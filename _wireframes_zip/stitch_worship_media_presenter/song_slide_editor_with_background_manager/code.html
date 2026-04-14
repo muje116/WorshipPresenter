@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&amp;family=Manrope:wght@600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "background": "#0b1326",
+                        "error": "#ffb4ab",
+                        "surface": "#0b1326",
+                        "surface-container-lowest": "#060e20",
+                        "primary-fixed": "#dee0ff",
+                        "on-secondary-fixed-variant": "#354a53",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "on-primary-fixed-variant": "#002ccd",
+                        "on-primary-container": "#7d8fff",
+                        "on-tertiary-container": "#ff636b",
+                        "error-container": "#93000a",
+                        "surface-container-low": "#131b2e",
+                        "surface-tint": "#bbc3ff",
+                        "surface-container-high": "#222a3d",
+                        "tertiary-fixed": "#ffdad9",
+                        "surface-container": "#171f33",
+                        "inverse-primary": "#2848ee",
+                        "primary-container": "#001d92",
+                        "surface-container-highest": "#2d3449",
+                        "primary": "#bbc3ff",
+                        "surface-variant": "#2d3449",
+                        "tertiary": "#ffb3b3",
+                        "outline-variant": "#454652",
+                        "on-primary-fixed": "#000f5d",
+                        "tertiary-fixed-dim": "#ffb3b3",
+                        "on-tertiary": "#680014",
+                        "on-primary": "#001d93",
+                        "on-tertiary-fixed-variant": "#920021",
+                        "on-background": "#dae2fd",
+                        "secondary-container": "#374c56",
+                        "on-tertiary-fixed": "#400009",
+                        "tertiary-container": "#670014",
+                        "on-surface": "#dae2fd",
+                        "on-secondary-fixed": "#071e27",
+                        "secondary-fixed-dim": "#b4cad6",
+                        "on-secondary": "#1e333c",
+                        "secondary": "#b4cad6",
+                        "outline": "#908f9d",
+                        "surface-bright": "#31394d",
+                        "surface-dim": "#0b1326",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#c6c5d4",
+                        "inverse-on-surface": "#283044",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-fixed": "#cfe6f2",
+                        "on-secondary-container": "#a6bcc7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #bbc3ff;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body select-none">
+<!-- TopAppBar -->
+<header class="bg-[#0b1326] dark:bg-[#0b1326] shadow-[0_32px_32px_rgba(187,195,255,0.08)] fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 font-['Manrope'] tracking-wide">
+<div class="flex items-center gap-8">
+<span class="text-xl font-bold tracking-tighter text-[#dae2fd]">Sanctuary Pro</span>
+<nav class="hidden md:flex gap-6 items-center h-full pt-1">
+<a class="text-[#c6c5d4] hover:bg-[#222a3d] transition-colors px-3 py-1" href="#">Live</a>
+<a class="text-[#bbc3ff] border-b-2 border-[#bbc3ff] pb-1 hover:bg-[#222a3d] transition-colors px-3 py-1" href="#">Edit</a>
+<a class="text-[#c6c5d4] hover:bg-[#222a3d] transition-colors px-3 py-1" href="#">Schedule</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#c6c5d4] cursor-pointer hover:bg-[#222a3d] p-2 transition-colors duration-200">settings</span>
+<span class="material-symbols-outlined text-[#c6c5d4] cursor-pointer hover:bg-[#222a3d] p-2 transition-colors duration-200">help</span>
+</div>
+<button class="signature-gradient text-on-primary-fixed px-5 py-2 rounded-lg font-headline font-bold text-sm active:scale-95 duration-200">Go Live</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/20">
+<img alt="Operator Profile" data-alt="close-up portrait of a professional male audio engineer in a dark studio setting with soft blue lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqfISo7rq6RfPo715domsJ0pRyI4MSuRCOEk0UsK2g_KmKxrQwSCJXzFYeNd2feW59GGCCw-Etg4e2R7LNhspXEnYpnbjs98esknWo9rfeAlROZ_SAHF5RVGQGDmXsYAQ0Tzl2TYo-KeerZgWaSsWMshToCFTdo05xjEEYgSO4G3YjRYRTJTEk7l1_nVR1xCAYp85vOsIMsBZOf8Z9AbTit6uwuyCBclrv1pC8in7uREjufmm2I8uADzejyVOG4bdIWcS_29Y1spU"/>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-16">
+<!-- SideNavBar -->
+<aside class="bg-[#131b2e] dark:bg-[#131b2e] h-full w-64 flex flex-col fixed left-0 top-0 pt-16 no-border font-['Inter'] text-sm">
+<div class="p-4 flex items-center gap-3">
+<div class="w-8 h-8 bg-surface-container-highest rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-lg">auto_stories</span>
+</div>
+<div>
+<h3 class="text-[#dae2fd] font-['Manrope'] font-bold leading-tight">Main Stage</h3>
+<p class="text-xs text-on-surface-variant opacity-70">Production Suite</p>
+</div>
+</div>
+<div class="px-3 space-y-1 mt-4">
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] transition-all flex items-center gap-3">
+<span class="material-symbols-outlined">auto_stories</span> Library
+                </button>
+<button class="w-full text-left px-3 py-2.5 rounded-lg bg-[#222a3d] text-[#dae2fd] border-l-4 border-[#bbc3ff] transition-all flex items-center gap-3">
+<span class="material-symbols-outlined">movie</span> Media
+                </button>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] transition-all flex items-center gap-3">
+<span class="material-symbols-outlined">format_quote</span> Lyrics
+                </button>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] transition-all flex items-center gap-3">
+<span class="material-symbols-outlined">palette</span> Themes
+                </button>
+<button class="w-full text-left px-3 py-2.5 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] transition-all flex items-center gap-3">
+<span class="material-symbols-outlined">settings_input_component</span> Automation
+                </button>
+</div>
+<div class="mt-auto p-4 space-y-1">
+<button class="w-full text-left px-3 py-2 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] flex items-center gap-3">
+<span class="material-symbols-outlined">contact_support</span> Support
+                </button>
+<button class="w-full text-left px-3 py-2 rounded-lg text-[#c6c5d4] hover:bg-[#171f33] flex items-center gap-3">
+<span class="material-symbols-outlined">terminal</span> Logs
+                </button>
+</div>
+</aside>
+<!-- Main Content Area (Slide Editor) -->
+<main class="flex-1 ml-64 mr-80 bg-surface-container-lowest p-8 flex flex-col items-center justify-center relative overflow-hidden">
+<!-- Canvas Grid Overlay -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background-image: linear-gradient(to right, #908f9d 1px, transparent 1px), linear-gradient(to bottom, #908f9d 1px, transparent 1px); background-size: 40px 40px;"></div>
+<!-- Slide Stage -->
+<div class="w-full max-w-4xl aspect-video bg-surface-container rounded-xl shadow-2xl relative overflow-hidden group">
+<!-- Background Layer (The 'Slide Content') -->
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-60 blur-[4px]" data-alt="cinematic mountain landscape at night under a starlit sky with deep blue and purple tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBym_AhWQkmOG_vPIGaQ3stfGvO7NfsOo3LZ77XKOwfv5Imsgqjmm8yg1ey79jwvGSSNa0aKVUDizrOtPpXGY4OAj_lU38FKjg1qPM_5iJsDbsW-46cUGTPjtp3GxcyLncLnK5oGlaBnDPI5g1lnVlRuByKiZaOU7HHjZsYmGYS1htjjlBBybzH7xj_r1xbGWd03AYm5mJU29Gpd6CyGdY1a6Hs5G2ulsh0dkU8cpGr3tz6N8EcIWZDJx--tKKC3A9_RxtEG4DMmZw"/>
+</div>
+<!-- Text Overlay Layer -->
+<div class="absolute inset-0 z-10 flex flex-col items-center justify-center p-12 text-center">
+<h1 class="text-6xl font-headline font-extrabold text-white tracking-tight drop-shadow-2xl">
+                        Amazing Grace
+                    </h1>
+</div>
+<!-- Live Tag -->
+<div class="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1 bg-tertiary-container rounded-full animate-pulse">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="text-xs font-bold text-tertiary tracking-widest uppercase">Live View</span>
+</div>
+</div>
+<!-- Editor HUD -->
+<div class="mt-12 flex gap-4">
+<div class="bg-surface-container-high/80 backdrop-blur-xl px-6 py-3 rounded-full border border-outline-variant/10 flex items-center gap-6 shadow-2xl">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">text_fields</span>
+<span class="text-xs font-semibold uppercase tracking-wider">Verse 1</span>
+</div>
+<div class="h-4 w-px bg-outline-variant/30"></div>
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-surface-variant rounded transition-colors">
+<span class="material-symbols-outlined">undo</span>
+</button>
+<button class="p-2 hover:bg-surface-variant rounded transition-colors">
+<span class="material-symbols-outlined">redo</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Property Panel -->
+<aside class="w-80 h-full fixed right-0 top-0 pt-16 bg-surface-container-low border-l border-outline-variant/10 z-40 overflow-y-auto">
+<div class="p-6">
+<h2 class="font-headline text-lg font-bold text-on-surface mb-6">Background &amp; Style</h2>
+<!-- Type Selector -->
+<div class="flex p-1 bg-surface-container-lowest rounded-lg mb-8">
+<button class="flex-1 py-2 text-xs font-semibold bg-surface-container-high text-primary rounded shadow-sm">Media</button>
+<button class="flex-1 py-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors">Gradient</button>
+<button class="flex-1 py-2 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-colors">Color</button>
+</div>
+<!-- Media Section -->
+<div class="space-y-6">
+<div class="space-y-3">
+<label class="text-xs font-bold text-on-surface-variant tracking-wider uppercase">Active Media</label>
+<div class="group relative aspect-video rounded-lg overflow-hidden border border-outline-variant/20 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="cinematic mountain landscape thumbnail with deep blue tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-mCaXeYFaXlyy3V5SU4aI1gT5PDMTnx6yxYJ2dNyANzjbKh1qSYkr_seAUQwX6KYqUdX44IxRLiTMrgTJTmHgFcieuU-Bt-uX9pH3FvAxaXIOrCfQdZUPhTCa0ruk6tBELB6LzAVDZbLQ05dVtyh-5xNQcDfBikejyY6eon7d1DSMybxyHzyQmqZyMkyw5NA6qQbUpIxKYXNaxkZSfqgLk8vQzZDPyqQ-UZvqm5AA9qqnNM83QrOgahVftvoNn_p4f7Z87-ym4zI"/>
+<div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="signature-gradient px-4 py-2 rounded-lg text-xs font-bold text-on-primary-fixed">Change Media</button>
+</div>
+</div>
+</div>
+<!-- Sliders -->
+<div class="space-y-6 pt-4">
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-xs font-bold text-on-surface-variant tracking-wider uppercase">Opacity</label>
+<span class="text-xs font-mono text-primary">60%</span>
+</div>
+<input class="w-full h-1 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" type="range" value="60"/>
+</div>
+<div class="space-y-4">
+<div class="flex justify-between items-center">
+<label class="text-xs font-bold text-on-surface-variant tracking-wider uppercase">Blur</label>
+<span class="text-xs font-mono text-primary">4px</span>
+</div>
+<input class="w-full h-1 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" type="range" value="20"/>
+</div>
+</div>
+<!-- Media Picker Grid -->
+<div class="pt-6 border-t border-outline-variant/10">
+<label class="text-xs font-bold text-on-surface-variant tracking-wider uppercase mb-4 block">Quick Picker</label>
+<div class="grid grid-cols-2 gap-3">
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container border-2 border-primary-container cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="starry night sky over snowy mountains" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfiK5GDgBT-YO45u8mTiqNuGu0nG6tNsK6H7m40R9uvyN2UxO2JyXQA6dsogJECl1_f-7anI6wKOFeCGjZMEAoD1d5H8YP6AWLaTjI-ky2ZVS4Vbl137tbGc_6FRFdV5EBz4I9m0XCbEAyHxPbC_eaZ3Wxiqm7o3UC0XRQsTnzGzYSv4rlgIo4m-YgLw2dVh7APcIafjPeVTEGuIcsjnXHDSoBdt-aPdN3ieLgHO5tScP45ef_6an6vsS4CkX_LYI-21v5KCc5x00"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container border border-outline-variant/20 hover:border-primary/50 transition-all cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="dramatic mountain peaks at sunrise with orange glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASilzPwzLfo4sH2ZLF0wJZDh67Zthh7-ZJas-nk5EkLqUwYfRcHLzcpxK07yB34nXxH5G4BfyB56Fo6OX9eh0yQ7SFd1QKGfkIpchgDLJEejIQeQyD__Dr_icphZsBjrTag7Z14T_ujaaJ06-kE1x3D4zCKVtTvnlEzMcH6mVWTKR9uC3-fjuBRJLFlwEylZpy-QpPQ464VnvwOM_Q_uHHkn09sFV0UIFPO4bG8asMTglFNCeNdqITxKmDSgYvxRk3GobUYyJf4NA"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container border border-outline-variant/20 hover:border-primary/50 transition-all cursor-pointer">
+<img class="w-full h-full object-cover" data-alt="misty mountain ranges with soft light" src="https://lh3.googleusercontent.com/aida-public/AB6AXuABzEvyWEXllfFDzkjBRNCCCsCZxnBKka4LgLO1shw-Z_mOjxoJeVgianF0y1pCWndL6tYvLmRyWT7DHzSP4NgYoCFItDzT3lw4eXD1XsX-607HXvIyVZDfj_zUKjpkVGyNtLkyQoCE7YjtU-CWfWAmjCATQd5PIAW-LRM9riws3A9xYiXyXsOT6YNfX50Gmvf-MHdTScIkK7MvCHurrWIKH7WLCfeFeN5FNRnSgnv6Zk4H5jYPlsuCfgfLHpVceqyDAHGEr8LBs84"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden bg-surface-container border border-outline-variant/20 hover:border-primary/50 transition-all cursor-pointer flex items-center justify-center">
+<span class="material-symbols-outlined text-outline">add</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="absolute bottom-0 left-0 w-full p-6 bg-surface-container-low/80 backdrop-blur-md">
+<button class="w-full py-3 bg-surface-container-highest text-primary font-headline font-bold text-sm rounded-lg hover:bg-surface-container-high transition-colors active:scale-95">
+                    Save as Template
+                </button>
+</div>
+</aside>
+</div>
+</body></html>

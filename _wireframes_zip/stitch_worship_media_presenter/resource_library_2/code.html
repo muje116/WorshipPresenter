@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary": "#b4cad6",
+                      "on-secondary-container": "#a6bcc7",
+                      "surface-container": "#171f33",
+                      "on-secondary": "#1e333c",
+                      "on-primary-fixed": "#000f5d",
+                      "surface": "#0b1326",
+                      "tertiary-fixed": "#ffdad9",
+                      "secondary-fixed": "#cfe6f2",
+                      "inverse-on-surface": "#283044",
+                      "on-tertiary-fixed": "#400009",
+                      "surface-tint": "#bbc3ff",
+                      "tertiary": "#ffb3b3",
+                      "on-surface": "#dae2fd",
+                      "outline-variant": "#454652",
+                      "surface-container-highest": "#2d3449",
+                      "on-error": "#690005",
+                      "on-surface-variant": "#c6c5d4",
+                      "on-secondary-fixed-variant": "#354a53",
+                      "on-tertiary-container": "#ff636b",
+                      "on-tertiary": "#680014",
+                      "surface-container-lowest": "#060e20",
+                      "primary": "#bbc3ff",
+                      "secondary-fixed-dim": "#b4cad6",
+                      "on-secondary-fixed": "#071e27",
+                      "surface-variant": "#2d3449",
+                      "inverse-primary": "#2848ee",
+                      "on-background": "#dae2fd",
+                      "surface-container-low": "#131b2e",
+                      "inverse-surface": "#dae2fd",
+                      "secondary-container": "#374c56",
+                      "on-primary": "#001d93",
+                      "tertiary-fixed-dim": "#ffb3b3",
+                      "on-tertiary-fixed-variant": "#920021",
+                      "on-primary-fixed-variant": "#002ccd",
+                      "primary-container": "#001d92",
+                      "primary-fixed-dim": "#bbc3ff",
+                      "surface-dim": "#0b1326",
+                      "tertiary-container": "#670014",
+                      "error-container": "#93000a",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed": "#dee0ff",
+                      "surface-container-high": "#222a3d",
+                      "surface-bright": "#31394d",
+                      "background": "#0b1326",
+                      "on-primary-container": "#7d8fff",
+                      "outline": "#908f9d",
+                      "error": "#ffb4ab"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Manrope"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+        .glass-panel {
+            background-color: rgba(45, 52, 73, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary/30">
+<!-- SideNavBar Anchor -->
+<aside class="flex flex-col h-screen py-6 px-4 h-full w-64 fixed left-0 top-0 bg-[#131b2e] dark:bg-slate-900 shadow-2xl shadow-indigo-950/20 z-50">
+<div class="mb-10 px-4">
+<h1 class="text-xl font-bold tracking-tighter text-[#dae2fd] font-headline uppercase">The Ethereal Stage</h1>
+<p class="text-[10px] tracking-[0.2em] text-on-surface-variant font-label uppercase mt-1">Sanctuary Control</p>
+</div>
+<nav class="flex-1 space-y-2">
+<!-- Schedules (Inactive) -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="font-['Manrope'] tracking-wide">Schedules</span>
+</a>
+<!-- Library (Active) -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#bbc3ff] border-r-2 border-[#bbc3ff] font-semibold bg-[#171f33] transition-colors rounded-l-lg active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="video_library" style="font-variation-settings: 'FILL' 1;">video_library</span>
+<span class="font-['Manrope'] tracking-wide">Library</span>
+</a>
+<!-- Settings (Inactive) -->
+<a class="flex items-center gap-3 px-4 py-3 text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors rounded-lg group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-['Manrope'] tracking-wide">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-4">
+<button class="w-full py-3 px-4 signature-gradient text-on-primary-fixed font-headline font-bold rounded-md flex items-center justify-center gap-2 transition-transform active:scale-95 shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                Go Live
+            </button>
+</div>
+</aside>
+<!-- TopNavBar Anchor -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 flex justify-between items-center px-8 border-b border-white/5 bg-[#0b1326]/80 backdrop-blur-xl dark:bg-slate-950/80 z-40">
+<div class="flex items-center gap-6">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-lowest border-none text-xs font-headline tracking-widest pl-10 pr-4 py-2 rounded-full w-64 focus:ring-1 focus:ring-primary/50 text-on-surface" placeholder="SEARCH ASSETS..." type="text"/>
+</div>
+<nav class="flex gap-8">
+<a class="text-[#c6c5d4] font-['Manrope'] text-sm uppercase tracking-widest hover:text-white transition-opacity" href="#">Preview</a>
+<a class="text-[#c6c5d4] font-['Manrope'] text-sm uppercase tracking-widest hover:text-white transition-opacity" href="#">Live</a>
+<a class="text-[#bbc3ff] border-b border-[#bbc3ff] pb-1 font-['Manrope'] text-sm uppercase tracking-widest" href="#">Stage Display</a>
+</nav>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4">
+<button class="text-[#c6c5d4] hover:text-white transition-all">
+<span class="material-symbols-outlined" data-icon="cast">cast</span>
+</button>
+<button class="text-[#c6c5d4] hover:text-white transition-all">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="h-8 w-8 rounded-full bg-surface-container-high border border-outline-variant/20 overflow-hidden">
+<img alt="Operator Profile" class="w-full h-full object-cover" data-alt="portrait of a male system operator with glasses in a dark tech-focused environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBQOTJUPKSldCFZHMexYv-cMId4gJ_hOP64JQyxppg82W9QuYCfosHw0CBMt-wQJUWTCnIUUpkbSQv58u-GtdGr-JZxxSH05Dlj_C3SAI6TsPCHEDpML48GGYQQR_FCgS-1cFaUZ4MFyYINs_4-1uuZ7yqiCoFARKhG7J4pZ1LlX6lRF9RhrxPvo762wUprkkLt3lGgoLWEYBXt55f-IJaXgdkj4e02wKtvAIJT5uZkAOVpE4lcXFwxxYiUch2lHQndJoBVQCeMLb4"/>
+</div>
+</div>
+</header>
+<!-- Main Content Stage -->
+<main class="ml-64 pt-16 min-h-screen bg-surface">
+<div class="flex h-[calc(100vh-4rem)]">
+<!-- Category Sidebar -->
+<aside class="w-72 bg-surface-container-low p-6 flex flex-col gap-8 overflow-y-auto">
+<div>
+<h3 class="text-xs font-headline font-bold text-on-surface-variant tracking-[0.2em] mb-4 uppercase">Content Categories</h3>
+<div class="space-y-1">
+<button class="w-full flex items-center justify-between px-3 py-2 bg-surface-container-high text-primary rounded-lg transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">music_note</span>
+<span class="text-sm font-medium">Songs</span>
+</div>
+<span class="text-[10px] font-label opacity-60">124</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface-container-highest text-on-surface-variant rounded-lg transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="text-sm font-medium">Bibles</span>
+</div>
+<span class="text-[10px] font-label opacity-60">12</span>
+</button><button class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface-container-highest text-on-surface-variant rounded-lg transition-all group">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">perm_media</span>
+<span class="text-sm font-medium">Media</span>
+</div>
+<span class="text-[10px] font-label opacity-60">86</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface-container-highest text-on-surface-variant rounded-lg transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">movie</span>
+<span class="text-sm font-medium">Videos</span>
+</div>
+<span class="text-[10px] font-label opacity-60">48</span>
+</button>
+<button class="w-full flex items-center justify-between px-3 py-2 hover:bg-surface-container-highest text-on-surface-variant rounded-lg transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px]">wallpaper</span>
+<span class="text-sm font-medium">Backgrounds</span>
+</div>
+<span class="text-[10px] font-label opacity-60">312</span>
+</button>
+</div>
+</div>
+<div>
+<h3 class="text-xs font-headline font-bold text-on-surface-variant tracking-[0.2em] mb-4 uppercase">Filter By Tags</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">Worship</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">Uplifting</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">Sermon</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">4K UHD</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">Announcement</span>
+<span class="px-3 py-1 bg-surface-container rounded-full text-[10px] text-secondary font-label border border-outline-variant/15 hover:border-primary/40 cursor-pointer transition-colors">Instrumental</span>
+</div>
+</div>
+<div class="mt-auto pt-6">
+<button class="w-full py-4 border-2 border-dashed border-outline-variant/30 rounded-xl flex flex-col items-center justify-center gap-2 hover:border-primary/40 hover:bg-surface-container transition-all group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary transition-colors">cloud_upload</span>
+<span class="text-[10px] font-headline font-bold tracking-widest text-on-surface-variant group-hover:text-primary uppercase">Import Media</span>
+</button>
+</div>
+</aside>
+<!-- Media Grid Area -->
+<section class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-3xl font-headline font-extrabold tracking-tight">Song Library</h2>
+<p class="text-on-surface-variant text-sm mt-1">Showing 124 arrangement items</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 bg-surface-container hover:bg-surface-container-high rounded-lg text-xs font-headline font-semibold text-secondary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                            SORT BY: RECENT
+                        </button>
+<button class="px-4 py-2 bg-surface-container hover:bg-surface-container-high rounded-lg text-xs font-headline font-semibold text-secondary transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">grid_view</span>
+</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Media Card 1: Active "Live" card -->
+<div class="group relative bg-surface-container-low rounded-xl overflow-hidden border-l-2 border-tertiary transition-all hover:translate-y-[-4px] hover:shadow-2xl hover:shadow-primary/5">
+<div class="aspect-video relative overflow-hidden">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="vibrant abstract motion background with deep blues and soft pink light trails for worship visuals" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSd7s1d6d2UuzRkPObaNqUSrHz-Dr5ZfcuO_xAl8HYhj0Fjz9Rw3Oi8kXga0gLFTxTV2u8ZdgtBcJ9b-aF_Bkcre7ckXufwGFxnsFprGLl4eVpvBk3UJoHef7-BVaUi7KBc9xqCDPefFWXzcRbl1CvqFLyD-fevpiddbnXLuaMI78bLjwcaNXbDXWEl5ECVxop1LoD8zcUY06QyOVPbo2A-YU9KDOaZ69s_NWZzoBZYW7iWBLYeiAw6Q93rbVYzqcKcbTC_B049J8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest to-transparent opacity-60"></div>
+<div class="absolute top-3 left-3 flex items-center gap-2">
+<span class="bg-tertiary-container/90 text-tertiary text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-tighter animate-pulse">Live</span>
+</div>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Waymaker</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Leeland • Key of C • 4:32</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">CCLI #7115744</span>
+</div>
+</div>
+</div>
+<!-- Media Card 2 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="cinematic mountain landscape at dusk with deep teal sky and star clusters for sermon backgrounds" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJH0-ceOXd-6rWe3VhTDXv-cscOoFrrD9zOdzm6Xh0DR0PTzB_6BtQbU88qkTEK-KFzvpqbXiyG4TXui7Z46J-n6sl2NXUyq-FzyOfoXCXa6NoA5N9TSOtqe4RicID4PIRLMauzcsi3KsobL_zolMKuhzX_hM9sQva3sqCHzJBtg4hgXNhjAOaLYxqIThmCAEmOnJP8ifKkxuaeMKXnxAmjHiRWudG4dLWVux2dbfI9B83M6qETq0wh0lF5e9sCBuCVXYN6T34jtw"/>
+<div class="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-colors"></div>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Goodness of God</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Bethel Music • Key of G</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Lyric Video</span>
+</div>
+</div>
+</div>
+<!-- Media Card 3 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="bokeh lighting from stage lights in a dark venue with warm golden and amber glows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCAV4osDFYCAW8VQeqOLAa7k3ovyHNCxMhKyV_IML14fSanetxJWDmVRqlmMm8XhKWWocPtGnpdFC6J1u9y80Uu8mMbpPmBZ-myjUGQXvPFiFnGO3Tf7w1aLYzLhZuGyJfr23V5UCSBUcwYF2XbRC4l-Btogf1q6_FaFbLNP5sUsKc7FpC6Knpf3EWWdvRTOIUiCqj0lLs89Y-ehcIjAYneHv0wAHEMyxVcMYpAe0ZKyyfgtgF3r7y4vAU2VsAGMlEBnJYEElMMWWY"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">How Great Thou Art</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Traditional • Hymn</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Public Domain</span>
+</div>
+</div>
+</div>
+<!-- Media Card 4 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="minimalist audio waveform visualization on a deep navy background with glowing light edges" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB8QRoItc6iTdi7ICVfQVCGiPyvE489VbSVMRRQINNTKlFcEs1hZG7dK-09EQPrbSlVXme1mtxMpFWdf9H8RfhfA5MAIQF0Z43auKM3jcdVdQUP-CTYj420L-_vABtErMLKpr125ZgQbrLeD6OhZH-GEfH1Q0INrWXFeIoNyqcD9oTL8rsGd84lClZE6EiikEURsxyGfCOPQ7aGLSh7YdMOlgWOSLtM7KmcXMJFdN3Y5c8GiuZKtehaVA1xMm-DZCXJWi6dXMAvs6k"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Reckless Love</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Cory Asbury • Key of Gb</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Modern Worship</span>
+</div>
+</div>
+</div>
+<!-- Media Card 5 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="soft blurred forest at dawn with hazy atmospheric light rays filtering through tall trees" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9JAaEW92fslBV59FmggM5suQ7BrnnleIj_dwgg4KDQldjWWsOAq59o2X4G4eJKn6AKWa6lqzhc9zsYBjWnNiRCfR8kf1Ztp230XnVJILQpdw9YHg0oieVQCpUKFmfvZfYzbdFEP5qr2rhwpdtRjgzkfZ1-4rfkPEJc_u4IpOg66cP0KNzzlcIfK0Zu1rWAeO1ySjY3F0f8jzLhSATj1Qn0vqFFKbi6rre5p6iaP83x98HsSZfTYEGdY4MuY6CnG2M1XVa6vPoF0I"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Agnus Dei</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Michael W. Smith • Key of Bb</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Worship Classic</span>
+</div>
+</div>
+</div>
+<!-- Media Card 6 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="overhead view of high quality studio mixing console in dim blue studio lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDuK44yn_B9rxnR_qco-4vBv6eUl0TzBlNkaVXY_upN_i10VV3tSWO2mMUOBfzPcv24hZk9SOgMbKfAi_pcwGkRkpM7j2Tzfov14zdcZnruuvZgLerTGiTSPWXaBuYlvxSgpYI9sQ6ogG_qNnlhjI0kidEYeVXyILMojxo50cECzwAl84XP6GbyWiO7fKmGIVqR8h0XkHFOF524_8frOuFHt1xL3u60IWLOy1w4V8wZ-mnmzb4xGhTsd8o5_g_CDjYkYTL9Mdjy_M4"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Gratitude</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Brandon Lake • Key of B</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">New Release</span>
+</div>
+</div>
+</div>
+<!-- Media Card 7 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="dramatic lighting through stained glass window casting colorful patterns in a dark cathedral" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGt_Nf8JT37LML6mfgxK3WGMi2Y0uA_zq04HYZf3NiLUQH-dXsBWriAQq4FfhtkKOYpf9Agzdshb8mEkxJCMQPAGpqmevYkv3eDkEctb0b71Nx3dcgQJqou6NUEZaC7v2zTyIfRKtAKjviTXLJaMu43T0a-4_Xo175YO25HbaS0LRldkENDWF04Cye1B_xx3kVvOgo5FSyakXcqR2bo3RXba_Q36xaXAWw0IchcITkntkPdrJOCj7yr6Wb0BWXMAab8vCQkRNffw4"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">Build My Life</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Pat Barrett • Key of G</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Lyric Video</span>
+</div>
+</div>
+</div>
+<!-- Media Card 8 -->
+<div class="group bg-surface-container rounded-xl overflow-hidden transition-all hover:bg-surface-container-high">
+<div class="aspect-video relative overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" data-alt="deep blue ocean waves at night with shimmering moonlight reflection for contemplative visuals" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZA-Pz7RR16jL3PqfvS6npUpVCsBhIcKt01CJ1N2ovuWOrQjPx6hJGcTCSxfW0Hf9ZWuy0f5koynCmxutWLkGqh-1QSzXo_Wnl__J40E99reLvJvH9EimeZnureHrSoREWWxw2QhWWYn0U9JEFe0qPiIs09VDBJ17DnWgMmOpRVfJMEXIkvAOPHRgh0KK6SYS5MRJtfibuLpFETUq5Ruiqo2EzkFBeVuGlkxxvrj_6WXoUGSSrsLHBAUatgPv6skSlQ7EtdU77uG4"/>
+</div>
+<div class="p-4">
+<h4 class="font-headline font-bold text-on-surface mb-1">O Praise The Name</h4>
+<p class="text-[11px] text-on-surface-variant font-label mb-3">Hillsong Worship • Key of C</p>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest text-[9px] px-2 py-0.5 rounded text-on-secondary">Easter Special</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Media Details / Metadata Inspector (Contextual Asymmetry) -->
+<aside class="w-80 bg-surface-container-lowest border-l border-white/5 p-6 hidden xl:block">
+<div class="flex justify-between items-center mb-8">
+<h3 class="text-xs font-headline font-bold text-on-surface-variant tracking-[0.2em] uppercase">Inspector</h3>
+<button class="text-on-surface-variant hover:text-white transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="space-y-8">
+<!-- Preview Thumbnail -->
+<div class="rounded-lg overflow-hidden border border-outline-variant/10">
+<img alt="Active Preview" class="w-full" data-alt="vibrant abstract motion background with deep blues and soft pink light trails for worship visuals" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlvJiuFkW71imi_kSOh_PaxVV_Wwe9PGerMll_MPpKBZjyRm_pQ37PpxNIZ0ZkFaeJ9kzhtPyNETncWXMpiboEW53VXpwLahMB5CtvVMc1yPYY6nahPqp220t4ZUTwQlxaPTI6F92ZkFCHW0IokiHoFi80EhyLVA4zrAW5mo_120zE8lgVWD7KWgdr7Gq5IxUTxjJyb1n1oLmEE_k4HGeh0rDzDSaNTL0xrp9Y_x0bzusg0COV7tzF7h5mb4Bfr-K5XYfOSGaqbvA"/>
+</div>
+<!-- Core Metadata -->
+<div>
+<h4 class="text-xl font-headline font-bold text-on-surface">Waymaker</h4>
+<p class="text-sm text-secondary mt-1">Leeland • Waymaker (Live)</p>
+</div>
+<!-- Detailed Info -->
+<div class="space-y-4">
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="text-[11px] font-label text-on-surface-variant uppercase tracking-wider">Arrangement</span>
+<span class="text-sm font-medium">Standard Band</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="text-[11px] font-label text-on-surface-variant uppercase tracking-wider">Key</span>
+<span class="text-sm font-medium">C Major</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="text-[11px] font-label text-on-surface-variant uppercase tracking-wider">Tempo</span>
+<span class="text-sm font-medium">68 BPM</span>
+</div>
+<div class="flex justify-between items-center border-b border-white/5 pb-2">
+<span class="text-[11px] font-label text-on-surface-variant uppercase tracking-wider">Time Sig.</span>
+<span class="text-sm font-medium">4/4</span>
+</div>
+</div>
+<!-- Media Assets -->
+<div>
+<h3 class="text-xs font-headline font-bold text-on-surface-variant tracking-[0.2em] mb-4 uppercase">Linked Assets</h3>
+<div class="space-y-2">
+<div class="flex items-center gap-3 p-2 bg-surface-container rounded group cursor-pointer hover:bg-surface-container-high">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">description</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-xs font-medium truncate">Chord_Sheet_C.pdf</p>
+<p class="text-[10px] text-on-surface-variant">1.2 MB</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-2 bg-surface-container rounded group cursor-pointer hover:bg-surface-container-high">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">audio_file</span>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-xs font-medium truncate">Multitrack_Stem.zip</p>
+<p class="text-[10px] text-on-surface-variant">42.8 MB</p>
+</div>
+</div>
+</div>
+</div>
+<button class="w-full py-3 bg-surface-container-highest hover:bg-surface-bright text-on-surface font-headline font-bold rounded-lg text-xs tracking-widest uppercase transition-colors">
+                        Edit Arrangement
+                    </button>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

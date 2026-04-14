@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#93000a",
+                        "inverse-surface": "#dae2fd",
+                        "primary": "#bbc3ff",
+                        "on-secondary": "#1e333c",
+                        "tertiary-fixed": "#ffdad9",
+                        "on-tertiary": "#680014",
+                        "secondary-container": "#374c56",
+                        "on-secondary-fixed-variant": "#354a53",
+                        "background": "#0b1326",
+                        "inverse-on-surface": "#283044",
+                        "tertiary-fixed-dim": "#ffb3b3",
+                        "surface": "#0b1326",
+                        "surface-container-high": "#222a3d",
+                        "on-primary": "#001d93",
+                        "surface-container-low": "#131b2e",
+                        "on-secondary-container": "#a6bcc7",
+                        "on-background": "#dae2fd",
+                        "surface-variant": "#2d3449",
+                        "on-primary-fixed-variant": "#002ccd",
+                        "on-error": "#690005",
+                        "inverse-primary": "#2848ee",
+                        "outline": "#908f9d",
+                        "primary-fixed": "#dee0ff",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#bbc3ff",
+                        "on-surface-variant": "#c6c5d4",
+                        "on-secondary-fixed": "#071e27",
+                        "secondary-fixed": "#cfe6f2",
+                        "primary-container": "#001d92",
+                        "tertiary": "#ffb3b3",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "outline-variant": "#454652",
+                        "on-tertiary-fixed": "#400009",
+                        "surface-container-lowest": "#060e20",
+                        "surface-container": "#171f33",
+                        "error": "#ffb4ab",
+                        "on-primary-container": "#7d8fff",
+                        "secondary": "#b4cad6",
+                        "on-tertiary-container": "#ff636b",
+                        "tertiary-container": "#670014",
+                        "on-surface": "#dae2fd",
+                        "surface-dim": "#0b1326",
+                        "secondary-fixed-dim": "#b4cad6",
+                        "surface-container-highest": "#2d3449",
+                        "on-tertiary-fixed-variant": "#920021",
+                        "surface-bright": "#31394d",
+                        "on-primary-fixed": "#000f5d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 2px; }
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            background: rgba(23, 31, 51, 0.8);
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body overflow-hidden h-screen flex flex-col cursor-grabbing">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-[#131b2e] shadow-[0_32px_32px_rgba(187,195,255,0.08)] flex justify-between items-center h-16 px-6 font-manrope tracking-wide">
+<div class="flex items-center gap-3">
+<span class="text-xl font-bold tracking-tight text-[#dae2fd]">Ethereal Media</span>
+</div>
+<div class="flex items-center gap-6">
+<div class="hidden md:flex items-center gap-4">
+<span class="text-[#bbc3ff] font-semibold transition-transform active:scale-95 cursor-pointer">Library</span>
+<span class="text-[#c6c5d4] hover:bg-[#222a3d] transition-colors duration-200 px-3 py-1 rounded cursor-pointer">Schedules</span>
+<span class="text-[#c6c5d4] hover:bg-[#222a3d] transition-colors duration-200 px-3 py-1 rounded cursor-pointer">Live Hub</span>
+</div>
+<div class="flex items-center gap-4 border-l border-outline-variant pl-6">
+<span class="material-symbols-outlined text-[#c6c5d4] cursor-pointer hover:bg-[#222a3d] p-2 rounded-full">settings</span>
+<span class="material-symbols-outlined text-[#c6c5d4] cursor-pointer hover:bg-[#222a3d] p-2 rounded-full">help</span>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest overflow-hidden border border-outline-variant">
+<img alt="professional male portrait" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3stipOe0GHG1LzYJ1tanpzGfcWWaTOZzK0sNWEdTYgbvvNYyYocdihG7Qt45mGU9AIjw8JwvD3cxyywtjBRDBXducTbOUR9VW9yLQ8O2QCUrIZoD-lh2hAeZcdKPtkqH2quabcLqAaNoXNlLCux8jP2LaEPEQaqOlZXBVk_5T3aG58vkVJnsBveL8KyshEklc67w02y0Sir_dJraMNms4UwMu2P_mVZ-phigWPZ8niH576toXvKUt83KVHVaDeeQvUGCMuuXV_lU"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 pt-16 overflow-hidden">
+<!-- SideNavBar -->
+<nav class="fixed left-0 h-full w-64 pt-4 bg-[#131b2e] flex flex-col font-inter text-sm font-medium overflow-y-auto custom-scrollbar pb-20">
+<div class="px-6 mb-8 flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">folder_special</span>
+</div>
+<div>
+<h3 class="text-[#dae2fd] font-manrope font-bold">Media Assets</h3>
+<p class="text-xs text-on-surface-variant">Local Library</p>
+</div>
+</div>
+<div class="flex flex-col flex-1">
+<div class="space-y-1">
+<div class="flex items-center gap-3 px-6 py-3 text-[#dae2fd] border-l-2 border-[#ffb3b3] bg-[#171f33] cursor-pointer transition-all">
+<span class="material-symbols-outlined">image</span>
+<span>Images</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-3 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined">movie</span>
+<span>Videos</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-3 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined">wallpaper</span>
+<span>Backgrounds</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-3 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined">sync</span>
+<span>Loops</span>
+</div>
+</div>
+<!-- Folders Section -->
+<div class="mt-8">
+<div class="px-6 mb-2 flex items-center justify-between">
+<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">Folders</span>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+</div>
+<div class="space-y-1">
+<div class="flex items-center gap-3 px-6 py-2.5 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined text-xl">folder</span>
+<span class="truncate">Easter 2026</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-2.5 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined text-xl">folder</span>
+<span class="truncate">Youth Night</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-2.5 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined text-xl">folder</span>
+<span class="truncate">Background Loops</span>
+</div>
+</div>
+</div>
+<div class="mt-8 px-6 space-y-3">
+<button class="w-full signature-gradient text-on-primary-fixed py-2.5 rounded-md font-bold tracking-wide transition-transform active:scale-95 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl">upload</span>
+                        Import Media
+                    </button>
+<button class="w-full bg-surface-container-high text-on-surface py-2.5 rounded-md font-semibold tracking-wide transition-transform active:scale-95 flex items-center justify-center gap-2 hover:bg-surface-container-highest">
+<span class="material-symbols-outlined text-xl">create_new_folder</span>
+                        New Folder
+                    </button>
+</div>
+</div>
+<div class="mt-auto py-6 space-y-1">
+<div class="flex items-center gap-3 px-6 py-3 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined">delete</span>
+<span>Trash</span>
+</div>
+<div class="flex items-center gap-3 px-6 py-3 text-[#c6c5d4] hover:bg-[#171f33] hover:text-[#dae2fd] cursor-pointer transition-all">
+<span class="material-symbols-outlined">archive</span>
+<span>Archive</span>
+</div>
+</div>
+</nav>
+<!-- Main Media Grid Content -->
+<main class="ml-64 mr-80 flex-1 bg-surface flex flex-col overflow-hidden">
+<!-- Header/Filter Bar -->
+<div class="h-20 flex items-center justify-between px-8 bg-surface-container-low shrink-0">
+<div class="flex items-center gap-4">
+<div class="relative w-96">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-lowest border-none rounded-lg pl-10 pr-4 py-2 text-sm text-on-surface focus:ring-1 focus:ring-primary placeholder:text-on-surface-variant/50" placeholder="Search assets..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex bg-surface-container-lowest p-1 rounded-lg">
+<button class="p-1.5 bg-surface-container-high rounded text-primary"><span class="material-symbols-outlined">grid_view</span></button>
+<button class="p-1.5 text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">format_list_bulleted</span></button>
+</div>
+<button class="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface bg-surface-container-lowest px-4 py-2 rounded-lg">
+<span>Sort: Recent</span>
+<span class="material-symbols-outlined text-xs">expand_more</span>
+</button>
+</div>
+</div>
+<!-- Bento/Grid Layout -->
+<div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Folder Item -->
+<div class="group relative aspect-video bg-surface-container-lowest rounded-lg border border-outline-variant/30 hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2">
+<div class="text-primary/40 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined !text-6xl" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<span class="text-xs font-semibold text-on-surface-variant group-hover:text-on-surface">Easter 2026</span>
+<div class="absolute top-2 right-2 text-[10px] text-on-surface-variant/40">12 items</div>
+</div>
+<!-- Folder Item -->
+<div class="group relative aspect-video bg-surface-container-lowest rounded-lg border border-outline-variant/30 hover:border-primary/50 transition-all cursor-pointer flex flex-col items-center justify-center gap-2 border-primary scale-105 bg-primary/10 ring-4 ring-primary/20 transition-all duration-300 z-10">
+<div class="text-primary/40 group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined !text-6xl" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<span class="text-xs font-semibold text-on-surface-variant group-hover:text-on-surface">Youth Night</span>
+<div class="absolute top-2 right-2 text-[10px] text-on-surface-variant/40">8 items</div>
+<div class="absolute inset-0 border-2 border-dashed border-primary rounded-lg animate-pulse"></div></div>
+<!-- Media Card: Selected -->
+<div class="group relative aspect-video bg-surface-container rounded-lg overflow-hidden border-2 border-primary ring-4 ring-primary/10 transition-all opacity-40">
+<img alt="deep space galaxy" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7E5OGaFI5ekbKG7Vl2gfnjCbhoL1qFBmIoLTnX90K8xowShlcO9so7o0Qb0edznZJ0AHu1IFYqnO89uXwGm78lswyxDQlt2wAkgBf25ksXcpaLLwvGaAVIaGT-FeRC5Eb5bmh4TaL9FR1_KYL44XIqvsJ4KRj9asi7PaAMW8Zzra15uu2L85YXLhQkP1pobBSf3U7TV6J4oYHkJEBRWMK4bl3IooP1yWm77W07KA06DVz4Ri_IpLAEwTRHjLjJ_sXBPTDD_sEAnw"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute top-2 right-2 flex gap-2">
+<span class="bg-primary/20 backdrop-blur-md px-2 py-0.5 rounded text-[10px] text-primary font-bold tracking-widest uppercase">HD</span>
+</div>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">image</span>
+<span class="text-xs font-semibold text-white truncate">Nebula_Background_01.jpg</span>
+</div>
+<div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-white/20 backdrop-blur-xl p-3 rounded-full text-white hover:bg-white/40"><span class="material-symbols-outlined">visibility</span></button>
+</div>
+</div>
+<!-- Media Card: Video -->
+<div class="group relative aspect-video bg-surface-container rounded-lg overflow-hidden transition-all hover:bg-surface-container-high">
+<img alt="abstract flowing particles" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAefgaki5F9eHUlFIvIDNXyxwFbwMpaYOl7d6UoPMJeJTest3bAFV6AIzN-Erfc-4aOQt2O_ZSulY11xV_yEwdh7hpCV1avGJJhx6HVLt3A7TJBfA9X1SL3iAyhEp7iS96VUp6LEUX-kpC7TQwx6eWgJP-FsokEk0xi1Xapd-sr89w1288qSTXDPC_5WZ55NcoZupiVALIEwPcWYcNUtDCXkR0VhFUJAP7i1jNm6IfsiFcJhHo22FswDGwBguHhH-heHRmRn0aN6qQ"/>
+<div class="absolute inset-0 bg-black/30 group-hover:bg-black/10"></div>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">play_circle</span>
+<span class="text-xs font-semibold text-white truncate">Particle_Flow_Loop.mp4</span>
+</div>
+<div class="absolute bottom-3 right-3 text-[10px] text-white/80">00:30</div>
+</div>
+<div class="group relative aspect-video bg-surface-container rounded-lg overflow-hidden transition-all hover:bg-surface-container-high">
+<img alt="misty forest" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATw0kkDj-rLXqRSwwG7VZysfX6_O-pvE3EPq_s4dFi8Klb1cH20jCeyy6vlDqkxN5Pu5UA9yUmctNWxEq_Mq3fLMFMT8RRa0qudxRGrVRmTKavvwxUMuvyo3oLUiDhLV9QgLIXAX_Oy9CqQoi801sxt37gW2Y-VSSfvyvRqzBr60NNBgrb3hhz-GiuPCO_iycc3solHTJpvyQ-jvSiSmN_J2EZgtZHQDYGtUhrhusXCIAOFxmkHEQtlLu4wEINyx4JlYqZQ-LqaYE"/>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">image</span>
+<span class="text-xs font-semibold text-white truncate">Misty_Forest_HDR.png</span>
+</div>
+</div>
+<div class="group relative aspect-video bg-surface-container rounded-lg overflow-hidden transition-all hover:bg-surface-container-high">
+<img alt="geometric shapes" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnSuvTLh5thnTaRzKBDIwKNp4EABrHuWyTUpHaWt0B1pwAbVxrDg08mm4ecRM2CP2tTWeJB7rR5GHYQ1ZKuQJ3nY2PClKL1pm1Bhp7354ZTZeqYt-Phzp3M6n8qgphNQJpiNPUwtMjkBIulTY0ilxHQ-4IRZq0uHSYrZXBfUqojNxNuQ0l_euGdZWMF-GBKL1aLiln5h8ssf1Z1UYcGN4_UF4Mk3oBDHh0-9-bpjIWw_4oySvDgc5acJOOOYTOougfNeL5TDnDLzk"/>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">movie</span>
+<span class="text-xs font-semibold text-white truncate">Geometric_Intro.mp4</span>
+</div>
+<div class="absolute bottom-3 right-3 text-[10px] text-white/80">00:15</div>
+</div>
+<div class="group relative aspect-video bg-surface-container rounded-lg overflow-hidden transition-all hover:bg-surface-container-high">
+<img alt="light leaks" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8_-7fiqLKrtDTWylD4v8Sshib_mVNue2hN7lzR1Epe2N7iuj7yZ5SauwONQtiVC4ZBLQWOKo4YXihcbXtxd-mm1KBnQdQQUCMfilVKjzyOnk7iJH0W0YC5w0lkrIKy9CHUJRc1GGxyMl6lNP_r1MQcUISkfUZkfrCB1AflCXKbfYGSWfY9lLa0jI8OGXoM-dZGJ3VhqSoOYIGrNVNkb4bkGHNwflXPsDOioBUCxqKWxUTySVQR4HzuSW_Yr-bgIOp-J0MJG6H2G4"/>
+<div class="absolute bottom-3 left-3 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-sm">image</span>
+<span class="text-xs font-semibold text-white truncate">Light_Leaks_Overlay.jpg</span>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed pointer-events-none z-[100] w-64 aspect-video rounded-lg overflow-hidden border-2 border-primary/50 shadow-2xl opacity-70 rotate-3" style="left: 35%; top: 30%;">
+<img alt="ghost preview" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7E5OGaFI5ekbKG7Vl2gfnjCbhoL1qFBmIoLTnX90K8xowShlcO9so7o0Qb0edznZJ0AHu1IFYqnO89uXwGm78lswyxDQlt2wAkgBf25ksXcpaLLwvGaAVIaGT-FeRC5Eb5bmh4TaL9FR1_KYL44XIqvsJ4KRj9asi7PaAMW8Zzra15uu2L85YXLhQkP1pobBSf3U7TV6J4oYHkJEBRWMK4bl3IooP1yWm77W07KA06DVz4Ri_IpLAEwTRHjLjJ_sXBPTDD_sEAnw"/>
+<div class="absolute inset-0 bg-primary/20"></div>
+<div class="absolute bottom-2 left-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-white text-xs">image</span>
+<span class="text-[10px] font-bold text-white uppercase tracking-tight">Moving 1 Item</span>
+</div>
+</div></main>
+<!-- Inspector Panel (Right) -->
+<aside class="fixed right-0 h-full w-80 pt-4 bg-[#131b2e] border-l border-outline-variant/15 flex flex-col font-inter overflow-y-auto custom-scrollbar pb-24">
+<div class="px-6 pb-6">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-[#dae2fd] font-manrope font-bold text-lg">Inspector</h2>
+<button class="text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined">close</span></button>
+</div>
+<div class="rounded-xl overflow-hidden mb-6 aspect-video bg-surface-container-lowest">
+<img alt="nebula detail" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcsQlIis6jdwkL7fg7Dc9zPyNxL1465SpUtuv6UXVNRbrTrSjf8xWyOrfnXDEMzG_cugm0eTPb5HxCDF8HNK9ofzyuTo-_qi7cMfT8eV7r0lD2SooSjtJF8DwLJZC9lX039twNiW2UeShZ4jYxowoiIOEaQX5DRlf1RwNqloyOHpUEM3faZyvCIjAuO9H51wsbQ2nwdBc9feo_GvvsEoAW5g5XSUnw7roDTbAx-JGMXjqbA9hki47B9LML7xDs8aeiYOWQlMd6zI8"/>
+</div>
+<div class="space-y-6">
+<div>
+<label class="text-[10px] font-bold text-primary tracking-widest uppercase mb-2 block">Asset Identity</label>
+<h4 class="text-on-surface font-semibold mb-1">Nebula_Background_01.jpg</h4>
+<div class="flex flex-wrap gap-2 mt-3">
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded text-[10px] font-medium">Space</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded text-[10px] font-medium">Ambient</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded text-[10px] font-medium">Motion-Friendly</span>
+<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded text-[10px] font-medium">+ Tag</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="p-3 bg-surface-container-lowest rounded-lg">
+<span class="block text-[10px] text-on-surface-variant uppercase mb-1">Type</span>
+<span class="block text-sm text-on-surface">JPEG Image</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg">
+<span class="block text-[10px] text-on-surface-variant uppercase mb-1">Resolution</span>
+<span class="block text-sm text-on-surface">3840 x 2160</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg">
+<span class="block text-[10px] text-on-surface-variant uppercase mb-1">Created</span>
+<span class="block text-sm text-on-surface">Oct 12, 2023</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg">
+<span class="block text-[10px] text-on-surface-variant uppercase mb-1">Size</span>
+<span class="block text-sm text-on-surface">4.2 MB</span>
+</div>
+</div>
+<div class="space-y-3 pt-4">
+<button class="w-full signature-gradient text-on-primary-fixed py-3 rounded-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/10 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">send</span>
+                            Send to Live
+                        </button>
+<button class="w-full bg-surface-container-high text-on-surface py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">add_to_photos</span>
+                            Add to Schedule
+                        </button>
+<button class="w-full bg-transparent border border-outline-variant/30 text-on-surface-variant py-3 rounded-lg font-medium flex items-center justify-center gap-2 hover:border-outline-variant hover:text-on-surface transition-all">
+<span class="material-symbols-outlined">edit</span>
+                            Edit Metadata
+                        </button>
+</div>
+</div>
+</div>
+</aside>
+</div>
+<!-- Live Status Pill -->
+<div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+<div class="bg-tertiary-container/90 backdrop-blur-xl border border-tertiary/20 px-4 py-2 rounded-full flex items-center gap-3 animate-pulse">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="text-tertiary text-xs font-bold tracking-widest uppercase">System Live</span>
+<span class="text-white/40 text-xs">|</span>
+<span class="text-white text-xs font-medium">Service: Sunday Morning Glory</span>
+</div>
+</div>
+</body></html>

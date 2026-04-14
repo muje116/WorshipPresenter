@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>WorshipOS Output</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style> body { font-family: sans-serif; padding: 16px; background: #000; color: #fff; } .output { border: 1px solid #555; height: 100%; display: flex; align-items: center; justify-content: center; } </style>
+  </head>
+  <body>
+    <div class="output" id="outputRoot">Output</div>
+    <script>
+      const urlParams = new URLSearchParams(window.location.search)
+      const outId = urlParams.get('out') || '1'
+      document.title = 'WorshipOS Output ' + outId
+      const root = document.getElementById('outputRoot')
+      root.textContent = 'Output ' + outId + ' — idle'
+
+      function updateFromPayload(state) {
+        if (!state) return
+        if (state.mode === 'black') {
+          root.textContent = 'Output ' + outId + ' — BLACK'
+        } else if (state.slideTitle) {
+          root.textContent = 'Output ' + outId + ' | ' + state.slideTitle
+        }
+      }
+
+      if (window.worship?.outputs?.onOutputState) {
+        window.worship.outputs.onOutputState((payload) => {
+          updateFromPayload(payload?.state)
+        })
+      }
+
+      // Initialize with a default idle state
+      if (window.worship?.outputs?.setState) {
+        window.worship.outputs.setState(parseInt(outId), { slideTitle: 'Idle' })
+      }
+    </script>
+  </body>
+</html>

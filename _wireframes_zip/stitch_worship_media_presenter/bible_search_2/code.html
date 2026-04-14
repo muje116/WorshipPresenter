@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ethereal Stage - Scripture Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;family=Inter:wght@300;400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-surface": "#dae2fd",
+                      "on-primary-fixed-variant": "#002ccd",
+                      "inverse-surface": "#dae2fd",
+                      "primary": "#bbc3ff",
+                      "surface-bright": "#31394d",
+                      "secondary": "#b4cad6",
+                      "secondary-fixed": "#cfe6f2",
+                      "on-background": "#dae2fd",
+                      "on-error-container": "#ffdad6",
+                      "on-tertiary-container": "#ff636b",
+                      "on-secondary-fixed-variant": "#354a53",
+                      "secondary-container": "#374c56",
+                      "tertiary": "#ffb3b3",
+                      "surface-container": "#171f33",
+                      "on-surface-variant": "#c6c5d4",
+                      "on-secondary-fixed": "#071e27",
+                      "primary-container": "#001d92",
+                      "surface-dim": "#0b1326",
+                      "tertiary-fixed": "#ffdad9",
+                      "primary-fixed": "#dee0ff",
+                      "error": "#ffb4ab",
+                      "on-primary-fixed": "#000f5d",
+                      "surface-container-high": "#222a3d",
+                      "surface-container-highest": "#2d3449",
+                      "on-tertiary-fixed-variant": "#920021",
+                      "outline": "#908f9d",
+                      "on-tertiary-fixed": "#400009",
+                      "surface-tint": "#bbc3ff",
+                      "on-tertiary": "#680014",
+                      "surface-container-low": "#131b2e",
+                      "on-secondary-container": "#a6bcc7",
+                      "surface-variant": "#2d3449",
+                      "on-primary": "#001d93",
+                      "secondary-fixed-dim": "#b4cad6",
+                      "primary-fixed-dim": "#bbc3ff",
+                      "inverse-on-surface": "#283044",
+                      "surface": "#0b1326",
+                      "on-primary-container": "#7d8fff",
+                      "tertiary-fixed-dim": "#ffb3b3",
+                      "background": "#0b1326",
+                      "surface-container-lowest": "#060e20",
+                      "outline-variant": "#454652",
+                      "inverse-primary": "#2848ee",
+                      "tertiary-container": "#670014",
+                      "on-secondary": "#1e333c",
+                      "on-error": "#690005",
+                      "error-container": "#93000a"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Manrope"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+        .glass-overlay {
+            backdrop-filter: blur(20px);
+            background: rgba(45, 52, 73, 0.8);
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #454652; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30 overflow-hidden h-screen flex">
+<!-- Sidebar Navigation -->
+<aside class="bg-[#131b2e] flex flex-col h-full py-4 docked left-0 h-screen w-64 flex-shrink-0 z-50">
+<div class="px-6 mb-8">
+<h1 class="text-[#dae2fd] font-['Manrope'] font-bold text-xl tracking-tight uppercase">Sanctuary Alpha</h1>
+<p class="text-on-surface-variant text-[10px] tracking-[0.2em] mt-1 font-medium">LIVE OPERATOR</p>
+</div>
+<nav class="flex-1 space-y-1">
+<!-- Active Item: Library -->
+<a class="bg-[#222a3d] text-[#dae2fd] border-l-4 border-[#ffb3b3] flex items-center px-6 py-3 font-['Inter'] text-sm font-medium transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="auto_stories">auto_stories</span>
+                Library
+            </a>
+<a class="text-[#c6c5d4] hover:text-[#dae2fd] hover:bg-[#171f33] flex items-center px-6 py-3 font-['Inter'] text-sm font-medium transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="movie">movie</span>
+                Media
+            </a>
+<a class="text-[#c6c5d4] hover:text-[#dae2fd] hover:bg-[#171f33] flex items-center px-6 py-3 font-['Inter'] text-sm font-medium transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="menu_book">menu_book</span>
+                Scripture
+            </a>
+<a class="text-[#c6c5d4] hover:text-[#dae2fd] hover:bg-[#171f33] flex items-center px-6 py-3 font-['Inter'] text-sm font-medium transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="event_note">event_note</span>
+                Schedule
+            </a>
+<a class="text-[#c6c5d4] hover:text-[#dae2fd] hover:bg-[#171f33] flex items-center px-6 py-3 font-['Inter'] text-sm font-medium transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined mr-3" data-icon="settings">settings</span>
+                Settings
+            </a>
+</nav>
+<div class="px-4 mt-auto">
+<button class="w-full signature-gradient text-on-primary-fixed py-3 rounded-md font-bold text-xs tracking-widest shadow-lg shadow-primary/10 active:scale-95 transition-transform">
+                GO LIVE
+            </button>
+<div class="mt-6 flex items-center space-x-3 px-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant/15 flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw70cSnjo0OzVv8bhLarVBwjJ948IO9KziqyEsYrUzXzdPFneha1aMGR7LjVO0iWszPK9wfJMeg-w9QVaN1lj5GxwymlQQCTT6nL-RRsTsgIJwH0h5nYU8UnOAHoAxs2giLUZcbm1NdpsFuEIyoAY09wT1oaaEnQ9WcfreRj1581yQqVcx9jsc9-jTb2WZ8wgZ762i0Iz2XOAyxazN9yUWF1w5rNeyYHYFTReyDhNrpOI4Szusi9QbRguTmz1tklETzRjWTtKoy8g"/>
+</div>
+<div class="flex flex-col">
+<span class="text-xs font-bold text-on-surface">Alpha Operator</span>
+<span class="text-[10px] text-on-surface-variant">Station 01-A</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Sub-Nav: Scripture Explorer -->
+<section class="w-72 bg-surface-container-low border-r border-outline-variant/10 flex flex-col h-full overflow-hidden">
+<div class="p-5 border-b border-outline-variant/10">
+<h2 class="text-xs font-extrabold tracking-widest text-primary uppercase">Explorer</h2>
+</div>
+<div class="flex-1 overflow-y-auto p-2 space-y-1">
+<!-- Tree View Item -->
+<div>
+<button class="w-full flex items-center px-3 py-2 text-on-surface-variant hover:text-on-surface text-xs font-bold transition-colors">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="arrow_drop_down">arrow_drop_down</span>
+                    OLD TESTAMENT
+                </button>
+<div class="pl-4 space-y-1">
+<button class="w-full text-left px-4 py-2 text-xs rounded-md bg-surface-container-high text-primary font-medium">Genesis</button>
+<button class="w-full text-left px-4 py-2 text-xs rounded-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Exodus</button>
+<button class="w-full text-left px-4 py-2 text-xs rounded-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Leviticus</button>
+<button class="w-full text-left px-4 py-2 text-xs rounded-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Numbers</button>
+<button class="w-full text-left px-4 py-2 text-xs rounded-md text-on-surface-variant hover:bg-surface-container-high transition-colors">Deuteronomy</button>
+</div>
+</div>
+<div class="pt-2">
+<button class="w-full flex items-center px-3 py-2 text-on-surface-variant hover:text-on-surface text-xs font-bold transition-colors">
+<span class="material-symbols-outlined text-sm mr-2" data-icon="arrow_right">arrow_right</span>
+                    NEW TESTAMENT
+                </button>
+</div>
+</div>
+</section>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full bg-surface overflow-hidden">
+<!-- Top Search Bar -->
+<header class="h-16 flex items-center justify-between px-8 bg-surface border-b border-outline-variant/10">
+<div class="flex-1 max-w-2xl flex items-center bg-surface-container-lowest rounded-md px-4 py-2 border border-outline-variant/15">
+<span class="material-symbols-outlined text-on-surface-variant mr-3" data-icon="search">search</span>
+<input class="bg-transparent border-none text-on-surface text-sm focus:ring-0 w-full placeholder:text-on-surface-variant/50 font-medium" placeholder="Genesis 1:1..." type="text"/>
+<kbd class="text-[10px] bg-surface-container-highest px-1.5 py-0.5 rounded border border-outline-variant/30 text-on-surface-variant">CMD + K</kbd>
+</div>
+<div class="flex items-center space-x-4 ml-8">
+<div class="flex items-center bg-surface-container-high px-3 py-1.5 rounded-md text-xs font-semibold text-on-surface cursor-pointer border border-outline-variant/15">
+<span class="mr-2">ESV</span>
+<span class="material-symbols-outlined text-sm" data-icon="unfold_more">unfold_more</span>
+</div>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="tune">tune</span>
+</button>
+</div>
+</header>
+<div class="flex-1 overflow-y-auto p-8">
+<!-- Chapter Selector Grid -->
+<section class="mb-10">
+<div class="flex items-end justify-between mb-6">
+<div>
+<h3 class="text-3xl font-extrabold font-headline tracking-tighter text-on-surface mb-1">Genesis</h3>
+<p class="text-sm text-on-surface-variant font-medium">Select a chapter to begin</p>
+</div>
+</div>
+<div class="grid grid-cols-10 gap-3">
+<!-- Active Chapter -->
+<button class="aspect-square flex items-center justify-center rounded-lg bg-primary-container text-primary font-extrabold text-lg border-2 border-primary/50 shadow-inner">1</button>
+<!-- Inactive Chapters -->
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">2</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">3</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">4</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">5</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">6</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">7</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">8</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">9</button>
+<button class="aspect-square flex items-center justify-center rounded-lg bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high transition-all text-sm font-bold border border-outline-variant/10">10</button>
+</div>
+</section>
+<!-- Scripture Preview Area -->
+<section class="bg-surface-container-lowest rounded-xl p-8 border border-outline-variant/15 relative">
+<div class="absolute top-4 right-4 flex space-x-2">
+<span class="bg-surface-container-highest text-[10px] font-bold text-on-surface px-2 py-1 rounded">CHAPTER 1</span>
+<span class="bg-surface-container-highest text-[10px] font-bold text-on-surface px-2 py-1 rounded">ESV</span>
+</div>
+<div class="space-y-8 max-w-3xl mx-auto">
+<!-- Active Verse Selection -->
+<div class="relative group cursor-pointer flex gap-6">
+<span class="text-primary font-extrabold font-headline text-2xl pt-1 opacity-50 select-none">1</span>
+<p class="text-2xl font-headline leading-relaxed text-on-surface font-medium border-l-4 border-tertiary pl-6 py-1 bg-surface-container-high/40 rounded-r-lg shadow-sm">
+                            In the beginning, God created the heavens and the earth.
+                        </p>
+</div>
+<div class="relative group cursor-pointer flex gap-6">
+<span class="text-on-surface-variant font-extrabold font-headline text-2xl pt-1 opacity-30 select-none">2</span>
+<p class="text-2xl font-headline leading-relaxed text-on-surface-variant font-light pl-6 hover:text-on-surface transition-colors">
+                            The earth was without form and void, and darkness was over the face of the deep. And the Spirit of God was hovering over the face of the waters.
+                        </p>
+</div>
+<div class="relative group cursor-pointer flex gap-6">
+<span class="text-on-surface-variant font-extrabold font-headline text-2xl pt-1 opacity-30 select-none">3</span>
+<p class="text-2xl font-headline leading-relaxed text-on-surface-variant font-light pl-6 hover:text-on-surface transition-colors">
+                            And God said, “Let there be light,” and there was light.
+                        </p>
+</div>
+<div class="relative group cursor-pointer flex gap-6">
+<span class="text-on-surface-variant font-extrabold font-headline text-2xl pt-1 opacity-30 select-none">4</span>
+<p class="text-2xl font-headline leading-relaxed text-on-surface-variant font-light pl-6 hover:text-on-surface transition-colors">
+                            And God saw that the light was good. And God separated the light from the darkness.
+                        </p>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Inspector/Action Pane -->
+<aside class="w-80 bg-surface-container-low border-l border-outline-variant/10 flex flex-col h-full overflow-hidden">
+<div class="p-6 border-b border-outline-variant/10 bg-surface-container-lowest">
+<h2 class="text-xs font-extrabold tracking-widest text-primary uppercase mb-4">Inspector</h2>
+<div class="flex items-center space-x-2">
+<span class="bg-tertiary-container text-tertiary text-[10px] font-black px-2 py-0.5 rounded tracking-tighter flex items-center animate-pulse">
+<span class="w-1.5 h-1.5 bg-tertiary rounded-full mr-1.5"></span>
+                    LIVE NOW
+                </span>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto">
+<!-- Selected Verse Card -->
+<div class="p-6">
+<div class="bg-surface-container rounded-xl p-5 border border-outline-variant/10 mb-6">
+<div class="flex justify-between items-start mb-4">
+<span class="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">Currently Selected</span>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-lg" data-icon="content_copy">content_copy</span></button>
+</div>
+<h4 class="text-lg font-headline font-bold text-on-surface mb-2">Genesis 1:1</h4>
+<p class="text-sm italic text-on-surface-variant leading-relaxed mb-4">"In the beginning, God created the heavens and the earth."</p>
+<div class="flex space-x-2">
+<button class="flex-1 bg-surface-container-highest text-on-surface text-[11px] font-bold py-2 rounded border border-outline-variant/20 hover:border-primary/50 transition-colors">EDIT THEME</button>
+<button class="flex-1 bg-surface-container-highest text-on-surface text-[11px] font-bold py-2 rounded border border-outline-variant/20 hover:border-primary/50 transition-colors">SHARE</button>
+</div>
+</div>
+<!-- Fast Actions -->
+<div class="space-y-4">
+<button class="w-full signature-gradient text-on-primary-fixed flex items-center justify-center space-x-2 py-4 rounded-lg font-extrabold text-sm tracking-tight shadow-xl shadow-primary/10 transition-transform active:scale-95 group">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform" data-icon="bolt">bolt</span>
+<span>SEND TO PROJECTOR</span>
+</button>
+<button class="w-full bg-surface-container-highest text-on-surface flex items-center justify-center space-x-2 py-4 rounded-lg font-bold text-sm border border-outline-variant/30 hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="add_to_photos">add_to_photos</span>
+<span>ADD TO SCHEDULE</span>
+</button>
+</div>
+<!-- Reference Context Bento -->
+<div class="mt-8 grid grid-cols-2 gap-3">
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10 col-span-2">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-2">Word Count</span>
+<span class="text-2xl font-headline font-extrabold text-on-surface">10</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-2">Style</span>
+<span class="text-xs font-bold text-primary">LYRIC BOLD</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10">
+<span class="text-[9px] font-bold text-on-surface-variant uppercase tracking-widest block mb-2">Motion</span>
+<span class="text-xs font-bold text-on-surface">STATIC</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mini Preview Window -->
+<div class="p-6 bg-surface-container-highest/30">
+<div class="aspect-video bg-[#000] rounded-lg overflow-hidden border border-outline-variant/30 relative">
+<img alt="Scripture Background Preview" class="w-full h-full object-cover opacity-60" data-alt="dramatic dark space nebula with deep blues and purples, subtle cosmic dust, cinematic lighting for worship background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAt9Vl8jtgBzjtF6xoN75Ttt55pwooIXAHn1MN1flw1GPCdtrViXD_DirI85Yras74BbQ08Yyqxzq_kMxIjj-7sz_f5u3XXKDTw2H8LLxEcZZj89mvlBRONWhqEO1u8Be_nFPnt8JMZaX4KpqRltnTua3wtwozCIEW07vNs8YCMjK6hdw1SCTGiD9y6eVbhCiybOKBXc7dQQBfgQoY3JzTXmTECcxiOmarQK2-mZclWAn_oa3wPt_tXRHNrCXzUtpteDz4Mkjh3ts4"/>
+<div class="absolute inset-0 flex items-center justify-center p-4">
+<div class="text-center">
+<p class="text-[10px] text-white font-headline font-bold leading-tight drop-shadow-lg">In the beginning, God created the heavens and the earth.</p>
+<p class="text-[6px] text-white/70 font-bold mt-1 tracking-widest">GENESIS 1:1</p>
+</div>
+</div>
+<div class="absolute bottom-2 right-2 bg-black/50 px-1.5 py-0.5 rounded flex items-center">
+<span class="text-[8px] font-bold text-white/50 mr-1">PREVIEW</span>
+<span class="material-symbols-outlined text-[10px] text-primary" data-icon="visibility">visibility</span>
+</div>
+</div>
+</div>
+</aside>
+</body></html>

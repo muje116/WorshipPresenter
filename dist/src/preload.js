@@ -1,0 +1,35 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const electron_1 = require("electron");
+const api = {
+    db: {
+        run: (sql, params) => electron_1.ipcRenderer.invoke('db.run', { sql, params })
+    },
+    outputs: {
+        onOutputState: (cb) => electron_1.ipcRenderer.on('output-state', (_e, payload) => cb(payload)),
+        setState: (outId, state) => electron_1.ipcRenderer.send('output-set-state', { outId, state }),
+        actions: {
+            black: () => electron_1.ipcRenderer.send('output-action', { action: 'BLACK' }),
+            logo: () => electron_1.ipcRenderer.send('output-action', { action: 'LOGO' }),
+            clear: () => electron_1.ipcRenderer.send('output-action', { action: 'CLEAR' }),
+            fullscreen: () => electron_1.ipcRenderer.send('output-action', { action: 'FULLSCREEN' })
+        }
+    },
+    bibles: {
+        listTranslations: () => electron_1.ipcRenderer.invoke('bibles.listTranslations'),
+        openOsisFile: () => electron_1.ipcRenderer.invoke('bibles.openOsisFile'),
+        importFromOsis: (translationCode, language, filePath) => electron_1.ipcRenderer.invoke('bibles.importFromOsis', { translationCode, language, filePath }),
+        getBooks: () => electron_1.ipcRenderer.invoke('bibles.getBooks'),
+        getChapters: (book) => electron_1.ipcRenderer.invoke('bibles.getChapters', { book }),
+        getVerses: (book, chapter, translationId) => electron_1.ipcRenderer.invoke('bibles.getVerses', { book, chapter, translationId }),
+        search: (query, translationId) => electron_1.ipcRenderer.invoke('bibles.search', { query, translationId })
+    },
+    ndi: {
+        enable: (enabled) => electron_1.ipcRenderer.invoke('ndi.enable', enabled),
+        status: () => electron_1.ipcRenderer.invoke('ndi.status')
+    },
+    dialog: {
+        openFiles: (options) => electron_1.ipcRenderer.invoke('dialog.openFiles', options || {})
+    }
+};
+electron_1.contextBridge.exposeInMainWorld('worship', api);

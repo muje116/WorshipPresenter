@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../src/renderer/app/styles.css"],
+  "sourcesContent": [":root { --bg: #111; --fg: #fff; }\nhtml, body, #root { height: 100%; margin: 0; }\nbody { background: var(--bg); color: var(--fg); font-family: system-ui, -apple-system, Arial; }\n"],
+  "mappings": ";AAAA;AAAQ,QAAM;AAAM,QAAM;AAAM;AAChC;AAAM;AAAM,CAAC;AAAO,UAAQ;AAAM,UAAQ;AAAG;AAC7C;AAAO,cAAY,IAAI;AAAO,SAAO,IAAI;AAAO;AAAA,IAAa,SAAS;AAAA,IAAE,aAAa;AAAA,IAAE;AAAO;",
+  "names": []
+}

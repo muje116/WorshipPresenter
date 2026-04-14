@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Display &amp; Output Settings | The Ethereal Stage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary": "#b4cad6",
+                        "on-secondary-container": "#a6bcc7",
+                        "surface-container": "#171f33",
+                        "on-secondary": "#1e333c",
+                        "on-primary-fixed": "#000f5d",
+                        "surface": "#0b1326",
+                        "tertiary-fixed": "#ffdad9",
+                        "secondary-fixed": "#cfe6f2",
+                        "inverse-on-surface": "#283044",
+                        "on-tertiary-fixed": "#400009",
+                        "surface-tint": "#bbc3ff",
+                        "tertiary": "#ffb3b3",
+                        "on-surface": "#dae2fd",
+                        "outline-variant": "#454652",
+                        "surface-container-highest": "#2d3449",
+                        "on-error": "#690005",
+                        "on-surface-variant": "#c6c5d4",
+                        "on-secondary-fixed-variant": "#354a53",
+                        "on-tertiary-container": "#ff636b",
+                        "on-tertiary": "#680014",
+                        "surface-container-lowest": "#060e20",
+                        "primary": "#bbc3ff",
+                        "secondary-fixed-dim": "#b4cad6",
+                        "on-secondary-fixed": "#071e27",
+                        "surface-variant": "#2d3449",
+                        "inverse-primary": "#2848ee",
+                        "on-background": "#dae2fd",
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "secondary-container": "#374c56",
+                        "on-primary": "#001d93",
+                        "tertiary-fixed-dim": "#ffb3b3",
+                        "on-tertiary-fixed-variant": "#920021",
+                        "on-primary-fixed-variant": "#002ccd",
+                        "primary-container": "#001d92",
+                        "primary-fixed-dim": "#bbc3ff",
+                        "surface-dim": "#0b1326",
+                        "tertiary-container": "#670014",
+                        "error-container": "#93000a",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#dee0ff",
+                        "surface-container-high": "#222a3d",
+                        "surface-bright": "#31394d",
+                        "background": "#0b1326",
+                        "on-primary-container": "#7d8fff",
+                        "outline": "#908f9d",
+                        "error": "#ffb4ab"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Inter', sans-serif;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(23, 31, 51, 0.8);
+            backdrop-filter: blur(20px);
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="flex flex-col h-screen py-6 px-4 h-full w-64 fixed left-0 top-0 bg-[#131b2e] dark:bg-slate-900 font-['Manrope'] tracking-wide shadow-2xl shadow-indigo-950/20 z-50">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tighter text-[#dae2fd]">The Ethereal Stage</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] text-[#bbc3ff] opacity-80 mt-1">Sanctuary Control</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-[#bbc3ff]">calendar_today</span>
+<span class="font-medium">Schedules</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors active:scale-95 duration-150 group" href="#">
+<span class="material-symbols-outlined group-hover:text-[#bbc3ff]">video_library</span>
+<span class="font-medium">Library</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-[#bbc3ff] border-r-2 border-[#bbc3ff] font-semibold bg-[#171f33] active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-medium">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<button class="w-full signature-gradient text-[#000f5d] py-3 rounded-md font-bold text-sm tracking-widest uppercase flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/40 hover:opacity-90 transition-all">
+<span class="material-symbols-outlined text-lg">sensors</span>
+                Go Live
+            </button>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 ml-64 overflow-y-auto no-scrollbar relative min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 flex justify-between items-center px-8 border-b border-white/5 bg-[#0b1326]/80 backdrop-blur-xl dark:bg-slate-950/80 z-40">
+<div class="flex items-center gap-8">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[#c6c5d4] text-lg">search</span>
+<input class="bg-surface-container-lowest border-none rounded-full py-1.5 pl-10 pr-4 text-xs focus:ring-1 focus:ring-primary w-64 font-body placeholder:text-outline/50" placeholder="Search preferences..." type="text"/>
+</div>
+<nav class="flex gap-6 font-['Manrope'] text-sm uppercase tracking-widest">
+<a class="text-[#c6c5d4] hover:text-white transition-opacity" href="#">Preview</a>
+<a class="text-[#c6c5d4] hover:text-white transition-opacity" href="#">Live</a>
+<a class="text-[#bbc3ff] border-b border-[#bbc3ff] pb-1" href="#">Stage Display</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#c6c5d4] hover:text-white transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined">cast</span>
+</button>
+<button class="text-[#c6c5d4] hover:text-white transition-opacity flex items-center justify-center">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img class="w-full h-full object-cover" data-alt="Portrait of a focused technical operator in a dark production room with soft blue rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUko3tmjjq-aERuJuH2UmdtA8eNxKzBVyk_n50s_qwMhJlayVTBwmtXa1r2RLtg_ojiOU2BB8uy7AGVgCoE2DRdxN_jwJWYMj2yECFBZ0UKXWQGN71mJ9TXT0tNLaHMjYxfzkbA9vXa6PZ5RwUfCkjJy5oeXWqVz1XwOdfKrr7V_QQosJDjs35eQW37rwbeEjcrjc3HIjfQoDNTpjQ1rF-v5QTvtjAWA9732-TF4H45AnDwc89ZXX1yZ5Yueon_38uL4G4umEY_w0"/>
+</div>
+</div>
+</header>
+<!-- Content Area -->
+<div class="pt-24 pb-12 px-12 max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-10">
+<div>
+<h2 class="text-4xl font-headline font-extrabold tracking-tight text-on-surface">Output Configuration</h2>
+<p class="text-on-surface-variant font-body mt-2">Manage signal routing, screen arrangement, and stage monitor behavior.</p>
+</div>
+<div class="bg-surface-container-low px-4 py-2 rounded-lg flex items-center gap-3">
+<span class="flex h-2 w-2 rounded-full bg-primary animate-pulse"></span>
+<span class="text-xs font-label uppercase tracking-widest text-primary">System Synchronized</span>
+</div>
+</div>
+<!-- Bento Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Monitor Layout Visualizer (Wide Card) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-low rounded-xl p-8 relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-6 opacity-10">
+<span class="material-symbols-outlined text-9xl">monitor</span>
+</div>
+<h3 class="text-lg font-headline font-bold mb-8 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">layers</span>
+                        Visual Workspace
+                    </h3>
+<div class="flex items-end justify-center gap-4 h-64 bg-surface-container-lowest/50 rounded-2xl border border-outline-variant/10 p-8">
+<!-- Primary Display -->
+<div class="w-48 h-32 bg-surface-container-high rounded-lg border-2 border-primary shadow-2xl shadow-primary/10 flex flex-col items-center justify-center relative">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-primary text-on-primary-fixed text-[10px] font-bold rounded">PRIMARY</span>
+<span class="material-symbols-outlined text-primary/40 text-3xl">desktop_windows</span>
+<p class="text-[10px] mt-2 font-label text-on-surface-variant">1920 x 1080</p>
+</div>
+<!-- Extended Display -->
+<div class="w-56 h-36 bg-surface-container-highest rounded-lg border border-outline-variant/30 flex flex-col items-center justify-center relative hover:border-primary/50 transition-colors cursor-pointer">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-surface-container-highest text-on-surface-variant text-[10px] font-bold rounded border border-outline-variant/30">EXTENDED</span>
+<span class="material-symbols-outlined text-white/20 text-4xl">tv</span>
+<p class="text-[10px] mt-2 font-label text-on-surface-variant">3840 x 2160</p>
+</div>
+<!-- Stage Display -->
+<div class="w-32 h-20 bg-surface-container-low border-2 border-tertiary/40 rounded-lg flex flex-col items-center justify-center relative opacity-80">
+<span class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-tertiary-container text-tertiary text-[10px] font-bold rounded border border-tertiary/20">STAGE</span>
+<span class="material-symbols-outlined text-tertiary/40 text-2xl">co_present</span>
+<p class="text-[10px] mt-1 font-label text-tertiary/40">1280 x 720</p>
+</div>
+</div>
+<div class="mt-8 flex justify-between items-center text-sm font-body">
+<span class="text-on-surface-variant">Drag to rearrange logical display order</span>
+<button class="text-primary font-semibold hover:underline flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">refresh</span> Detect Displays
+                        </button>
+</div>
+</div>
+<!-- Display Settings (Vertical Panel) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container rounded-xl p-8 flex flex-col gap-8">
+<div>
+<label class="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-4">Active Output</label>
+<div class="space-y-3">
+<button class="w-full flex items-center justify-between p-4 rounded-lg bg-surface-container-high border border-primary/40">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">check_circle</span>
+<div class="text-left">
+<p class="text-sm font-semibold">Primary Output</p>
+<p class="text-[10px] text-on-surface-variant">Built-in Display</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant">keyboard_arrow_down</span>
+</button>
+<button class="w-full flex items-center justify-between p-4 rounded-lg bg-surface-container-low border border-transparent hover:border-outline-variant transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">desktop_access_disabled</span>
+<div class="text-left">
+<p class="text-sm font-semibold text-on-surface-variant">Extended Monitor</p>
+<p class="text-[10px] text-on-surface-variant/50">Dell U2723QE</p>
+</div>
+</div>
+</button>
+</div>
+</div>
+<div class="space-y-6">
+<div>
+<label class="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-2">Resolution</label>
+<select class="w-full bg-surface-container-lowest border-none rounded-lg py-3 px-4 text-sm focus:ring-1 focus:ring-primary appearance-none">
+<option>1920 x 1080 (16:9)</option>
+<option>3840 x 2160 (16:9)</option>
+<option>2560 x 1440 (16:9)</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-label uppercase tracking-widest text-on-surface-variant mb-2">Refresh Rate</label>
+<div class="flex gap-2">
+<button class="flex-1 py-2 bg-surface-container-high border border-primary/50 text-primary rounded-md text-xs font-bold">60Hz</button>
+<button class="flex-1 py-2 bg-surface-container-lowest border border-outline-variant/30 text-on-surface-variant rounded-md text-xs font-bold">30Hz</button>
+<button class="flex-1 py-2 bg-surface-container-lowest border border-outline-variant/30 text-on-surface-variant rounded-md text-xs font-bold">24Hz</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Stage Display Rules (Wide Bottom Card) -->
+<div class="col-span-12 lg:col-span-7 bg-surface-container-low rounded-xl p-8">
+<div class="flex justify-between items-center mb-6">
+<h3 class="text-lg font-headline font-bold flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">co_present</span>
+                            Stage Display Controls
+                        </h3>
+<div class="flex items-center gap-3 bg-surface-container-lowest p-1 rounded-full border border-outline-variant/20">
+<button class="px-4 py-1.5 bg-tertiary text-on-tertiary font-bold text-[10px] uppercase rounded-full">Active</button>
+<button class="px-4 py-1.5 text-on-surface-variant font-bold text-[10px] uppercase rounded-full">Disabled</button>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-8">
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<div class="max-w-[200px]">
+<p class="text-sm font-semibold mb-1">Show Next Slide</p>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">Preview the upcoming slide for the presenter.</p>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="max-w-[200px]">
+<p class="text-sm font-semibold mb-1">Current Timer</p>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">Display active countdown in the corner.</p>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<div class="flex items-center justify-between">
+<div class="max-w-[200px]">
+<p class="text-sm font-semibold mb-1">Operator Notes</p>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">Render hidden cue notes on the stage display.</p>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<div class="max-w-[200px]">
+<p class="text-sm font-semibold mb-1">Flash Warnings</p>
+<p class="text-[11px] text-on-surface-variant leading-relaxed">Enable red border flash for critical cues.</p>
+</div>
+<div class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-10 h-5 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Color Profiles & Calibration (Small Card) -->
+<div class="col-span-12 lg:col-span-5 bg-surface-container rounded-xl p-8 flex flex-col justify-between">
+<div>
+<h3 class="text-lg font-headline font-bold mb-4">Color Profile</h3>
+<p class="text-xs text-on-surface-variant font-body mb-6">Optimized for sanctuary projection environments with deep black-floor compensation.</p>
+<div class="space-y-3">
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-primary/20 flex items-center justify-between">
+<span class="text-sm font-medium">Ethereal Stage Cinema</span>
+<span class="material-symbols-outlined text-primary text-sm">stars</span>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg border border-transparent hover:border-outline-variant transition-colors flex items-center justify-between group cursor-pointer">
+<span class="text-sm font-medium text-on-surface-variant group-hover:text-on-surface">Standard sRGB</span>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">circle</span>
+</div>
+</div>
+</div>
+<button class="w-full mt-6 py-3 bg-surface-container-high border border-outline-variant/30 rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-surface-container-highest transition-colors">
+                        Launch Calibrator
+                    </button>
+</div>
+</div>
+</div>
+<!-- Float Info (Ambient Glow) -->
+<div class="fixed bottom-8 right-8 pointer-events-none">
+<div class="bg-surface-container-high/80 backdrop-blur-md px-6 py-3 rounded-full border border-white/5 shadow-2xl shadow-indigo-950/40 flex items-center gap-4">
+<div class="flex flex-col items-end">
+<p class="text-[10px] uppercase tracking-tighter text-on-surface-variant font-bold">Signal Health</p>
+<p class="text-xs font-headline font-extrabold text-primary">OPTIMAL (4ms Latency)</p>
+</div>
+<div class="w-[1px] h-6 bg-white/10"></div>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">sensors</span>
+</div>
+</div>
+</main>
+</body></html>

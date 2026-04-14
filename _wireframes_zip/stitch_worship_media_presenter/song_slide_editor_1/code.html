@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Song &amp; Slide Editor | The Ethereal Stage</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#b4cad6",
+                    "on-secondary-container": "#a6bcc7",
+                    "surface-container": "#171f33",
+                    "on-secondary": "#1e333c",
+                    "on-primary-fixed": "#000f5d",
+                    "surface": "#0b1326",
+                    "tertiary-fixed": "#ffdad9",
+                    "secondary-fixed": "#cfe6f2",
+                    "inverse-on-surface": "#283044",
+                    "on-tertiary-fixed": "#400009",
+                    "surface-tint": "#bbc3ff",
+                    "tertiary": "#ffb3b3",
+                    "on-surface": "#dae2fd",
+                    "outline-variant": "#454652",
+                    "surface-container-highest": "#2d3449",
+                    "on-error": "#690005",
+                    "on-surface-variant": "#c6c5d4",
+                    "on-secondary-fixed-variant": "#354a53",
+                    "on-tertiary-container": "#ff636b",
+                    "on-tertiary": "#680014",
+                    "surface-container-lowest": "#060e20",
+                    "primary": "#bbc3ff",
+                    "secondary-fixed-dim": "#b4cad6",
+                    "on-secondary-fixed": "#071e27",
+                    "surface-variant": "#2d3449",
+                    "inverse-primary": "#2848ee",
+                    "on-background": "#dae2fd",
+                    "surface-container-low": "#131b2e",
+                    "inverse-surface": "#dae2fd",
+                    "secondary-container": "#374c56",
+                    "on-primary": "#001d93",
+                    "tertiary-fixed-dim": "#ffb3b3",
+                    "on-tertiary-fixed-variant": "#920021",
+                    "on-primary-fixed-variant": "#002ccd",
+                    "primary-container": "#001d92",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "surface-dim": "#0b1326",
+                    "tertiary-container": "#670014",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed": "#dee0ff",
+                    "surface-container-high": "#222a3d",
+                    "surface-bright": "#31394d",
+                    "background": "#0b1326",
+                    "on-primary-container": "#7d8fff",
+                    "outline": "#908f9d",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%);
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #2d3449; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary selection:text-on-primary-fixed overflow-hidden">
+<!-- Shared SideNavBar -->
+<aside class="flex flex-col h-screen py-6 px-4 bg-[#131b2e] dark:bg-slate-900 h-full w-64 fixed left-0 top-0 shadow-2xl shadow-indigo-950/20 font-['Manrope'] tracking-wide z-50">
+<div class="mb-8 px-2">
+<h1 class="text-xl font-bold tracking-tighter text-[#dae2fd]">The Ethereal Stage</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant/60 mt-1">Sanctuary Control</p>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+<span class="text-sm">Schedules</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-[#bbc3ff] border-r-2 border-[#bbc3ff] font-semibold hover:bg-[#171f33] transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="video_library">video_library</span>
+<span class="text-sm">Library</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-3 rounded-lg text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-6 border-t border-white/5 px-2">
+<button class="w-full signature-gradient text-on-primary-fixed font-bold py-3 rounded-md text-sm active:scale-95 duration-150 shadow-lg shadow-primary-container/20">
+                Go Live
+            </button>
+</div>
+</aside>
+<!-- Shared TopNavBar -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 bg-[#0b1326]/80 backdrop-blur-xl dark:bg-slate-950/80 flex justify-between items-center px-8 border-b border-white/5 z-40">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-6">
+<a class="text-[#c6c5d4] font-['Manrope'] text-sm uppercase tracking-widest hover:text-white transition-opacity" href="#">Preview</a>
+<a class="text-[#c6c5d4] font-['Manrope'] text-sm uppercase tracking-widest hover:text-white transition-opacity" href="#">Live</a>
+<a class="text-[#bbc3ff] border-b border-[#bbc3ff] pb-1 font-['Manrope'] text-sm uppercase tracking-widest" href="#">Stage Display</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#bbc3ff] cursor-pointer hover:opacity-80 transition-all" data-icon="cast">cast</span>
+<span class="material-symbols-outlined text-[#bbc3ff] cursor-pointer hover:opacity-80 transition-all" data-icon="help_outline">help_outline</span>
+</div>
+<div class="h-8 w-8 rounded-full overflow-hidden bg-surface-container-highest border border-white/10">
+<img alt="Operator Profile" class="w-full h-full object-cover" data-alt="Close-up portrait of a focused male digital operator in a dim control room environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB85DILNcovHZXm7jrD0SlJluPxeWaYIwv3g6jYwA42ls2xMBm0kDZDeS31_7pWeZGP-2eh-Z-b-tlNNTzE7xgMvyu-v_DDwlkl8i8k3CZz1VDRoKkcgWK2USPhz8FWD1V1pH6Qk4P4lgmFhntQqjlYPwMai9aIttw5UYIN_EY0CUoaRxPgSsJjIZhRHk_x24GnyB-mXjfiTX90YvQh0JsXNYGQmlI0Q-gspBC3FJjrx3wzDI-IGD8MNedde39mwQCLiMWgZufp850"/>
+</div>
+</div>
+</header>
+<!-- Main Workspace Canvas -->
+<main class="ml-64 pt-16 h-screen flex overflow-hidden">
+<!-- Left: Slide List (Navigator) -->
+<section class="w-72 bg-surface-container-low border-r border-white/5 flex flex-col">
+<div class="p-6">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-xs font-bold tracking-widest uppercase text-on-surface-variant">Slide Sequence</h2>
+<span class="material-symbols-outlined text-primary text-sm cursor-pointer" data-icon="add_circle">add_circle</span>
+</div>
+<div class="space-y-4 overflow-y-auto max-h-[calc(100vh-160px)] pr-2">
+<!-- Slide Item 1 (Active) -->
+<div class="group relative aspect-video rounded-lg overflow-hidden bg-surface-container ring-2 ring-primary ring-offset-2 ring-offset-surface-container-low cursor-pointer">
+<div class="absolute inset-0 bg-black/40 flex flex-col justify-center items-center p-3 text-center">
+<p class="text-[8px] leading-tight font-medium opacity-90 line-clamp-3">Amazing grace how sweet the sound that saved a wretch like me</p>
+</div>
+<div class="absolute top-2 left-2 px-1.5 py-0.5 bg-primary/20 backdrop-blur-md rounded text-[10px] font-bold text-primary">01</div>
+<div class="absolute bottom-0 left-0 h-1 w-full bg-primary"></div>
+</div>
+<!-- Slide Item 2 -->
+<div class="group relative aspect-video rounded-lg overflow-hidden bg-surface-container-highest hover:bg-surface-container transition-all cursor-pointer border border-white/5">
+<div class="absolute inset-0 bg-black/60 flex flex-col justify-center items-center p-3 text-center">
+<p class="text-[8px] leading-tight font-medium opacity-70 line-clamp-3">I once was lost but now am found was blind but now I see</p>
+</div>
+<div class="absolute top-2 left-2 px-1.5 py-0.5 bg-white/5 backdrop-blur-md rounded text-[10px] font-bold text-on-surface-variant">02</div>
+</div>
+<!-- Slide Item 3 -->
+<div class="group relative aspect-video rounded-lg overflow-hidden bg-surface-container-highest hover:bg-surface-container transition-all cursor-pointer border border-white/5">
+<div class="absolute inset-0 bg-black/60 flex flex-col justify-center items-center p-3 text-center">
+<p class="text-[8px] leading-tight font-medium opacity-70 line-clamp-3">’Twas grace that taught my heart to fear and grace my fears relieved</p>
+</div>
+<div class="absolute top-2 left-2 px-1.5 py-0.5 bg-white/5 backdrop-blur-md rounded text-[10px] font-bold text-on-surface-variant">03</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Center: Editor Stage -->
+<section class="flex-1 bg-surface-container-lowest relative flex flex-col overflow-hidden">
+<div class="flex-1 p-12 flex flex-col items-center justify-center">
+<!-- Live Status Pill -->
+<div class="absolute top-8 left-8 flex items-center gap-2 px-4 py-1.5 rounded-full bg-tertiary-container border border-tertiary/20">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+<span class="text-[10px] font-bold tracking-widest uppercase text-tertiary">Editing Live Buffer</span>
+</div>
+<!-- Main Text Canvas -->
+<div class="w-full max-w-4xl aspect-video rounded-xl bg-black shadow-2xl relative overflow-hidden group">
+<img class="absolute inset-0 w-full h-full object-cover opacity-40" data-alt="Cinematic wide shot of misty mountains at twilight with deep indigo and soft magenta atmospheric lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdPMrAC9zg17Pj5bt53475wMOjYDCzdV5enCdPUDzkbXl2GXCgG3KRrcI4AfrCOJg1YNGFX7CCGK8YUWuQaBOVTTaXiZ_XfnNzyHzzwO0kQXB_u1m9MNl1fYzdKtUxhOIROTzxS7LcJWTmHMerx2DDOZvRDwRuwvk2b9rIIGnrdUfD6RMdtYbBzZ9LCBTGFYuotS8kqen0vjEVpuZxIyHB-5JDx08HemH-m5malLvJQPW_cynDkhDQ2lr-rGjNBMI8Eom5bK8Ui9E"/>
+<div class="absolute inset-0 flex items-center justify-center p-16">
+<textarea class="w-full h-full bg-transparent border-none focus:ring-0 text-center text-5xl font-extrabold font-headline leading-tight text-white placeholder-white/20 resize-none overflow-hidden" placeholder="Type lyrics here...">Amazing grace
+How sweet the sound
+That saved a wretch
+Like me</textarea>
+</div>
+<!-- Resize Handles (Visual) -->
+<div class="absolute inset-4 border border-primary/20 rounded pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</div>
+<!-- Verse Navigator -->
+<div class="mt-12 flex gap-3">
+<button class="px-6 py-2 rounded-full bg-inverse-surface text-inverse-on-surface text-xs font-bold uppercase tracking-widest">Verse 1</button>
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high transition-colors">Chorus</button>
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high transition-colors">Verse 2</button>
+<button class="px-6 py-2 rounded-full bg-secondary-container text-on-surface-variant text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high transition-colors">Bridge</button>
+</div>
+</div>
+<!-- Preview/Action Bar -->
+<div class="h-20 bg-surface-container-low/50 backdrop-blur-md border-t border-white/5 flex items-center justify-between px-12">
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-sm font-semibold transition-all">
+<span class="material-symbols-outlined text-primary" data-icon="undo">undo</span>
+<span class="text-xs">Undo</span>
+</button>
+<button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-sm font-semibold transition-all">
+<span class="material-symbols-outlined text-primary" data-icon="redo">redo</span>
+<span class="text-xs">Redo</span>
+</button>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center gap-3 px-6 py-3 rounded-lg bg-surface-container-high border border-primary/20 text-primary font-bold uppercase tracking-widest text-xs hover:bg-primary hover:text-on-primary-fixed transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span>
+                        Preview Changes
+                    </button>
+</div>
+</div>
+</section>
+<!-- Right: Formatting & Background Selection -->
+<section class="w-80 bg-surface-container border-l border-white/5 flex flex-col">
+<div class="p-6 overflow-y-auto">
+<h2 class="text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-6">Typography</h2>
+<!-- Font Selection -->
+<div class="space-y-6">
+<div class="space-y-2">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant/70">Typeface</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border-none rounded-lg text-sm font-headline appearance-none py-3 px-4 focus:ring-1 focus:ring-primary/40">
+<option>Manrope (Modern Display)</option>
+<option>Inter (Clean Utility)</option>
+<option>Serif Pro (Classic)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-3 text-on-surface-variant pointer-events-none" data-icon="unfold_more">unfold_more</span>
+</div>
+</div>
+<!-- Sizes & Alignment Grid -->
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant/70">Size</label>
+<div class="flex items-center bg-surface-container-lowest rounded-lg overflow-hidden">
+<input class="w-full bg-transparent border-none text-sm py-2 px-3 focus:ring-0" type="number" value="72"/>
+<span class="pr-3 text-[10px] text-on-surface-variant">PX</span>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant/70">Weight</label>
+<div class="relative">
+<select class="w-full bg-surface-container-lowest border-none rounded-lg text-sm appearance-none py-2 px-3 focus:ring-0">
+<option>ExtraBold</option>
+<option>Bold</option>
+<option>SemiBold</option>
+</select>
+</div>
+</div>
+</div>
+<div class="space-y-2">
+<label class="text-[10px] uppercase font-bold text-on-surface-variant/70">Alignment</label>
+<div class="flex bg-surface-container-lowest rounded-lg p-1">
+<button class="flex-1 py-1.5 rounded-md flex justify-center items-center hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="format_align_left">format_align_left</span>
+</button>
+<button class="flex-1 py-1.5 rounded-md flex justify-center items-center bg-surface-container-high text-primary shadow-inner">
+<span class="material-symbols-outlined text-sm" data-icon="format_align_center">format_align_center</span>
+</button>
+<button class="flex-1 py-1.5 rounded-md flex justify-center items-center hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="format_align_right">format_align_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="h-px bg-white/5 my-8"></div>
+<h2 class="text-xs font-bold tracking-widest uppercase text-on-surface-variant mb-6">Visual Backdrop</h2>
+<!-- Background Presets Bento -->
+<div class="grid grid-cols-2 gap-3">
+<div class="aspect-square rounded-lg overflow-hidden border-2 border-primary cursor-pointer relative group">
+<img class="w-full h-full object-cover" data-alt="Abstract deep indigo and violet landscape with soft hazy light and distant mountain silhouettes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDWCbdXwOhWqFudqP0BCt-xBgYsaWPTw3kJDxPtS3eXs1fxSpBlzYajX4gfkWtCbgsW9gsf0pAlm_cEDEJ19GL-eAuLuRD2egzbDdOgepfn5Cw7WZSvgM4LivK_jreXTHFBF3ApC_Nb4jbmKh4vZLRQQh7WRD3NowbmJnw1Q-GHUNmYN5FOBeN-CT0IwIj1MvU6kdczuNPAt4c6_kXwqDg51dsviJSpGsI97wj8kFHTMVUoL9Hb5TRoi7w2mRHNfoh6HGKMi-Q1_FY"/>
+<div class="absolute inset-0 bg-primary/20 flex items-center justify-center opacity-100 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-white" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden border border-white/5 cursor-pointer relative group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Peaceful sunset over a calm lake with soft orange and purple reflections on the water surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcHUZsR3eLqqU0tzvHJSXiW47mNlE__HV_efdB2cqN-5oEQ97GykVeFhxUKS9EDcJu6Y2M1wQ63Bu-ypxLyOr-hHm6TmEcOSgmcujjXv4IOClOOkFYEqxjnvOTERbJRRq_aBEmedUKlGnwQAvpgyQ7qaUr1C5c7yLnBs48NWczhN2ltZqsmmynP4ykY5jBldrt-MWuNSnm_ggI6BcTmiEchiIcKzOngy5tTHXGZEGjwzQeBjMymNddj5sHKoQ9OlPqeT3WPhMxYdI"/>
+</div>
+<div class="aspect-square rounded-lg overflow-hidden border border-white/5 cursor-pointer relative group">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Atmospheric dark cinematic forest with mystical fog and soft moonlight filtering through branches" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-mEbKJfD3AtuD6yq0d6DS__m8dXHn46Jcn_c--ybSDHnfp8IjVRZ__9_PqZcZXxW53uVVGaAXIkbsxkilhDHR47siEAWBKSXcNKWzmrlxEt6m29Vzb68ZPBSo4OvjjDVuDBwG-aClGAfuxBWv4miwFnj4IhlQ3FCWfTYNc-cvLChYjSKX1jy8iWAWCIWLv2agpqSD4eV-vaWxtAbqUO_uu55hrl99lxcjABPi4JvX9NP5g8nHkkkGXkPX8HtMEUICnyUyFt1W6f4"/>
+</div>
+<button class="aspect-square rounded-lg border border-dashed border-on-surface-variant/20 flex flex-col items-center justify-center gap-1 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="add_photo_alternate">add_photo_alternate</span>
+<span class="text-[8px] uppercase tracking-tighter">Upload</span>
+</button>
+</div>
+<div class="mt-8 p-4 rounded-xl bg-primary-container/10 border border-primary/10">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary text-sm" data-icon="info" style="font-variation-settings: 'FILL' 1;">info</span>
+<h3 class="text-[10px] font-bold uppercase tracking-wider text-primary">Pro Tip</h3>
+</div>
+<p class="text-[10px] leading-relaxed text-on-surface-variant/80">Use dark backdrops with high contrast (70%+) to ensure readability for the congregation in bright sanctuaries.</p>
+</div>
+</div>
+</section>
+</main>
+</body></html>

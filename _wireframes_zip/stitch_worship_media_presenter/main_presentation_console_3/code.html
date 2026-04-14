@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Ethereal Stage | Presentation Console</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "secondary": "#b4cad6",
+                    "on-secondary-container": "#a6bcc7",
+                    "surface-container": "#171f33",
+                    "on-secondary": "#1e333c",
+                    "on-primary-fixed": "#000f5d",
+                    "surface": "#0b1326",
+                    "tertiary-fixed": "#ffdad9",
+                    "secondary-fixed": "#cfe6f2",
+                    "inverse-on-surface": "#283044",
+                    "on-tertiary-fixed": "#400009",
+                    "surface-tint": "#bbc3ff",
+                    "tertiary": "#ffb3b3",
+                    "on-surface": "#dae2fd",
+                    "outline-variant": "#454652",
+                    "surface-container-highest": "#2d3449",
+                    "on-error": "#690005",
+                    "on-surface-variant": "#c6c5d4",
+                    "on-secondary-fixed-variant": "#354a53",
+                    "on-tertiary-container": "#ff636b",
+                    "on-tertiary": "#680014",
+                    "surface-container-lowest": "#060e20",
+                    "primary": "#bbc3ff",
+                    "secondary-fixed-dim": "#b4cad6",
+                    "on-secondary-fixed": "#071e27",
+                    "surface-variant": "#2d3449",
+                    "inverse-primary": "#2848ee",
+                    "on-background": "#dae2fd",
+                    "surface-container-low": "#131b2e",
+                    "inverse-surface": "#dae2fd",
+                    "secondary-container": "#374c56",
+                    "on-primary": "#001d93",
+                    "tertiary-fixed-dim": "#ffb3b3",
+                    "on-tertiary-fixed-variant": "#920021",
+                    "on-primary-fixed-variant": "#002ccd",
+                    "primary-container": "#001d92",
+                    "primary-fixed-dim": "#bbc3ff",
+                    "surface-dim": "#0b1326",
+                    "tertiary-container": "#670014",
+                    "error-container": "#93000a",
+                    "on-error-container": "#ffdad6",
+                    "primary-fixed": "#dee0ff",
+                    "surface-container-high": "#222a3d",
+                    "surface-bright": "#31394d",
+                    "background": "#0b1326",
+                    "on-primary-container": "#7d8fff",
+                    "outline": "#908f9d",
+                    "error": "#ffb4ab"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Manrope"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3, .headline { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-panel { backdrop-filter: blur(20px); }
+        .gradient-primary { background: linear-gradient(135deg, #bbc3ff 0%, #001d92 100%); }
+    </style>
+</head>
+<body class="bg-surface text-on-surface overflow-hidden">
+<!-- SideNavBar Anchor -->
+<aside class="flex flex-col h-screen py-6 px-4 bg-[#131b2e] dark:bg-slate-900 h-full w-64 fixed left-0 top-0 shadow-2xl shadow-indigo-950/20 font-['Manrope'] tracking-wide z-50">
+<div class="mb-10 px-2">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tighter text-[#dae2fd]">The Ethereal Stage</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] opacity-50">Sanctuary Control</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 px-3 py-3 rounded text-[#bbc3ff] border-r-2 border-[#bbc3ff] font-semibold bg-[#171f33] transition-colors" href="#">
+<span class="material-symbols-outlined">calendar_today</span>
+<span class="text-sm">Schedules</span>
+</a>
+<a class="flex items-center gap-4 px-3 py-3 rounded text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">video_library</span>
+<span class="text-sm">Library</span>
+</a><a class="flex items-center gap-4 px-3 py-3 rounded text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">perm_media</span>
+<span class="text-sm">Media</span>
+</a>
+<a class="flex items-center gap-4 px-3 py-3 rounded text-[#c6c5d4] opacity-70 hover:bg-[#171f33] transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm">Settings</span>
+</a>
+</nav>
+<div class="mt-auto px-2">
+<button class="w-full py-3 px-4 rounded-md gradient-primary text-on-primary-fixed font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">sensors</span>
+                Go Live
+            </button>
+</div>
+</aside>
+<!-- Main Content Area (Canvas) -->
+<main class="ml-64 w-[calc(100%-16rem)] h-screen flex flex-col relative">
+<!-- TopNavBar Anchor -->
+<header class="flex justify-between items-center px-8 border-b border-white/5 bg-[#0b1326]/80 backdrop-blur-xl dark:bg-slate-950/80 text-[#bbc3ff] font-['Manrope'] text-sm uppercase tracking-widest fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-6">
+<a class="text-[#c6c5d4] hover:text-white transition-opacity" href="#">Preview</a>
+<a class="text-[#bbc3ff] border-b border-[#bbc3ff] pb-1" href="#">Live</a>
+<a class="text-[#c6c5d4] hover:text-white transition-opacity" href="#">Stage Display</a>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:opacity-80 transition-all">cast</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:opacity-80 transition-all">help_outline</span>
+</div>
+<div class="h-8 w-px bg-white/10 mx-2"></div>
+<div class="flex items-center gap-3">
+<span class="text-[10px] text-right">
+<div class="text-on-surface font-bold">Admin Operator</div>
+<div class="opacity-50">Morning Service</div>
+</span>
+<img alt="Operator Profile" class="w-8 h-8 rounded-full border border-white/10" data-alt="portrait of a professional male tech operator in a low-lit environment with soft blue rim lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwnD5QXHBu1JL-0gqsxA7dHCBAD5ELloUs__d6EXL_PU2L2s1wWAzU3C3CJMcd1MqA5LM6ZKfAdbrXKC4p1DUxuOZO28EkGMjj4penHSniHusE_UFMVJrlfaegBLwTqTXXjjjeB1BG66g27tDzqmp0gWXzXyk_te1BzX-RyFwZTc4Fx6tZnJ1qmDU01v5ff0VC92NT4kQOxzbihVXiSBBXNeNUVEp1IQzfsr9BpvtQZIMm5oLw7V5aF-e_jzi9tH4LCoEi29f8lQY"/>
+</div>
+</div>
+</header>
+<!-- Presentation Console Grid -->
+<div class="mt-16 p-6 h-[calc(100vh-4rem)] grid grid-cols-12 gap-6 overflow-hidden">
+<!-- Column 1: Order of Service (Schedule) -->
+<section class="col-span-3 flex flex-col overflow-hidden">
+<div class="flex items-center justify-between mb-4">
+<h3 class="headline text-xs font-extrabold uppercase tracking-widest text-on-surface-variant">Order of Service</h3>
+<span class="text-[10px] bg-surface-container-highest px-2 py-1 rounded">12 ITEMS</span>
+</div>
+<div class="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+<!-- Schedule Item: Active -->
+<div class="bg-surface-container-high p-4 rounded-lg border-l-2 border-tertiary shadow-lg relative group transition-all">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-tertiary font-bold tracking-tighter">04 CURRENT</span>
+<span class="text-[10px] opacity-40">04:22</span>
+</div>
+<h4 class="font-headline font-bold text-sm">Amazing Grace (My Chains Are Gone)</h4>
+<p class="text-xs text-on-surface-variant mt-1">Worship Set - Chorus 2</p>
+</div>
+<!-- Schedule Item -->
+<div class="bg-surface-container-low p-4 rounded-lg hover:bg-surface-container transition-colors group">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold tracking-tighter">05 NEXT</span>
+<span class="text-[10px] opacity-40">10:00</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface-variant group-hover:text-on-surface">Sermon: The Quiet Path</h4>
+<p class="text-xs text-on-surface-variant/60 mt-1">Pastor Sarah Jenkins</p>
+</div>
+<!-- Schedule Item -->
+<div class="bg-surface-container-low p-4 rounded-lg hover:bg-surface-container transition-colors group">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold tracking-tighter">06</span>
+<span class="text-[10px] opacity-40">03:15</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface-variant group-hover:text-on-surface">Closing Prayer</h4>
+<p class="text-xs text-on-surface-variant/60 mt-1">Scripture Reading</p>
+</div>
+<!-- Schedule Item -->
+<div class="bg-surface-container-low p-4 rounded-lg hover:bg-surface-container transition-colors group opacity-60">
+<div class="flex justify-between items-start mb-2">
+<span class="text-[10px] text-on-surface-variant font-bold tracking-tighter">07</span>
+<span class="text-[10px] opacity-40">05:00</span>
+</div>
+<h4 class="font-headline font-bold text-sm text-on-surface-variant group-hover:text-on-surface">Announcements</h4>
+<p class="text-xs text-on-surface-variant/60 mt-1">Video Presentation</p>
+</div>
+</div>
+</section>
+<!-- Column 2 & 3: Main Stage -->
+<section class="col-span-9 grid grid-rows-2 gap-6 overflow-hidden">
+<!-- Top Half: Monitors -->
+<div class="grid grid-cols-2 gap-6">
+<!-- Resource Preview -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col border border-white/5 shadow-inner">
+<div class="bg-surface-container px-4 py-2 flex justify-between items-center">
+<span class="text-[10px] font-bold tracking-widest text-on-surface-variant uppercase">Preview: Slide 08</span>
+<span class="material-symbols-outlined text-sm opacity-50">visibility</span>
+</div>
+<div class="flex-1 relative flex items-center justify-center bg-black/40 group overflow-hidden">
+<img alt="Preview Background" class="absolute inset-0 w-full h-full object-cover opacity-30 grayscale blur-[2px]" data-alt="dramatic foggy forest with tall pines at dusk, mystical cinematic atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7USPiUtRDy5R_fBduMuGggS62dbx4z7-4ni6blw7frtjLFi3dk8rEnZImRWlOZbzngLsThL-nKpSH6zvq1io6lfOIhBu_XdtcdgxiePWVaw0t2p9NxLmHEBmEfzTUmf9r2Pz4QywKqVpPBt63e1y-607hBPBcHZG3XQfcUjf6iWIwt_UddX4Oc8evZOrAW2eo5RXA5lycJ5nzS3dfKgyGHS4kTOd8ml3JqvZlK8U5KVxjeE6r4aSSKEF_eoN6ZUf0QQd92W9qSUw"/>
+<div class="relative z-10 text-center px-12">
+<h2 class="headline text-2xl font-bold leading-tight text-white/80">My chains are gone,<br/>I've been set free</h2>
+</div>
+<div class="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="bg-surface-container-high p-2 rounded text-xs hover:bg-surface-bright">EDIT</button>
+</div>
+</div>
+</div>
+<!-- Live Output -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col border border-tertiary/20 shadow-[0_0_40px_rgba(255,179,179,0.05)]">
+<div class="bg-tertiary-container/30 px-4 py-2 flex justify-between items-center">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></div>
+<span class="text-[10px] font-bold tracking-widest text-tertiary uppercase">LIVE OUTPUT</span>
+</div>
+<span class="text-[10px] font-mono text-tertiary/80">00:14:55:02</span>
+</div>
+<div class="flex-1 relative flex items-center justify-center bg-black overflow-hidden group">
+<img alt="Live Background" class="absolute inset-0 w-full h-full object-cover opacity-60" data-alt="dramatic foggy forest with tall pines at dusk, mystical cinematic atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIPM_b1uJOgz-3yDCI_IKBuOVQeS_8nlLdXDyThQ461utbB16LqVoGZAbjW4uiBWxaoDP44TrqtsqB8vljEhBGQanP_po1qVAzFJkjbaMzDstGRa-sLK1Hkuk9WZdq3hExqbYZQ90OsYZ77GSz7AHOiEFnu3n4UBZ2fMU0JgHGxxWhC6FdjBNgQ6XhWEq7VET0CbI12IZOAw3HjlAw5DqPK4xZUYH0INwQK8Ixkto__bH6x5l2BC1hYqNEb_I-K8HScXbXG5YeoOQ"/>
+<div class="relative z-10 text-center px-12">
+<h2 class="headline text-3xl font-extrabold leading-tight text-white shadow-2xl">Amazing grace,<br/>How sweet the sound</h2>
+</div>
+<!-- Live Label Pill -->
+<div class="absolute top-4 right-4 bg-tertiary text-on-tertiary px-3 py-1 rounded-full text-[10px] font-black tracking-widest">ON AIR</div>
+<!-- Video Playback Controls Overlay -->
+<div class="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent pt-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="flex flex-col gap-2">
+<!-- Progress Bar -->
+<div class="group/progress relative h-1.5 w-full bg-white/20 rounded-full cursor-pointer">
+<div class="absolute left-0 top-0 h-full w-[65%] bg-primary rounded-full"></div>
+<div class="absolute left-[65%] top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg scale-0 group-hover/progress:scale-100 transition-transform"></div>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4">
+<!-- Play/Pause -->
+<button class="text-white hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-xl" style="font-variation-settings: 'FILL' 1;">pause</span>
+</button>
+<!-- Time Indicators -->
+<div class="flex items-center gap-2 text-[10px] font-mono text-white/80">
+<span>03:42</span>
+<span class="opacity-40">/</span>
+<span>05:15</span>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<!-- Volume/Mute -->
+<button class="text-white/70 hover:text-white transition-colors">
+<span class="material-symbols-outlined text-lg">volume_up</span>
+</button>
+<!-- Settings/Fullscreen options could go here -->
+</div>
+</div>
+</div>
+</div></div>
+</div>
+</div>
+<!-- Bottom Half: Control Grid -->
+<div class="grid grid-cols-12 gap-6 h-full overflow-hidden">
+<!-- Slide Navigator (Asymmetric Bento) -->
+<div class="col-span-8 bg-surface-container-low rounded-xl p-4 flex flex-col overflow-hidden">
+<div class="flex items-center justify-between mb-4">
+<div class="flex gap-4">
+<button class="text-xs font-bold text-on-surface border-b border-primary pb-1">Lyrics</button>
+<button class="text-xs font-bold text-on-surface-variant hover:text-on-surface transition-colors">Media</button>
+<button class="text-xs font-bold text-on-surface-variant hover:text-on-surface transition-colors">Scripture</button>
+</div>
+<span class="text-[10px] opacity-40">8 VERSES TOTAL</span>
+</div>
+<div class="grid grid-cols-4 gap-3 overflow-y-auto pr-1 custom-scrollbar">
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all border-l-2 border-primary">
+<span class="text-[10px] font-bold text-primary">VERSE 1</span>
+<p class="text-[9px] line-clamp-2 opacity-60">Amazing grace how sweet the sound that saved a wretch...</p>
+</div>
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="text-[10px] font-bold text-on-surface-variant">CHORUS 1</span>
+<p class="text-[9px] line-clamp-2 opacity-60">My chains are gone I've been set free my God my Savior...</p>
+</div>
+<div class="aspect-video bg-surface-container-highest rounded-lg border-2 border-tertiary p-3 flex flex-col justify-between shadow-lg ring-1 ring-tertiary/20">
+<span class="text-[10px] font-bold text-tertiary">VERSE 2</span>
+<p class="text-[9px] line-clamp-2 text-on-surface">Twas grace that taught my heart to fear and grace my fears...</p>
+</div>
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="text-[10px] font-bold text-on-surface-variant">VERSE 3</span>
+<p class="text-[9px] line-clamp-2 opacity-60">The Lord has promised good to me His word my hope...</p>
+</div>
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="text-[10px] font-bold text-on-surface-variant">CHORUS 2</span>
+<p class="text-[9px] line-clamp-2 opacity-60">My chains are gone I've been set free my God my Savior...</p>
+</div>
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="text-[10px] font-bold text-on-surface-variant">BRIDGE</span>
+<p class="text-[9px] line-clamp-2 opacity-60">The earth shall soon dissolve like snow the sun forbear...</p>
+</div>
+<div class="aspect-video bg-surface-container rounded-lg border border-white/5 p-3 flex flex-col justify-between hover:bg-surface-container-high cursor-pointer transition-all">
+<span class="text-[10px] font-bold text-on-surface-variant">OUTRO</span>
+<p class="text-[9px] line-clamp-2 opacity-60">God who called me here below will be forever mine...</p>
+</div>
+<div class="aspect-video bg-surface-container-lowest border border-dashed border-white/10 rounded-lg p-3 flex flex-col items-center justify-center opacity-40">
+<span class="material-symbols-outlined text-sm mb-1">add</span>
+<span class="text-[9px]">ADD SLIDE</span>
+</div>
+</div>
+</div>
+<!-- Transition Controls -->
+<div class="col-span-4 flex flex-col gap-4">
+<div class="bg-surface-container-low rounded-xl p-5 flex flex-col gap-4 border border-white/5 h-full">
+<h3 class="headline text-[10px] font-extrabold uppercase tracking-widest text-on-surface-variant">Global Controls</h3>
+<div class="grid grid-cols-2 gap-3">
+<button class="bg-surface-container-highest hover:bg-surface-bright p-4 rounded-lg flex flex-col items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-lg">bolt</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">CUT</span>
+</button>
+<button class="bg-primary-container text-on-primary-container hover:opacity-90 p-4 rounded-lg flex flex-col items-center gap-2 transition-all border border-primary/20">
+<span class="material-symbols-outlined text-lg">flare</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">FADE</span>
+</button>
+</div>
+<div class="space-y-4 pt-4 border-t border-white/5">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-medium opacity-60">FADE TIME</span>
+<span class="text-[10px] font-bold text-primary">0.8s</span>
+</div>
+<div class="relative w-full h-1 bg-surface-container-highest rounded-full">
+<div class="absolute left-0 top-0 h-full w-[40%] bg-primary rounded-full"></div>
+<div class="absolute left-[40%] top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-lg"></div>
+</div>
+</div>
+<div class="mt-auto grid grid-cols-2 gap-2">
+<button class="bg-error-container/20 text-error p-3 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-error/10 hover:bg-error-container/40">
+<span class="material-symbols-outlined text-sm">block</span>
+                                    Clear Screen
+                                </button>
+<button class="bg-surface-container-highest text-on-surface p-3 rounded-lg flex items-center justify-center gap-2 text-[10px] font-bold uppercase border border-white/5 hover:bg-surface-bright">
+<span class="material-symbols-outlined text-sm">subtitles_off</span>
+                                    Hide Text
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+<!-- Contextual FAB (Only on Home/Dashboard screens) -->
+<button class="fixed bottom-8 right-8 w-14 h-14 rounded-full gradient-primary flex items-center justify-center text-on-primary-fixed shadow-2xl shadow-primary/40 hover:scale-105 active:scale-95 transition-transform z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+</button>
+</body></html>
