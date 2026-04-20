@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { useStore } from '../store'
 
 declare const window: any
 
@@ -9,28 +10,65 @@ interface MediaAsset {
   name?: string
   thumbnail?: string
   duration?: number
+  folder_id?: number | null
+}
+
+interface MediaFolder {
+  id: number
+  name: string
+  parent_id: number | null
 }
 
 interface MediaLibraryProps {
   mediaType: 'image' | 'video'
   onMediaSelect: (asset: MediaAsset) => void
+  onSendToPreview?: (asset: MediaAsset) => void
+  onSendToLive?: (asset: MediaAsset) => void
 }
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType, onMediaSelect }) => {
+type MediaFilter = 'all' | 'image' | 'video' | 'background' | 'loop'
+
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive }) => {
+  const setCurrentSlide = useStore((state) => state.setCurrentSlide)
+  const setLiveSlide = useStore((state) => state.setLiveSlide)
+  const setTheme = useStore((state) => state.setTheme)
+  const theme = useStore((state) => state.theme)
+
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([])
+  const [folders, setFolders] = useState<MediaFolder[]>([])
   const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null)
   const [isImporting, setIsImporting] = useState(false)
+  const [activeFilter, setActiveFilter] = useState<MediaFilter>('all')
+  const [currentFolderId, setCurrentFolderId] = useState<number | null>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [sortMode, setSortMode] = useState<'recent' | 'name'>('recent')
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     loadMediaAssets()
-  }, [mediaType])
+    loadFolders()
+  }, [activeFilter, currentFolderId])
 
   const loadMediaAssets = async () => {
     try {
-      const results = await window.worship.db.run(
-        'SELECT * FROM media_assets WHERE type = ? ORDER BY id DESC',
-        [mediaType]
-      )
+      let sql = 'SELECT * FROM media_assets'
+      const params: any[] = []
+      const conditions: string[] = []
+
+      if (activeFilter === 'image') { conditions.push('type = ?'); params.push('image') }
+      else if (activeFilter === 'video') { conditions.push('type = ?'); params.push('video') }
+
+      if (currentFolderId !== null) {
+        conditions.push('folder_id = ?')
+        params.push(currentFolderId)
+      }
+
+      if (conditions.length > 0) {
+        sql += ' WHERE ' + conditions.join(' AND ')
+      }
+      sql += ' ORDER BY id DESC'
+
+      const results = await window.worship.db.run(sql, params)
       const normalized = (results || []).map((asset: any) => ({
         ...asset,
         name: asset.name || asset.path?.split('\\').pop() || asset.path?.split('/').pop() || 'Untitled'
@@ -42,14 +80,24 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType, onMediaSe
     }
   }
 
+  const loadFolders = async () => {
+    try {
+      const results = await window.worship.db.run('SELECT * FROM media_folders ORDER BY name')
+      setFolders(results || [])
+    } catch {
+      setFolders([])
+    }
+  }
+
   const handleImport = async () => {
     setIsImporting(true)
     try {
-      const extensions = mediaType === 'image' 
+      const type = activeFilter === 'video' ? 'video' : 'image'
+      const extensions = type === 'image'
         ? ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
         : ['mp4', 'mov', 'mkv', 'webm', 'avi']
-      const title = mediaType === 'image' ? 'Import Images' : 'Import Videos'
-      
+      const title = type === 'image' ? 'Import Images' : 'Import Videos'
+
       const filePaths: string[] = await window.worship.dialog.openFiles({
         title,
         filters: [{ name: title, extensions }],
@@ -60,22 +108,34 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType, onMediaSe
         for (const filePath of filePaths) {
           const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || ''
           await window.worship.db.run(
-            'INSERT INTO media_assets (path, type, name, duration) VALUES (?, ?, ?, ?)',
-            [filePath, mediaType, fileName, mediaType === 'video' ? 0 : null]
+            'INSERT INTO media_assets (path, type, name, duration, folder_id) VALUES (?, ?, ?, ?, ?)',
+            [filePath, type, fileName, type === 'video' ? 0 : null, currentFolderId]
           )
         }
         await loadMediaAssets()
       }
     } catch (error) {
       console.error('Failed to import media:', error)
-      alert('Failed to import media files')
     } finally {
       setIsImporting(false)
     }
   }
 
+  const handleCreateFolder = async () => {
+    const name = prompt('Folder name:')
+    if (!name) return
+    try {
+      await window.worship.db.run(
+        'INSERT INTO media_folders (name, parent_id) VALUES (?, ?)',
+        [name, currentFolderId]
+      )
+      await loadFolders()
+    } catch (error) {
+      console.error('Failed to create folder:', error)
+    }
+  }
+
   const handleDelete = async (asset: MediaAsset) => {
-    if (!confirm(`Delete ${asset.name || 'this asset'}?`)) return
     try {
       await window.worship.db.run('DELETE FROM media_assets WHERE id = ?', [asset.id])
       await loadMediaAssets()
@@ -92,21 +152,25 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType, onMediaSe
     onMediaSelect(asset)
   }
 
-  const handleUseAsBackground = async () => {
+  const handleUseAsBackground = () => {
     if (!selectedAsset) return
-    try {
-      // Update theme with selected media
-      const currentTheme = await window.worship.db.run('SELECT * FROM themes LIMIT 1')
-      if (currentTheme && currentTheme.length > 0) {
-        await window.worship.db.run(
-          'UPDATE themes SET backgroundImage = ? WHERE id = ?',
-          [selectedAsset.path, currentTheme[0].id]
-        )
-        alert('Background updated!')
-      }
-    } catch (error) {
-      console.error('Failed to update background:', error)
-    }
+    setTheme({ ...theme, backgroundImage: selectedAsset.path })
+  }
+
+  const handleSendToLive = () => {
+    if (!selectedAsset) return
+    onSendToLive?.(selectedAsset)
+    setTheme({ ...theme, backgroundImage: selectedAsset.path })
+    setLiveSlide(selectedAsset.name || 'Media')
+    const OUTPUT_IDS = [1, 2]
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: selectedAsset.name || 'Media', theme: { ...theme, backgroundImage: selectedAsset.path } }))
+  }
+
+  const handleSendToPreview = () => {
+    if (!selectedAsset) return
+    onSendToPreview?.(selectedAsset)
+    setTheme({ ...theme, backgroundImage: selectedAsset.path })
+    setCurrentSlide(selectedAsset.name || 'Media')
   }
 
   const handleAddToSchedule = async () => {
@@ -114,144 +178,247 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType, onMediaSe
     try {
       await window.worship.db.run(
         'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
-        [1, mediaType === 'image' ? 'image' : 'video', selectedAsset.path]
+        [1, selectedAsset.type === 'image' ? 'image' : 'video', selectedAsset.path]
       )
-      alert('Added to schedule!')
     } catch (error) {
       console.error('Failed to add to schedule:', error)
     }
   }
 
+  const filteredAssets = mediaAssets
+    .filter(a => !searchQuery || (a.name || '').toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => sortMode === 'name' ? (a.name || '').localeCompare(b.name || '') : b.id - a.id)
+
+  const currentFolders = folders.filter(f => f.parent_id === currentFolderId)
+
+  const FILTER_ITEMS: { key: MediaFilter; label: string; icon: string }[] = [
+    { key: 'all', label: 'All Media', icon: '📁' },
+    { key: 'image', label: 'Images', icon: '🖼' },
+    { key: 'video', label: 'Videos', icon: '🎬' },
+    { key: 'background', label: 'Backgrounds', icon: '🌄' },
+    { key: 'loop', label: 'Loops', icon: '🔄' },
+  ]
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with import button */}
-      <div className="p-3 border-b border-slate-700 bg-slate-800/50">
-        <button
-          onClick={handleImport}
-          disabled={isImporting}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-600 text-white text-sm py-2 px-3 rounded-lg transition-colors flex items-center justify-center gap-2"
-        >
-          <span>{isImporting ? '⏳' : '📁'}</span>
-          {isImporting ? 'Importing...' : `Import ${mediaType === 'image' ? 'Images' : 'Videos'}`}
-        </button>
-      </div>
+    <div className="workspace-grid workspace-media">
+      {/* LEFT: Filters & Folders Panel */}
+      <aside className="panel media-filters-panel">
+        <div className="media-section-label">
+          Media Assets
+        </div>
 
-      {/* Search/filter bar */}
-      <div className="p-3 border-b border-slate-700">
-        <input
-          type="text"
-          placeholder={`Search ${mediaType}s...`}
-          className="w-full bg-slate-700 text-slate-200 text-sm rounded px-3 py-1.5 border border-slate-600"
-        />
-      </div>
+        <div className="media-type-list">
+          {FILTER_ITEMS.map(item => (
+            <button
+              key={item.key}
+              className={`media-type-item ${activeFilter === item.key ? 'active' : ''}`}
+              onClick={() => { setActiveFilter(item.key); setCurrentFolderId(null) }}
+            >
+              <span className="icon">{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-      {/* Media grid */}
-      <div className="flex-1 overflow-y-auto p-3">
-        {mediaAssets.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-3 opacity-50">
-              {mediaType === 'image' ? '🖼️' : '🎬'}
-            </div>
-            <div className="text-slate-400 text-sm mb-2">No {mediaType}s yet</div>
-            <div className="text-slate-500 text-xs">Click "Import" to add files</div>
+        <div className="media-section-label">
+          Folders
+          <button onClick={handleCreateFolder} title="New Folder">+</button>
+        </div>
+
+        <div className="folder-tree">
+          {currentFolderId !== null && (
+            <button className="folder-item" onClick={() => setCurrentFolderId(null)}>
+              <span className="folder-icon">⬅</span>
+              Back to Root
+            </button>
+          )}
+          {currentFolders.map(folder => (
+            <button key={folder.id} className={`folder-item ${currentFolderId === folder.id ? 'active' : ''}`} onClick={() => setCurrentFolderId(folder.id)}>
+              <span className="folder-icon">📁</span>
+              {folder.name}
+            </button>
+          ))}
+        </div>
+
+        <div className="media-panel-actions">
+          <button className="live-button full" onClick={handleImport} disabled={isImporting}>
+            {isImporting ? '⏳ Importing...' : '📤 Import Media'}
+          </button>
+          <button className="ghost-button" onClick={handleCreateFolder}>
+            📁 New Folder
+          </button>
+        </div>
+
+        <div className="media-bottom-links">
+          <button className="media-bottom-link">🗑 Trash</button>
+          <button className="media-bottom-link">📦 Archive</button>
+        </div>
+      </aside>
+
+      {/* CENTER: Content Grid */}
+      <section className="panel media-content-panel">
+        <div className="media-main-toolbar">
+          <input
+            className="search-input"
+            placeholder="Search assets..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          <div className="view-toggle-group">
+            <button className={`view-toggle-btn ${viewMode === 'grid' ? 'active' : ''}`} onClick={() => setViewMode('grid')}>⊞</button>
+            <button className={`view-toggle-btn ${viewMode === 'list' ? 'active' : ''}`} onClick={() => setViewMode('list')}>☰</button>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-2">
-            {mediaAssets.map((asset) => (
+          <select className="sort-select" value={sortMode} onChange={(e) => setSortMode(e.target.value as any)}>
+            <option value="recent">Sort: Recent</option>
+            <option value="name">Sort: Name</option>
+          </select>
+        </div>
+
+        {viewMode === 'grid' ? (
+          <div className="media-content-grid">
+            {/* Folder cards */}
+            {currentFolders.map(folder => (
+              <div key={`f-${folder.id}`} className="folder-card" onClick={() => setCurrentFolderId(folder.id)}>
+                <span className="folder-icon-lg">📁</span>
+                <span className="folder-name">{folder.name}</span>
+              </div>
+            ))}
+
+            {/* Asset cards */}
+            {filteredAssets.map(asset => (
               <div
                 key={asset.id}
+                className={`asset-card ${selectedAsset?.id === asset.id ? 'selected' : ''}`}
                 onClick={() => handleSelect(asset)}
-                onDoubleClick={() => handleUseAsBackground()}
-                className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${
-                  selectedAsset?.id === asset.id
-                    ? 'border-blue-500 shadow-lg'
-                    : 'border-slate-700 hover:border-slate-600'
-                }`}
+                onDoubleClick={() => handleSendToPreview()}
               >
-                {/* Thumbnail preview */}
-                <div className="aspect-video bg-slate-800 flex items-center justify-center overflow-hidden">
-                  {mediaType === 'image' ? (
+                <div className="asset-card-thumb">
+                  {asset.type === 'image' ? (
                     <img
                       src={`file://${asset.path}`}
                       alt={asset.name}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="56"%3E%3Crect fill="%23334155" width="100" height="56"/%3E%3Ctext x="50" y="28" text-anchor="middle" fill="%2394a3b8" font-size="10"%3EImage%3C/text%3E%3C/svg%3E'
-                      }}
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
-                    <div className="relative w-full h-full flex items-center justify-center">
-                      <div className="text-2xl">🎬</div>
-                      {asset.duration && asset.duration > 0 && (
-                        <div className="absolute bottom-1 right-1 bg-black/70 text-white text-xs px-1 rounded">
-                          {Math.floor(asset.duration / 60)}:{String(Math.floor(asset.duration % 60)).padStart(2, '0')}
-                        </div>
-                      )}
-                    </div>
+                    <span className="video-icon">🎬</span>
                   )}
                 </div>
-                
-                {/* Asset name */}
-                <div className="p-2 bg-slate-800/90">
-                  <div className="text-xs text-slate-300 truncate">{asset.name}</div>
+                <div className="asset-card-name">
+                  <span className="type-icon">{asset.type === 'image' ? '🖼' : '▶'}</span>
+                  {(asset.name || '').length > 20 ? (asset.name || '').slice(0, 18) + '...' : asset.name}
                 </div>
+              </div>
+            ))}
 
-                {/* Action buttons on hover */}
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleUseAsBackground()
-                    }}
-                    className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
-                    title="Use as background"
-                  >
-                    BG
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDelete(asset)
-                    }}
-                    className="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-                    title="Delete"
-                  >
-                    🗑️
-                  </button>
+            {filteredAssets.length === 0 && currentFolders.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5 }}>{activeFilter === 'video' ? '🎬' : '🖼️'}</div>
+                <div style={{ fontSize: '0.85rem', marginBottom: 4 }}>No assets yet</div>
+                <div style={{ fontSize: '0.72rem' }}>Click "Import Media" to add files</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="media-content-list">
+            {filteredAssets.map(asset => (
+              <div key={asset.id} className={`media-list-item ${selectedAsset?.id === asset.id ? 'selected' : ''}`} onClick={() => handleSelect(asset)}>
+                <div className="media-list-thumb">
+                  {asset.type === 'image' ? (
+                    <img src={`file://${asset.path}`} alt={asset.name} onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '1rem' }}>🎬</div>
+                  )}
                 </div>
-
-                {/* Selected indicator */}
-                {selectedAsset?.id === asset.id && (
-                  <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-1.5 py-0.5 rounded">
-                    ✓
-                  </div>
-                )}
+                <div className="media-list-info">
+                  <div className="media-list-name">{asset.name}</div>
+                  <div className="media-list-meta">{asset.type} • {asset.path.split('\\').pop()?.split('.').pop()?.toUpperCase()}</div>
+                </div>
               </div>
             ))}
           </div>
         )}
-      </div>
 
-      {/* Selected asset actions */}
-      {selectedAsset && (
-        <div className="p-3 border-t border-slate-700 bg-slate-800/50 space-y-2">
-          <div className="text-xs text-slate-400 mb-2">Selected: {selectedAsset.name || 'Untitled'}</div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleUseAsBackground}
-              className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded transition-colors"
-            >
-              Set as Background
-            </button>
-            <button
-              onClick={handleAddToSchedule}
-              className="flex-1 py-1.5 bg-green-600 hover:bg-green-700 text-white text-xs rounded transition-colors"
-            >
-              Add to Schedule
-            </button>
-          </div>
+        {/* Status bar */}
+        <div className="status-bar">
+          <span className="status-dot" />
+          System Live
+          <span style={{ opacity: 0.6 }}>|</span>
+          {filteredAssets.length} assets
         </div>
-      )}
+      </section>
+
+      {/* RIGHT: Inspector Panel */}
+      <aside className="panel media-inspector">
+        <div className="inspector-header">
+          <h3 className="inspector-title">Inspector</h3>
+        </div>
+
+        {selectedAsset ? (
+          <>
+            <div className="asset-preview">
+              {selectedAsset.type === 'image' ? (
+                <img
+                  src={`file://${selectedAsset.path}`}
+                  alt={selectedAsset.name}
+                  onError={(e) => { e.currentTarget.style.display = 'none' }}
+                />
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '2.5rem', opacity: 0.5 }}>🎬</div>
+              )}
+            </div>
+
+            <div className="asset-identity">
+              <div className="asset-identity-label">Asset Identity</div>
+              <div className="asset-identity-name">{selectedAsset.name}</div>
+            </div>
+
+            <div className="asset-tags">
+              <span className="chip">{selectedAsset.type === 'image' ? 'Image' : 'Video'}</span>
+              <span className="chip">Local</span>
+              <span className="chip">+ Tag</span>
+            </div>
+
+            <div className="asset-meta-grid">
+              <div className="meta-card">
+                <div className="meta-card-label">Type</div>
+                <div className="meta-card-value">{selectedAsset.type === 'image' ? 'JPEG Image' : 'Video File'}</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Resolution</div>
+                <div className="meta-card-value">—</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Created</div>
+                <div className="meta-card-value">—</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Size</div>
+                <div className="meta-card-value">—</div>
+              </div>
+            </div>
+
+            <div className="inspector-actions">
+              <button className="soft-button full" onClick={handleSendToPreview}>
+                👁 Send to Preview
+              </button>
+              <button className="send-projector-btn" onClick={handleSendToLive}>
+                ▶ Send to Live
+              </button>
+              <button className="ghost-button" onClick={handleAddToSchedule}>
+                📋 Add to Schedule
+              </button>
+              <button className="ghost-button" onClick={() => handleDelete(selectedAsset)}>
+                ✏️ Edit Metadata
+              </button>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 8 }}>📸</div>
+            Select an asset to see details
+          </div>
+        )}
+      </aside>
     </div>
   )
 }

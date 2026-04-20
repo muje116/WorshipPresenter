@@ -1,15 +1,39 @@
 import React, { useEffect, useState } from 'react'
+import { useStore } from '../store'
 
 declare const window: any
 
 type Translation = { code: string; name: string; id?: number }
 
+const OT_BOOKS = [
+  'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+  'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+  '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
+  'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+  'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
+  'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
+  'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
+  'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
+]
+
+const NT_BOOKS = [
+  'Matthew', 'Mark', 'Luke', 'John', 'Acts',
+  'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+  'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy',
+  '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
+  '1 Peter', '2 Peter', '1 John', '2 John', '3 John',
+  'Jude', 'Revelation'
+]
+
 export const BiblePicker: React.FC = () => {
+  const setCurrentSlide = useStore((state) => state.setCurrentSlide)
+  const setLiveSlide = useStore((state) => state.setLiveSlide)
+  const liveSlide = useStore((state) => state.liveSlide)
+
   const [translations, setTranslations] = useState<Translation[]>([])
-  const [allBooks, setAllBooks] = useState<string[]>([])
   const [selectedTranslation, setSelectedTranslation] = useState<string>('')
   const [secondTranslation, setSecondTranslation] = useState<string>('')
-  const [selectedBook, setSelectedBook] = useState<string>('')
+  const [selectedBook, setSelectedBook] = useState<string>('Genesis')
   const [selectedChapter, setSelectedChapter] = useState<number>(1)
   const [chapters, setChapters] = useState<number[]>([])
   const [verses, setVerses] = useState<any[]>([])
@@ -18,13 +42,14 @@ export const BiblePicker: React.FC = () => {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [dualMode, setDualMode] = useState(false)
-  const [selectedVerseRange, setSelectedVerseRange] = useState<string>('')
+  const [selectedVerse, setSelectedVerse] = useState<any | null>(null)
+  const [otExpanded, setOtExpanded] = useState(true)
+  const [ntExpanded, setNtExpanded] = useState(false)
 
-  // Load translations and books
+  // Load translations
   useEffect(() => {
     const loadBibleData = async () => {
       try {
-        // Load translations
         const translationsList = await window.worship.bibles.listTranslations()
         if (translationsList && translationsList.length) {
           setTranslations(translationsList)
@@ -35,17 +60,6 @@ export const BiblePicker: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load translations:', error)
-      }
-
-      try {
-        // Load all 66 Bible books
-        const booksList = await window.worship.bibles.getBooks()
-        setAllBooks(booksList)
-        if (booksList.length) {
-          setSelectedBook(booksList[0])
-        }
-      } catch (error) {
-        console.error('Failed to load books:', error)
       }
     }
     loadBibleData()
@@ -79,7 +93,6 @@ export const BiblePicker: React.FC = () => {
         setChapters(chaptersList)
         setSelectedChapter(chaptersList[0])
       } else {
-        // Default to 1 if no chapters found
         setChapters([1])
         setSelectedChapter(1)
       }
@@ -129,220 +142,232 @@ export const BiblePicker: React.FC = () => {
 
   const handleImportOsis = async () => {
     const filePath = await window.worship?.bibles?.openOsisFile?.()
-    if (!filePath) {
-      alert('No OSIS file selected')
-      return
-    }
+    if (!filePath) return
     try {
       const translationCodeToUse = selectedTranslation || (translations[0]?.code ?? 'NIV')
-      const bibleId = await window.worship.bibles.importFromOsis(translationCodeToUse, 'en', filePath)
-      alert('Imported OSIS Bible successfully')
-      // Reload translations
+      await window.worship.bibles.importFromOsis(translationCodeToUse, 'en', filePath)
       const translationsList = await window.worship.bibles.listTranslations()
       if (translationsList && translationsList.length) {
         setTranslations(translationsList)
       }
     } catch (e) {
       console.error(e)
-      alert('Failed to import OSIS Bible')
     }
   }
 
   const handleVerseSelect = (verse: any) => {
-    // Create a slide with the selected verse(s)
-    const verseText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`
-    // This would normally go to the store
-    console.log('Selected verse:', verseText)
+    setSelectedVerse(verse)
+    const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`
+    setCurrentSlide(slideText)
   }
 
-  const handleRangeSelect = () => {
-    if (!selectedVerseRange) return
-    // Parse range like "1-5"
-    const parts = selectedVerseRange.split('-')
-    if (parts.length === 2) {
-      const start = parseInt(parts[0])
-      const end = parseInt(parts[1])
-      const selectedVerses = verses.filter(v => v.verse >= start && v.verse <= end)
-      const verseText = selectedVerses.map(v => v.text).join(' ')
-      const slideContent = `${selectedBook} ${selectedChapter}:${selectedVerseRange}\n\n${verseText}`
-      console.log('Selected verse range:', slideContent)
+  const sendToProjector = () => {
+    if (!selectedVerse) return
+    const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}\n\n${selectedVerse.text}`
+    setCurrentSlide(slideText)
+    setLiveSlide(slideText)
+    // Also send to output windows
+    const OUTPUT_IDS = [1, 2]
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }))
+  }
+
+  const addToSchedule = async () => {
+    if (!selectedVerse) return
+    try {
+      const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`
+      await window.worship.db.run(
+        'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
+        [1, 'scripture', content]
+      )
+    } catch (error) {
+      console.error('Failed to add to schedule:', error)
     }
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header with import button */}
-      <div className="p-3 border-b border-slate-700 bg-slate-800/50">
-        <button
-          onClick={handleImportOsis}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-lg transition-colors"
-        >
-          📥 Import OSIS Bible
-        </button>
-      </div>
+  const wordCount = selectedVerse ? selectedVerse.text.split(/\s+/).filter(Boolean).length : 0
 
-      {/* Translation selectors */}
-      <div className="p-3 border-b border-slate-700 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-20">Translation</span>
-          <select
-            value={selectedTranslation}
-            onChange={(e) => setSelectedTranslation(e.target.value)}
-            className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600"
-          >
-            {translations.map(t => (
-              <option key={t.code} value={t.code}>{t.name}</option>
-            ))}
-          </select>
+  return (
+    <div className="workspace-grid workspace-scripture">
+      {/* LEFT: Explorer Panel */}
+      <aside className="panel explorer-panel">
+        <div className="import-osis-row">
+          <button className="live-button full" onClick={handleImportOsis}>📥 Import OSIS Bible</button>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-xs text-slate-400">
-            <input
-              type="checkbox"
-              checked={dualMode}
-              onChange={(e) => setDualMode(e.target.checked)}
-              className="rounded"
-            />
-            Dual Translation
+
+        <div className="explorer-section-header" onClick={() => setOtExpanded(!otExpanded)}>
+          <span className={`chevron ${otExpanded ? 'open' : ''}`}>▶</span>
+          Old Testament
+        </div>
+        {otExpanded && (
+          <div className="book-list">
+            {OT_BOOKS.map(book => (
+              <button key={book} className={`book-item ${selectedBook === book ? 'active' : ''}`} onClick={() => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]) }}>
+                {book}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="explorer-section-header" onClick={() => setNtExpanded(!ntExpanded)}>
+          <span className={`chevron ${ntExpanded ? 'open' : ''}`}>▶</span>
+          New Testament
+        </div>
+        {ntExpanded && (
+          <div className="book-list">
+            {NT_BOOKS.map(book => (
+              <button key={book} className={`book-item ${selectedBook === book ? 'active' : ''}`} onClick={() => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]) }}>
+                {book}
+              </button>
+            ))}
+          </div>
+        )}
+      </aside>
+
+      {/* CENTER: Content Panel */}
+      <section className="panel scripture-content-panel">
+        <div className="scripture-search-bar">
+          <span className="search-icon">🔍</span>
+          <input
+            className="scripture-search-input"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            placeholder={`${selectedBook} 1`}
+          />
+          <select className="translation-selector" value={selectedTranslation} onChange={(e) => setSelectedTranslation(e.target.value)}>
+            {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>)}
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
+            <input type="checkbox" checked={dualMode} onChange={(e) => setDualMode(e.target.checked)} style={{ borderRadius: 4 }} />
+            Dual
           </label>
           {dualMode && (
-            <select
-              value={secondTranslation}
-              onChange={(e) => setSecondTranslation(e.target.value)}
-              className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600"
-            >
-              {translations.map(t => (
-                <option key={t.code} value={t.code}>{t.name}</option>
-              ))}
+            <select className="translation-selector" value={secondTranslation} onChange={(e) => setSecondTranslation(e.target.value)}>
+              {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>)}
             </select>
           )}
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="p-3 border-b border-slate-700">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder="Search Bible..."
-            className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-3 py-1.5 border border-slate-600"
-          />
-          <button
-            onClick={handleSearch}
-            disabled={isSearching}
-            className="px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm rounded transition-colors"
-          >
-            {isSearching ? '...' : '🔍'}
-          </button>
-        </div>
-      </div>
+        {/* Book title and chapter chips */}
+        <h2 className="scripture-book-title">{selectedBook}</h2>
+        <p className="scripture-book-subtitle">Select a chapter to begin</p>
 
-      {/* Navigation - Book/Chapter */}
-      <div className="p-3 border-b border-slate-700 space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-12">Book</span>
-          <select
-            value={selectedBook}
-            onChange={(e) => setSelectedBook(e.target.value)}
-            className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600"
-          >
-            {allBooks.map(book => (
-              <option key={book} value={book}>{book}</option>
-            ))}
-          </select>
+        <div className="chapter-chip-grid">
+          {chapters.map(ch => (
+            <button key={ch} className={`chapter-chip ${selectedChapter === ch ? 'active' : ''}`} onClick={() => { setSelectedChapter(ch); setSelectedVerse(null); setSearchResults([]) }}>
+              {ch}
+            </button>
+          ))}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-12">Chapter</span>
-          <select
-            value={selectedChapter}
-            onChange={(e) => setSelectedChapter(parseInt(e.target.value))}
-            className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600"
-          >
-            {chapters.map(chapter => (
-              <option key={chapter} value={chapter}>{chapter}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-12">Verses</span>
-          <input
-            type="text"
-            value={selectedVerseRange}
-            onChange={(e) => setSelectedVerseRange(e.target.value)}
-            placeholder="e.g. 1-5"
-            className="flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600"
-          />
-          <button
-            onClick={handleRangeSelect}
-            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-          >
-            Select
-          </button>
-        </div>
-      </div>
 
-      {/* Content area */}
-      <div className="flex-1 overflow-y-auto">
-        {/* Search Results */}
-        {searchResults.length > 0 && (
-          <div className="p-3">
-            <div className="text-xs text-slate-400 mb-2 font-medium uppercase">Search Results ({searchResults.length})</div>
-            <div className="space-y-2">
-              {searchResults.map((result, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleVerseSelect(result)}
-                  className="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors text-sm"
-                >
-                  <div className="text-blue-400 text-xs font-medium">{result.book} {result.chapter}:{result.verse}</div>
-                  <div className="text-slate-300 mt-1 line-clamp-2">{result.text}</div>
-                </button>
-              ))}
+        {/* Verse reader */}
+        <div className="verse-reader">
+          {/* Chapter / Translation label */}
+          {verses.length > 0 && (
+            <div className="verse-chapter-label">
+              <span className="verse-chapter-pill">Chapter {selectedChapter}</span>
+              <span className="verse-chapter-pill">{selectedTranslation.toUpperCase()}</span>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Verses List */}
-        {!searchResults.length && verses.length > 0 && (
-          <div className="p-3">
-            <div className="text-xs text-slate-400 mb-2 font-medium uppercase">
-              {selectedBook} {selectedChapter} ({verses.length} verses)
-            </div>
-            <div className="space-y-1">
-              {verses.map((verse) => (
-                <button
-                  key={verse.verse}
-                  onClick={() => handleVerseSelect(verse)}
-                  className="w-full text-left p-2 hover:bg-slate-800/50 rounded transition-colors text-sm group"
-                >
-                  <div className="flex gap-3">
-                    <span className="text-blue-400 text-xs font-medium mt-0.5">{verse.verse}</span>
-                    <span className="text-slate-300 flex-1">{verse.text}</span>
-                  </div>
+          {/* Search Results */}
+          {searchResults.length > 0 ? (
+            searchResults.map((result, idx) => (
+              <div key={idx} className={`verse-row ${selectedVerse === result ? 'selected' : ''}`} onClick={() => handleVerseSelect(result)}>
+                <span className="verse-number">{result.verse}</span>
+                <div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--primary)', marginBottom: 4 }}>{result.book} {result.chapter}:{result.verse}</div>
+                  <div className="verse-text">{result.text}</div>
+                </div>
+              </div>
+            ))
+          ) : verses.length > 0 ? (
+            verses.map((verse) => (
+              <div key={verse.verse} className={`verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`} onClick={() => handleVerseSelect(verse)}>
+                <span className="verse-number">{verse.verse}</span>
+                <div style={{ flex: 1 }}>
+                  <div className="verse-text">{verse.text}</div>
                   {dualMode && secondVerses.length > 0 && (
-                    <div className="flex gap-3 mt-1 pt-1 border-t border-slate-700">
-                      <span className="text-slate-500 text-xs mt-0.5">{verse.verse}</span>
-                      <span className="text-slate-400 flex-1 text-xs">{secondVerses.find(v => v.verse === verse.verse)?.text}</span>
+                    <div className="verse-text-secondary">
+                      {secondVerses.find(v => v.verse === verse.verse)?.text}
                     </div>
                   )}
-                </button>
-              ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: 8 }}>📖</div>
+              <div style={{ fontSize: '0.85rem' }}>Select a book and chapter to view verses</div>
+              <div style={{ fontSize: '0.72rem', marginTop: 4 }}>Or search for specific text</div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
+      </section>
 
-        {/* Empty state */}
-        {verses.length === 0 && searchResults.length === 0 && (
-          <div className="p-6 text-center text-slate-500 text-sm">
-            <div className="text-3xl mb-2">📖</div>
-            <div>Select a book and chapter to view verses</div>
-            <div className="text-xs mt-1">Or search for specific text</div>
+      {/* RIGHT: Inspector Panel */}
+      <aside className="panel scripture-inspector">
+        <div className="inspector-header">
+          <h3 className="inspector-title">Inspector</h3>
+          {liveSlide && liveSlide.includes(selectedBook) && (
+            <div className="inspector-live-pill"><span className="dot" /> LIVE NOW</div>
+          )}
+        </div>
+
+        {selectedVerse ? (
+          <>
+            <div className="verse-card">
+              <div className="verse-card-label">Currently Selected</div>
+              <div className="verse-card-ref">{selectedBook} {selectedChapter}:{selectedVerse.verse}</div>
+              <div className="verse-card-text">"{selectedVerse.text}"</div>
+            </div>
+
+            <div className="inspector-actions">
+              <div className="inspector-button-row">
+                <button className="ghost-button" onClick={() => {}}>Edit Theme</button>
+                <button className="ghost-button" onClick={() => {}}>Share</button>
+              </div>
+
+              <button className="send-projector-btn" onClick={sendToProjector}>
+                ⚡ Send to Projector
+              </button>
+
+              <button className="ghost-button" onClick={addToSchedule}>
+                📋 Add to Schedule
+              </button>
+            </div>
+
+            <div className="inspector-meta-grid">
+              <div className="meta-card">
+                <div className="meta-card-label">Word Count</div>
+                <div className="meta-card-value">{wordCount}</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Style</div>
+                <div className="meta-card-value">Lyric Bold</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Motion</div>
+                <div className="meta-card-value">Static</div>
+              </div>
+              <div className="meta-card">
+                <div className="meta-card-label">Translation</div>
+                <div className="meta-card-value">{selectedTranslation.toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div className="projection-preview">
+              <div className="preview-text">{selectedVerse.text.slice(0, 80)}{selectedVerse.text.length > 80 ? '...' : ''}</div>
+              <span className="preview-label">Preview</span>
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            <div style={{ fontSize: '2rem', marginBottom: 8 }}>📖</div>
+            Select a verse to see details and send to projector
           </div>
         )}
-      </div>
+      </aside>
     </div>
   )
 }

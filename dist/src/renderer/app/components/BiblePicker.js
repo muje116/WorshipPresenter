@@ -3,12 +3,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BiblePicker = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
+const store_1 = require("../store");
+const OT_BOOKS = [
+    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
+    'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+    '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
+    'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+    'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations',
+    'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
+    'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk',
+    'Zephaniah', 'Haggai', 'Zechariah', 'Malachi'
+];
+const NT_BOOKS = [
+    'Matthew', 'Mark', 'Luke', 'John', 'Acts',
+    'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+    'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy',
+    '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
+    '1 Peter', '2 Peter', '1 John', '2 John', '3 John',
+    'Jude', 'Revelation'
+];
 const BiblePicker = () => {
+    const setCurrentSlide = (0, store_1.useStore)((state) => state.setCurrentSlide);
+    const setLiveSlide = (0, store_1.useStore)((state) => state.setLiveSlide);
+    const liveSlide = (0, store_1.useStore)((state) => state.liveSlide);
     const [translations, setTranslations] = (0, react_1.useState)([]);
-    const [allBooks, setAllBooks] = (0, react_1.useState)([]);
     const [selectedTranslation, setSelectedTranslation] = (0, react_1.useState)('');
     const [secondTranslation, setSecondTranslation] = (0, react_1.useState)('');
-    const [selectedBook, setSelectedBook] = (0, react_1.useState)('');
+    const [selectedBook, setSelectedBook] = (0, react_1.useState)('Genesis');
     const [selectedChapter, setSelectedChapter] = (0, react_1.useState)(1);
     const [chapters, setChapters] = (0, react_1.useState)([]);
     const [verses, setVerses] = (0, react_1.useState)([]);
@@ -17,12 +38,13 @@ const BiblePicker = () => {
     const [searchResults, setSearchResults] = (0, react_1.useState)([]);
     const [isSearching, setIsSearching] = (0, react_1.useState)(false);
     const [dualMode, setDualMode] = (0, react_1.useState)(false);
-    const [selectedVerseRange, setSelectedVerseRange] = (0, react_1.useState)('');
-    // Load translations and books
+    const [selectedVerse, setSelectedVerse] = (0, react_1.useState)(null);
+    const [otExpanded, setOtExpanded] = (0, react_1.useState)(true);
+    const [ntExpanded, setNtExpanded] = (0, react_1.useState)(false);
+    // Load translations
     (0, react_1.useEffect)(() => {
         const loadBibleData = async () => {
             try {
-                // Load translations
                 const translationsList = await window.worship.bibles.listTranslations();
                 if (translationsList && translationsList.length) {
                     setTranslations(translationsList);
@@ -34,17 +56,6 @@ const BiblePicker = () => {
             }
             catch (error) {
                 console.error('Failed to load translations:', error);
-            }
-            try {
-                // Load all 66 Bible books
-                const booksList = await window.worship.bibles.getBooks();
-                setAllBooks(booksList);
-                if (booksList.length) {
-                    setSelectedBook(booksList[0]);
-                }
-            }
-            catch (error) {
-                console.error('Failed to load books:', error);
             }
         };
         loadBibleData();
@@ -75,7 +86,6 @@ const BiblePicker = () => {
                 setSelectedChapter(chaptersList[0]);
             }
             else {
-                // Default to 1 if no chapters found
                 setChapters([1]);
                 setSelectedChapter(1);
             }
@@ -127,15 +137,11 @@ const BiblePicker = () => {
     };
     const handleImportOsis = async () => {
         const filePath = await window.worship?.bibles?.openOsisFile?.();
-        if (!filePath) {
-            alert('No OSIS file selected');
+        if (!filePath)
             return;
-        }
         try {
             const translationCodeToUse = selectedTranslation || (translations[0]?.code ?? 'NIV');
-            const bibleId = await window.worship.bibles.importFromOsis(translationCodeToUse, 'en', filePath);
-            alert('Imported OSIS Bible successfully');
-            // Reload translations
+            await window.worship.bibles.importFromOsis(translationCodeToUse, 'en', filePath);
             const translationsList = await window.worship.bibles.listTranslations();
             if (translationsList && translationsList.length) {
                 setTranslations(translationsList);
@@ -143,29 +149,35 @@ const BiblePicker = () => {
         }
         catch (e) {
             console.error(e);
-            alert('Failed to import OSIS Bible');
         }
     };
     const handleVerseSelect = (verse) => {
-        // Create a slide with the selected verse(s)
-        const verseText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`;
-        // This would normally go to the store
-        console.log('Selected verse:', verseText);
+        setSelectedVerse(verse);
+        const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`;
+        setCurrentSlide(slideText);
     };
-    const handleRangeSelect = () => {
-        if (!selectedVerseRange)
+    const sendToProjector = () => {
+        if (!selectedVerse)
             return;
-        // Parse range like "1-5"
-        const parts = selectedVerseRange.split('-');
-        if (parts.length === 2) {
-            const start = parseInt(parts[0]);
-            const end = parseInt(parts[1]);
-            const selectedVerses = verses.filter(v => v.verse >= start && v.verse <= end);
-            const verseText = selectedVerses.map(v => v.text).join(' ');
-            const slideContent = `${selectedBook} ${selectedChapter}:${selectedVerseRange}\n\n${verseText}`;
-            console.log('Selected verse range:', slideContent);
+        const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}\n\n${selectedVerse.text}`;
+        setCurrentSlide(slideText);
+        setLiveSlide(slideText);
+        // Also send to output windows
+        const OUTPUT_IDS = [1, 2];
+        OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }));
+    };
+    const addToSchedule = async () => {
+        if (!selectedVerse)
+            return;
+        try {
+            const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`;
+            await window.worship.db.run('INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))', [1, 'scripture', content]);
+        }
+        catch (error) {
+            console.error('Failed to add to schedule:', error);
         }
     };
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "flex flex-col h-full", children: [(0, jsx_runtime_1.jsx)("div", { className: "p-3 border-b border-slate-700 bg-slate-800/50", children: (0, jsx_runtime_1.jsx)("button", { onClick: handleImportOsis, className: "w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-lg transition-colors", children: "\uD83D\uDCE5 Import OSIS Bible" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "p-3 border-b border-slate-700 space-y-2", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex items-center gap-2", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-xs text-slate-400 w-20", children: "Translation" }), (0, jsx_runtime_1.jsx)("select", { value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600", children: translations.map(t => ((0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.name }, t.code))) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex items-center gap-2", children: [(0, jsx_runtime_1.jsxs)("label", { className: "flex items-center gap-2 text-xs text-slate-400", children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), className: "rounded" }), "Dual Translation"] }), dualMode && ((0, jsx_runtime_1.jsx)("select", { value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600", children: translations.map(t => ((0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.name }, t.code))) }))] })] }), (0, jsx_runtime_1.jsx)("div", { className: "p-3 border-b border-slate-700", children: (0, jsx_runtime_1.jsxs)("div", { className: "flex gap-2", children: [(0, jsx_runtime_1.jsx)("input", { type: "text", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), onKeyPress: (e) => e.key === 'Enter' && handleSearch(), placeholder: "Search Bible...", className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-3 py-1.5 border border-slate-600" }), (0, jsx_runtime_1.jsx)("button", { onClick: handleSearch, disabled: isSearching, className: "px-3 py-1.5 bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm rounded transition-colors", children: isSearching ? '...' : '🔍' })] }) }), (0, jsx_runtime_1.jsxs)("div", { className: "p-3 border-b border-slate-700 space-y-2", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex items-center gap-2", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-xs text-slate-400 w-12", children: "Book" }), (0, jsx_runtime_1.jsx)("select", { value: selectedBook, onChange: (e) => setSelectedBook(e.target.value), className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600", children: allBooks.map(book => ((0, jsx_runtime_1.jsx)("option", { value: book, children: book }, book))) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex items-center gap-2", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-xs text-slate-400 w-12", children: "Chapter" }), (0, jsx_runtime_1.jsx)("select", { value: selectedChapter, onChange: (e) => setSelectedChapter(parseInt(e.target.value)), className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600", children: chapters.map(chapter => ((0, jsx_runtime_1.jsx)("option", { value: chapter, children: chapter }, chapter))) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex items-center gap-2", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-xs text-slate-400 w-12", children: "Verses" }), (0, jsx_runtime_1.jsx)("input", { type: "text", value: selectedVerseRange, onChange: (e) => setSelectedVerseRange(e.target.value), placeholder: "e.g. 1-5", className: "flex-1 bg-slate-700 text-slate-200 text-sm rounded px-2 py-1.5 border border-slate-600" }), (0, jsx_runtime_1.jsx)("button", { onClick: handleRangeSelect, className: "px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors", children: "Select" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "flex-1 overflow-y-auto", children: [searchResults.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "p-3", children: [(0, jsx_runtime_1.jsxs)("div", { className: "text-xs text-slate-400 mb-2 font-medium uppercase", children: ["Search Results (", searchResults.length, ")"] }), (0, jsx_runtime_1.jsx)("div", { className: "space-y-2", children: searchResults.map((result, idx) => ((0, jsx_runtime_1.jsxs)("button", { onClick: () => handleVerseSelect(result), className: "w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700 rounded-lg transition-colors text-sm", children: [(0, jsx_runtime_1.jsxs)("div", { className: "text-blue-400 text-xs font-medium", children: [result.book, " ", result.chapter, ":", result.verse] }), (0, jsx_runtime_1.jsx)("div", { className: "text-slate-300 mt-1 line-clamp-2", children: result.text })] }, idx))) })] })), !searchResults.length && verses.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "p-3", children: [(0, jsx_runtime_1.jsxs)("div", { className: "text-xs text-slate-400 mb-2 font-medium uppercase", children: [selectedBook, " ", selectedChapter, " (", verses.length, " verses)"] }), (0, jsx_runtime_1.jsx)("div", { className: "space-y-1", children: verses.map((verse) => ((0, jsx_runtime_1.jsxs)("button", { onClick: () => handleVerseSelect(verse), className: "w-full text-left p-2 hover:bg-slate-800/50 rounded transition-colors text-sm group", children: [(0, jsx_runtime_1.jsxs)("div", { className: "flex gap-3", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-blue-400 text-xs font-medium mt-0.5", children: verse.verse }), (0, jsx_runtime_1.jsx)("span", { className: "text-slate-300 flex-1", children: verse.text })] }), dualMode && secondVerses.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "flex gap-3 mt-1 pt-1 border-t border-slate-700", children: [(0, jsx_runtime_1.jsx)("span", { className: "text-slate-500 text-xs mt-0.5", children: verse.verse }), (0, jsx_runtime_1.jsx)("span", { className: "text-slate-400 flex-1 text-xs", children: secondVerses.find(v => v.verse === verse.verse)?.text })] }))] }, verse.verse))) })] })), verses.length === 0 && searchResults.length === 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "p-6 text-center text-slate-500 text-sm", children: [(0, jsx_runtime_1.jsx)("div", { className: "text-3xl mb-2", children: "\uD83D\uDCD6" }), (0, jsx_runtime_1.jsx)("div", { children: "Select a book and chapter to view verses" }), (0, jsx_runtime_1.jsx)("div", { className: "text-xs mt-1", children: "Or search for specific text" })] }))] })] }));
+    const wordCount = selectedVerse ? selectedVerse.text.split(/\s+/).filter(Boolean).length : 0;
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "panel explorer-panel", children: [(0, jsx_runtime_1.jsx)("div", { className: "import-osis-row", children: (0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: handleImportOsis, children: "\uD83D\uDCE5 Import OSIS Bible" }) }), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${otExpanded ? 'open' : ''}`, children: "\u25B6" }), "Old Testament"] }), otExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: OT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) })), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${ntExpanded ? 'open' : ''}`, children: "\u25B6" }), "New Testament"] }), ntExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: NT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) }))] }), (0, jsx_runtime_1.jsxs)("section", { className: "panel scripture-content-panel", children: [(0, jsx_runtime_1.jsxs)("div", { className: "scripture-search-bar", children: [(0, jsx_runtime_1.jsx)("span", { className: "search-icon", children: "\uD83D\uDD0D" }), (0, jsx_runtime_1.jsx)("input", { className: "scripture-search-input", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleSearch(), placeholder: `${selectedBook} 1` }), (0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }), (0, jsx_runtime_1.jsxs)("label", { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }), "Dual"] }), dualMode && ((0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }))] }), (0, jsx_runtime_1.jsx)("h2", { className: "scripture-book-title", children: selectedBook }), (0, jsx_runtime_1.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }), (0, jsx_runtime_1.jsx)("div", { className: "chapter-chip-grid", children: chapters.map(ch => ((0, jsx_runtime_1.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? 'active' : ''}`, onClick: () => { setSelectedChapter(ch); setSelectedVerse(null); setSearchResults([]); }, children: ch }, ch))) }), (0, jsx_runtime_1.jsxs)("div", { className: "verse-reader", children: [verses.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "verse-chapter-label", children: [(0, jsx_runtime_1.jsxs)("span", { className: "verse-chapter-pill", children: ["Chapter ", selectedChapter] }), (0, jsx_runtime_1.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })] })), searchResults.length > 0 ? (searchResults.map((result, idx) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse === result ? 'selected' : ''}`, onClick: () => handleVerseSelect(result), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: result.verse }), (0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsxs)("div", { style: { fontSize: '0.72rem', color: 'var(--primary)', marginBottom: 4 }, children: [result.book, " ", result.chapter, ":", result.verse] }), (0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: result.text })] })] }, idx)))) : verses.length > 0 ? (verses.map((verse) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`, onClick: () => handleVerseSelect(verse), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: verse.verse }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1 }, children: [(0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: verse.text }), dualMode && secondVerses.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find(v => v.verse === verse.verse)?.text }))] })] }, verse.verse)))) : ((0, jsx_runtime_1.jsxs)("div", { style: { textAlign: 'center', padding: 40, color: 'var(--text-muted)' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: '2rem', marginBottom: 8 }, children: "\uD83D\uDCD6" }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: '0.85rem' }, children: "Select a book and chapter to view verses" }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: '0.72rem', marginTop: 4 }, children: "Or search for specific text" })] }))] })] }), (0, jsx_runtime_1.jsxs)("aside", { className: "panel scripture-inspector", children: [(0, jsx_runtime_1.jsxs)("div", { className: "inspector-header", children: [(0, jsx_runtime_1.jsx)("h3", { className: "inspector-title", children: "Inspector" }), liveSlide && liveSlide.includes(selectedBook) && ((0, jsx_runtime_1.jsxs)("div", { className: "inspector-live-pill", children: [(0, jsx_runtime_1.jsx)("span", { className: "dot" }), " LIVE NOW"] }))] }), selectedVerse ? ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("div", { className: "verse-card", children: [(0, jsx_runtime_1.jsx)("div", { className: "verse-card-label", children: "Currently Selected" }), (0, jsx_runtime_1.jsxs)("div", { className: "verse-card-ref", children: [selectedBook, " ", selectedChapter, ":", selectedVerse.verse] }), (0, jsx_runtime_1.jsxs)("div", { className: "verse-card-text", children: ["\"", selectedVerse.text, "\""] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "inspector-actions", children: [(0, jsx_runtime_1.jsxs)("div", { className: "inspector-button-row", children: [(0, jsx_runtime_1.jsx)("button", { className: "ghost-button", onClick: () => { }, children: "Edit Theme" }), (0, jsx_runtime_1.jsx)("button", { className: "ghost-button", onClick: () => { }, children: "Share" })] }), (0, jsx_runtime_1.jsx)("button", { className: "send-projector-btn", onClick: sendToProjector, children: "\u26A1 Send to Projector" }), (0, jsx_runtime_1.jsx)("button", { className: "ghost-button", onClick: addToSchedule, children: "\uD83D\uDCCB Add to Schedule" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "inspector-meta-grid", children: [(0, jsx_runtime_1.jsxs)("div", { className: "meta-card", children: [(0, jsx_runtime_1.jsx)("div", { className: "meta-card-label", children: "Word Count" }), (0, jsx_runtime_1.jsx)("div", { className: "meta-card-value", children: wordCount })] }), (0, jsx_runtime_1.jsxs)("div", { className: "meta-card", children: [(0, jsx_runtime_1.jsx)("div", { className: "meta-card-label", children: "Style" }), (0, jsx_runtime_1.jsx)("div", { className: "meta-card-value", children: "Lyric Bold" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "meta-card", children: [(0, jsx_runtime_1.jsx)("div", { className: "meta-card-label", children: "Motion" }), (0, jsx_runtime_1.jsx)("div", { className: "meta-card-value", children: "Static" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "meta-card", children: [(0, jsx_runtime_1.jsx)("div", { className: "meta-card-label", children: "Translation" }), (0, jsx_runtime_1.jsx)("div", { className: "meta-card-value", children: selectedTranslation.toUpperCase() })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "projection-preview", children: [(0, jsx_runtime_1.jsxs)("div", { className: "preview-text", children: [selectedVerse.text.slice(0, 80), selectedVerse.text.length > 80 ? '...' : ''] }), (0, jsx_runtime_1.jsx)("span", { className: "preview-label", children: "Preview" })] })] })) : ((0, jsx_runtime_1.jsxs)("div", { style: { padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: '2rem', marginBottom: 8 }, children: "\uD83D\uDCD6" }), "Select a verse to see details and send to projector"] }))] })] }));
 };
 exports.BiblePicker = BiblePicker;

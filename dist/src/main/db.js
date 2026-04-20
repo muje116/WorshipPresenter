@@ -85,7 +85,15 @@ function initDB() {
       type TEXT,
       name TEXT,
       thumbnail TEXT,
-      duration INTEGER
+      duration INTEGER,
+      folder_id INTEGER,
+      FOREIGN KEY(folder_id) REFERENCES media_folders(id)
+    );
+    CREATE TABLE IF NOT EXISTS media_folders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      parent_id INTEGER,
+      FOREIGN KEY(parent_id) REFERENCES media_folders(id)
     );
   `);
     // Schema migrations for existing databases
@@ -94,6 +102,7 @@ function initDB() {
     ensureColumn('themes', 'font_size', 'INTEGER');
     ensureColumn('media_assets', 'name', 'TEXT');
     ensureColumn('media_assets', 'thumbnail', 'TEXT');
+    ensureColumn('media_assets', 'folder_id', 'INTEGER');
     // Seed a couple of Bible translations if empty
     try {
         const countRow = exports.db.prepare('SELECT COUNT(*) AS c FROM bibles').get();

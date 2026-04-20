@@ -9,15 +9,25 @@ import './styles.css'
 declare const window: any
 
 const OUTPUT_IDS = [1, 2]
-const LAYERS = ['background', 'media', 'slide_content', 'props_overlays', 'announcements', 'lower_thirds', 'live_video', 'alerts']
 const SECTION_TYPES = ['Intro', 'Verse', 'Chorus', 'Bridge', 'Pre-Chorus', 'Post-Chorus', 'Tag', 'Outro', 'Interlude', 'Instrumental']
+const LAYERS = ['background', 'media', 'slide_content', 'props_overlays', 'announcements', 'lower_thirds', 'live_video', 'alerts']
 const NOTE_INDEX: Record<string, number> = {
   C: 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, F: 5,
   'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11
 }
 const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 
-type TabType = 'songs' | 'bibles' | 'images' | 'videos' | 'settings'
+type Workspace = 'console' | 'library' | 'editor' | 'scripture' | 'media' | 'settings'
+type PaneSizes = {
+  consoleLeft: number
+  consoleBottom: number
+  editorLeft: number
+  editorRight: number
+}
+
+type BibleTranslation = { code: string; name: string; id?: number; language?: string }
+type VerseRow = { book: string; chapter: number; verse: number; text: string }
+type MediaAsset = { id: number; path: string; type: 'image' | 'video' | string; name?: string; duration?: number }
 
 const getOutId = (): number => {
   try {
@@ -35,54 +45,122 @@ const transposeChord = (chord: string, steps: number): string => {
   const match = chord.match(/^([A-G])([#b]?)(.*)$/)
   if (!match) return chord
   const [, root, accidental, suffix] = match
-  const normalized = `${root}${accidental || ''}`
-  const startIndex = NOTE_INDEX[normalized]
+  const startIndex = NOTE_INDEX[`${root}${accidental || ''}`]
   if (startIndex == null) return chord
-  const nextIndex = (startIndex + steps + 12) % 12
-  return `${NOTE_NAMES[nextIndex]}${suffix || ''}`
+  return `${NOTE_NAMES[(startIndex + steps + 12) % 12]}${suffix || ''}`
 }
 
-const transposeChordMarkup = (text: string, steps: number): string => {
-  if (!steps) return text
-  return text.replace(/\[([^\]]+)\]/g, (_match: string, chord: string) => `[${transposeChord(chord, steps)}]`)
-}
+const transposeChordMarkup = (text: string, steps: number): string =>
+  steps ? text.replace(/\[([^\]]+)\]/g, (_match: string, chord: string) => `[${transposeChord(chord, steps)}]`) : text
 
 const App: React.FC = () => {
   const outId = getOutId()
   const isOutput = outId > 0
+
   const songs = useStore((state) => state.songs)
   const schedule = useStore((state) => state.schedule)
   const theme = useStore((state) => state.theme)
   const currentSlide = useStore((state) => state.currentSlide)
   const liveSlide = useStore((state) => state.liveSlide)
+  const undoStack = useStore((state) => state.undoStack)
+  const redoStack = useStore((state) => state.redoStack)
   const looks = useStore((state) => state.looks)
   const addSong = useStore((state) => state.addSong)
-  const updateSongSection = useStore((state) => state.updateSongSection)
   const addSongSection = useStore((state) => state.addSongSection)
+  const updateSongSection = useStore((state) => state.updateSongSection)
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
+  const pushSlideUndo = useStore((state) => state.pushSlideUndo)
+  const undo = useStore((state) => state.undo)
+  const redo = useStore((state) => state.redo)
   const addScheduleItem = useStore((state) => state.addScheduleItem)
   const moveSchedule = useStore((state) => state.moveSchedule)
   const setTheme = useStore((state) => state.setTheme)
   const applyPreset = useStore((state) => state.applyPreset)
+  const saveTemplate = useStore((state) => state.saveTemplate)
   const setLook = useStore((state) => state.setLook)
+
+  const [workspace, setWorkspace] = React.useState<Workspace>('console')
+  const [clockValue, setClockValue] = React.useState(new Date())
   const [dragIndex, setDragIndex] = React.useState<number | null>(null)
   const [selectedSongId, setSelectedSongId] = React.useState<number>(songs[0]?.id ?? 0)
+  const [selectedSectionId, setSelectedSectionId] = React.useState<number | null>(null)
   const [showChords, setShowChords] = React.useState(true)
   const [transposeSteps, setTransposeSteps] = React.useState(0)
+  const [songSearchQuery, setSongSearchQuery] = React.useState('')
+  const [editorText, setEditorText] = React.useState('')
+  const [editorType, setEditorType] = React.useState('Verse')
   const [ndiEnabled, setNdiEnabled] = React.useState(false)
   const [outputStates, setOutputStates] = React.useState<Record<number, { slideTitle?: string; mode?: string }>>({})
-  const [activeTab, setActiveTab] = React.useState<TabType>('songs')
-  const [selectedSectionId, setSelectedSectionId] = React.useState<number | null>(null)
-  const [selectedMedia, setSelectedMedia] = React.useState<any>(null)
-  const [songSearchQuery, setSongSearchQuery] = React.useState('')
+  const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image')
+  const [mediaAssets, setMediaAssets] = React.useState<MediaAsset[]>([])
+  const [mediaSearchQuery, setMediaSearchQuery] = React.useState('')
+  const [mediaSort, setMediaSort] = React.useState<'recent' | 'name'>('recent')
+  const [mediaViewMode, setMediaViewMode] = React.useState<'grid' | 'list'>('grid')
+  const [selectedMediaId, setSelectedMediaId] = React.useState<number | null>(null)
+  const [isImportingMedia, setIsImportingMedia] = React.useState(false)
+  const [bgManagerTab, setBgManagerTab] = React.useState<'media' | 'gradient' | 'color'>('media')
+  const [gradientStart, setGradientStart] = React.useState('#1a1a2e')
+  const [gradientEnd, setGradientEnd] = React.useState('#0f4c75')
+
+  const [bibleTranslations, setBibleTranslations] = React.useState<BibleTranslation[]>([])
+  const [selectedTranslationCode, setSelectedTranslationCode] = React.useState('')
+  const [bibleBooks, setBibleBooks] = React.useState<string[]>([])
+  const [selectedBibleBook, setSelectedBibleBook] = React.useState('')
+  const [bibleChapters, setBibleChapters] = React.useState<number[]>([])
+  const [selectedBibleChapter, setSelectedBibleChapter] = React.useState(1)
+  const [bibleVerses, setBibleVerses] = React.useState<VerseRow[]>([])
+  const [bibleSearchQuery, setBibleSearchQuery] = React.useState('')
+  const [bibleSearchResults, setBibleSearchResults] = React.useState<VerseRow[]>([])
+  const [selectedVerse, setSelectedVerse] = React.useState<VerseRow | null>(null)
+  const [isBibleSearchRunning, setIsBibleSearchRunning] = React.useState(false)
+
+  const [activeOutputId, setActiveOutputId] = React.useState(1)
+  const [aspectRatio, setAspectRatio] = React.useState<'16:9' | '4:3' | '21:9' | 'FREE'>('16:9')
+  const [overscanPercent, setOverscanPercent] = React.useState(5)
+  const [outputResolution, setOutputResolution] = React.useState('1920x1080')
+  const [outputHardware, setOutputHardware] = React.useState('Built-in Display')
+  const [paneSizes, setPaneSizes] = React.useState<PaneSizes>(() => {
+    try {
+      const raw = localStorage.getItem('operator-pane-sizes')
+      if (!raw) return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 }
+      const parsed = JSON.parse(raw)
+      return {
+        consoleLeft: Number(parsed.consoleLeft) || 320,
+        consoleBottom: Number(parsed.consoleBottom) || 210,
+        editorLeft: Number(parsed.editorLeft) || 310,
+        editorRight: Number(parsed.editorRight) || 330,
+      }
+    } catch {
+      return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 }
+    }
+  })
+
+  const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0]
+  const selectedSection = selectedSong?.sections.find((section) => section.id === selectedSectionId) || selectedSong?.sections[0]
+  const filteredSongs = songs
+    .filter((song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase()))
+    .sort((a, b) => a.title.localeCompare(b.title))
 
   React.useEffect(() => {
     if (isOutput) return
-    if (!songs.find((song) => song.id === selectedSongId) && songs[0]) {
-      setSelectedSongId(songs[0].id)
-    }
+    const timer = setInterval(() => setClockValue(new Date()), 1000)
+    return () => clearInterval(timer)
+  }, [isOutput])
+
+  React.useEffect(() => {
+    if (isOutput) return
+    if (!songs.find((song) => song.id === selectedSongId) && songs[0]) setSelectedSongId(songs[0].id)
   }, [isOutput, selectedSongId, songs])
+
+  React.useEffect(() => {
+    if (!selectedSection) {
+      setEditorText('')
+      return
+    }
+    setEditorText(selectedSection.text || '')
+    setEditorType(selectedSection.type || 'Verse')
+  }, [selectedSection?.id, selectedSection?.text, selectedSection?.type])
 
   React.useEffect(() => {
     if (isOutput) return
@@ -95,76 +173,40 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
     if (isOutput) return
-    window?.worship?.ndi?.status?.().then((status: { enabled?: boolean }) => {
-      setNdiEnabled(Boolean(status?.enabled))
-    }).catch(() => {
-      setNdiEnabled(false)
-    })
+    window?.worship?.ndi?.status?.().then((status: { enabled?: boolean }) => setNdiEnabled(Boolean(status?.enabled))).catch(() => setNdiEnabled(false))
   }, [isOutput])
 
-  // Load songs and schedule from database on mount
   React.useEffect(() => {
     if (isOutput) return
     const loadData = async () => {
       try {
-        // Load songs from database
         const songsData = await window.worship.db.run('SELECT * FROM songs ORDER BY title')
-        if (songsData && songsData.length > 0) {
+        if (songsData?.length) {
           const songsWithSections = await Promise.all(
             songsData.map(async (song: any) => {
-              const sectionsData = await window.worship.db.run(
-                'SELECT * FROM song_sections WHERE song_id = ? ORDER BY order_num',
-                [song.id]
-              )
-              return {
-                ...song,
-                sections: sectionsData?.map((s: any) => ({
-                  id: s.id,
-                  type: s.type,
-                  text: s.content
-                })) || []
-              }
+              const sectionsData = await window.worship.db.run('SELECT * FROM song_sections WHERE song_id = ? ORDER BY order_num', [song.id])
+              return { ...song, sections: (sectionsData || []).map((s: any) => ({ id: s.id, type: s.type, text: s.content })) }
             })
           )
-          // Update store with loaded songs
           useStore.setState({ songs: songsWithSections })
-          if (songsWithSections.length > 0) {
-            setSelectedSongId(songsWithSections[0].id)
-          }
+          setSelectedSongId(songsWithSections[0]?.id || 0)
         }
-
-        // Load schedule from database
-        const scheduleData = await window.worship.db.run(
-          'SELECT * FROM schedule_items ORDER BY order_num'
-        )
-        if (scheduleData && scheduleData.length > 0) {
-          useStore.setState({
-            schedule: scheduleData.map((item: any) => ({
-              id: item.id,
-              type: item.item_type,
-              content: item.content
-            }))
-          })
+        const scheduleData = await window.worship.db.run('SELECT * FROM schedule_items ORDER BY order_num')
+        if (scheduleData?.length) {
+          useStore.setState({ schedule: scheduleData.map((item: any) => ({ id: item.id, type: item.item_type, content: item.content })) })
         }
       } catch (error) {
-        console.error('Failed to load data from database:', error)
+        console.error('Failed to load operator data:', error)
       }
     }
     loadData()
   }, [isOutput])
 
-  // Keyboard shortcuts
   React.useEffect(() => {
     if (isOutput) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Enter key sends selected section to live
-      if (e.key === 'Enter' && selectedSectionId !== null && !e.shiftKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault()
-        goLive()
-      }
-      // Space bar also sends to live (common in presentation software)
-      if (e.key === ' ' && selectedSectionId !== null && !e.shiftKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault()
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.key === 'Enter' || event.key === ' ') && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+        event.preventDefault()
         goLive()
       }
     }
@@ -172,19 +214,15 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isOutput, selectedSectionId, currentSlide])
 
-  if (isOutput) {
-    return <OutputView outId={outId} />
-  }
+  React.useEffect(() => {
+    if (isOutput) return
+    localStorage.setItem('operator-pane-sizes', JSON.stringify(paneSizes))
+  }, [isOutput, paneSizes])
 
-  const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0]
+  if (isOutput) return <OutputView outId={outId} />
 
   const sendLiveState = (slideTitle: string) => {
-    OUTPUT_IDS.forEach((id) => {
-      window?.worship?.outputs?.setState?.(id, {
-        slideTitle,
-        theme
-      })
-    })
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, theme }))
   }
 
   const goLive = () => {
@@ -192,29 +230,34 @@ const App: React.FC = () => {
     sendLiveState(currentSlide)
   }
 
-  const onBlack = () => {
-    window?.worship?.outputs?.actions?.black?.()
-  }
-
-  const onLogo = () => {
-    window?.worship?.outputs?.actions?.logo?.()
-  }
-
+  const onBlack = () => window?.worship?.outputs?.actions?.black?.()
+  const onLogo = () => window?.worship?.outputs?.actions?.logo?.()
   const onClear = () => {
     window?.worship?.outputs?.actions?.clear?.()
     sendLiveState(liveSlide)
   }
 
-  const handleSectionDoubleClick = (sectionText: string, sectionId: number) => {
-    setCurrentSlide(sectionText)
-    setLiveSlide(sectionText)
-    setSelectedSectionId(sectionId)
-    sendLiveState(sectionText)
+  const pickSection = (sectionId: number, live = false) => {
+    if (!selectedSong) return
+    const section = selectedSong.sections.find((item) => item.id === sectionId)
+    if (!section) return
+    setSelectedSectionId(section.id)
+    const transposed = transposeChordMarkup(section.text, transposeSteps)
+    const rendered = showChords ? transposed : stripChordMarkup(transposed)
+    pushSlideUndo(currentSlide)
+    setCurrentSlide(rendered)
+    if (live) {
+      setLiveSlide(rendered)
+      sendLiveState(rendered)
+    }
   }
 
-  const handleSectionClick = (sectionText: string, sectionId: number) => {
-    setCurrentSlide(sectionText)
-    setSelectedSectionId(sectionId)
+  const saveSectionEdits = () => {
+    if (!selectedSong || selectedSectionId === null) return
+    updateSongSection(selectedSong.id, selectedSectionId, { type: editorType, text: editorText })
+    const transposed = transposeChordMarkup(editorText, transposeSteps)
+    pushSlideUndo(currentSlide)
+    setCurrentSlide(showChords ? transposed : stripChordMarkup(transposed))
   }
 
   const toggleNdi = async () => {
@@ -227,670 +270,454 @@ const App: React.FC = () => {
     setLook(targetOutId, { ...currentLook, ...patch })
   }
 
-  const renderLookControls = (targetOutId: number) => {
-    const look = looks[targetOutId] || {
-      background: targetOutId === 1 ? '#1a1a1a' : '#111111',
-      template: 'default',
-      layers: ['slide_content', targetOutId === 1 ? 'lower_thirds' : 'announcements']
-    }
-    return (
-      <div key={targetOutId} className="p-4 bg-slate-800/50 rounded-xl border border-slate-700">
-        <strong className="text-sm text-slate-200">Output {targetOutId}</strong>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-xs text-slate-400">Background</span>
-          <input 
-            type="color" 
-            value={look.background} 
-            onChange={(e) => updateLook(targetOutId, { background: e.target.value })}
-            className="w-8 h-8 rounded cursor-pointer"
-          />
-        </div>
-        <div className="mt-3">
-          <span className="text-xs text-slate-400">Template</span>
-          <select 
-            value={look.template} 
-            onChange={(e) => updateLook(targetOutId, { template: e.target.value })}
-            className="mt-1 w-full bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600"
-          >
-            <option value="default">Default</option>
-            <option value="lower-thirds">Lower Thirds</option>
-            <option value="full">Full</option>
-          </select>
-        </div>
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {LAYERS.map((layer) => {
-            const activeLayers = look.layers || []
-            const checked = activeLayers.includes(layer)
-            return (
-              <label key={layer} className="flex items-center gap-2 text-xs text-slate-300">
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => updateLook(targetOutId, {
-                    layers: checked ? activeLayers.filter((item) => item !== layer) : [...activeLayers, layer]
-                  })}
-                  className="rounded"
-                />
-                {layer}
-              </label>
-            )
-          })}
-        </div>
-      </div>
-    )
-  }
-
-  const SidebarTab: React.FC<{ icon: string; label: string; active: boolean; onClick: () => void }> = ({ icon, label, active, onClick }) => (
-    <button
-      onClick={onClick}
-      className={`flex items-center gap-3 w-full px-4 py-3 text-left transition-all duration-200 ${
-        active 
-          ? 'bg-blue-600 text-white shadow-lg' 
-          : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
-      }`}
+  const renderConsole = () => (
+    <div
+      className="workspace-grid workspace-console"
+      style={{
+        gridTemplateColumns: `${paneSizes.consoleLeft}px minmax(0, 1fr)`,
+      }}
     >
-      <span className="text-lg">{icon}</span>
-      <span className="font-medium text-sm">{label}</span>
-    </button>
-  )
-
-  const renderSongsTab = () => {
-    // Filter songs based on search query
-    const filteredSongs = songSearchQuery
-      ? songs.filter(song => 
-          song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) ||
-          song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())
-        )
-      : songs
-
-    // Sort alphabetically by title
-    const sortedSongs = [...filteredSongs].sort((a, b) => 
-      a.title.localeCompare(b.title)
-    )
-
-    return (
-      <div className="flex flex-col h-full">
-        <div className="p-3 border-b border-slate-700 space-y-2">
-          <button
-            onClick={addSong}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
-          >
-            <span>+</span> Add New Song
-          </button>
-          <input
-            type="text"
-            value={songSearchQuery}
-            onChange={(e) => setSongSearchQuery(e.target.value)}
-            placeholder="Search songs..."
-            className="w-full bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600"
-          />
-        </div>
-        <div className="flex-1 overflow-y-auto p-2">
-          <div className="space-y-1">
-            {sortedSongs.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-sm">
-                <div className="text-2xl mb-2">🎵</div>
-                <div>No songs found</div>
-              </div>
-            ) : (
-              sortedSongs.map((song) => (
-                <button
-                  key={song.id}
-                  onClick={() => {
-                    setSelectedSongId(song.id)
-                    setCurrentSlide(song.title)
-                    setActiveTab('songs')
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all ${
-                    song.id === selectedSongId
-                      ? 'bg-blue-600 text-white shadow-lg'
-                      : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  <div className="font-medium text-sm">{song.title}</div>
-                  {song.artist && (
-                    <div className="text-xs opacity-70 mt-1">{song.artist}</div>
-                  )}
-                  <div className="text-xs opacity-60 mt-1">{song.sections.length} sections</div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-        <div className="p-2 border-t border-slate-700 text-xs text-slate-500 text-center">
-          {filteredSongs.length} song{filteredSongs.length !== 1 ? 's' : ''}
-        </div>
-      </div>
-    )
-  }
-
-  const renderBiblesTab = () => (
-    <BiblePicker />
-  )
-
-  const renderImagesTab = () => (
-    <MediaLibrary mediaType="image" onMediaSelect={setSelectedMedia} />
-  )
-
-  const renderVideosTab = () => (
-    <MediaLibrary mediaType="video" onMediaSelect={setSelectedMedia} />
-  )
-
-  const renderSettingsTab = () => (
-    <div className="flex flex-col h-full overflow-y-auto">
-      {/* Church Info Section */}
-      <div className="p-4 border-b border-slate-700">
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg">⛪</span> Church Information
-        </h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-slate-400 text-sm block mb-1">Church Name</label>
-            <input
-              type="text"
-              placeholder="Enter church name"
-              className="w-full bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600"
-            />
-          </div>
-          <div>
-            <label className="text-slate-400 text-sm block mb-1">Church Logo</label>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={async () => {
-                  const filePaths: string[] = await window.worship.dialog.openFiles({
-                    title: 'Select Church Logo',
-                    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'svg'] }]
-                  })
-                  if (filePaths.length > 0) {
-                    alert('Logo selected: ' + filePaths[0])
-                    // Would store in settings
-                  }
-                }}
-                className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm py-2 px-3 rounded-lg transition-colors"
-              >
-                📁 Choose Logo
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Theme Settings Section */}
-      <div className="p-4 border-b border-slate-700">
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg">🎨</span> Theme Presets
-        </h3>
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          {THEME_PRESETS.map((preset) => (
-            <button
-              key={preset.name}
-              onClick={() => applyPreset(preset)}
-              className={`p-3 rounded-lg border-2 transition-all text-left ${
-                theme.bg === preset.bg && theme.color === preset.color
-                  ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/30'
-                  : 'border-slate-700 hover:border-slate-500'
-              }`}
+      <section className="panel schedule-panel">
+        <div className="panel-header"><h3>Order of Service</h3><span>{schedule.length} items</span></div>
+        <div className="schedule-list">
+          {schedule.map((item, index) => (
+            <div
+              key={item.id}
+              draggable
+              onDragStart={() => setDragIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (dragIndex != null && dragIndex !== index) moveSchedule(dragIndex, index)
+                setDragIndex(null)
+              }}
+              onClick={() => setCurrentSlide(item.content)}
+              className={`schedule-item ${index === 0 ? 'active' : ''}`}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div
-                  className="w-6 h-6 rounded border border-slate-600"
-                  style={{ backgroundColor: preset.bg }}
-                />
-                <span className="text-xs font-medium text-slate-300">{preset.name}</span>
-              </div>
-              <div
-                className="text-xs px-2 py-1 rounded"
-                style={{ backgroundColor: preset.bg, color: preset.color }}
-              >
-                Aa {preset.fontSize}px
-              </div>
-            </button>
+              <div className="schedule-meta"><span>{String(index + 1).padStart(2, '0')}</span><span>{index === 0 ? 'CURRENT' : index === 1 ? 'NEXT' : 'UPCOMING'}</span></div>
+              <strong>{item.content}</strong>
+              <small>{item.type}</small>
+            </div>
           ))}
         </div>
+        <button className="soft-button full" onClick={() => addScheduleItem()}>Add Item</button>
+      </section>
 
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg"></span> Custom Theme
-        </h3>
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-slate-400 text-sm block mb-1">Background Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={theme.bg}
-                  onChange={(e) => setTheme({ ...theme, bg: e.target.value })}
-                  className="w-10 h-10 rounded cursor-pointer border border-slate-600"
-                />
-                <span className="text-xs text-slate-300">{theme.bg}</span>
-              </div>
-            </div>
-            <div>
-              <label className="text-slate-400 text-sm block mb-1">Text Color</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={theme.color}
-                  onChange={(e) => setTheme({ ...theme, color: e.target.value })}
-                  className="w-10 h-10 rounded cursor-pointer border border-slate-600"
-                />
-                <span className="text-xs text-slate-300">{theme.color}</span>
-              </div>
+      <section className="console-stage">
+        <div className="monitor-grid">
+          <div className="panel monitor">
+            <div className="monitor-header"><span>Preview</span><button className="text-button" onClick={() => setWorkspace('editor')}>Edit</button></div>
+            <div className="slide-frame" style={{ backgroundColor: theme.bg, backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined, backgroundSize: 'cover', color: theme.color, fontSize: theme.fontSize }}>
+              <div className="slide-overlay" />
+              <div className="slide-content">{currentSlide}</div>
             </div>
           </div>
-          <div>
-            <label className="text-slate-400 text-sm block mb-1">Font Size: {theme.fontSize}px</label>
-            <input
-              type="range"
-              min={24}
-              max={96}
-              value={theme.fontSize}
-              onChange={(e) => setTheme({ ...theme, fontSize: Number(e.target.value) })}
-              className="w-full accent-blue-600"
-            />
-            <div className="flex justify-between text-xs text-slate-500 mt-1">
-              <span>24px</span>
-              <span>96px</span>
-            </div>
-          </div>
-          <div>
-            <label className="text-slate-400 text-sm block mb-1">Background Image URL</label>
-            <input
-              type="text"
-              value={theme.backgroundImage || ''}
-              placeholder="https://example.com/image.jpg or file://path"
-              onChange={(e) => setTheme({ ...theme, backgroundImage: e.target.value })}
-              className="w-full bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Display Settings Section */}
-      <div className="p-4 border-b border-slate-700">
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg">🖥️</span> Display Settings
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-            <div>
-              <div className="text-slate-200 text-sm font-medium">Fullscreen Output Windows</div>
-              <div className="text-xs text-slate-400">Open output windows in fullscreen mode</div>
-            </div>
-            <button
-              onClick={() => {
-                // Request fullscreen via IPC
-                window.worship.outputs.actions.fullscreen?.()
-              }}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
-            >
-              Open Fullscreen
-            </button>
-          </div>
-          <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-            <div>
-              <div className="text-slate-200 text-sm font-medium">Aspect Ratio Preview</div>
-              <div className="text-xs text-slate-400">Simulate 4:3 output on 16:9 screen</div>
-            </div>
-            <select className="bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600">
-              <option value="16:9">16:9 (Widescreen)</option>
-              <option value="4:3">4:3 (Standard)</option>
-              <option value="21:9">21:9 (Ultrawide)</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* NDI & Streaming Section */}
-      <div className="p-4 border-b border-slate-700">
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg">📡</span> NDI & Streaming
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-            <div>
-              <div className="text-slate-200 text-sm font-medium">NDI Output</div>
-              <div className="text-xs text-slate-400">
-                {ndiEnabled ? 'NDI output active' : 'NDI output disabled'}
-              </div>
-            </div>
-            <button
-              onClick={toggleNdi}
-              className={`px-4 py-2 text-white text-sm rounded-lg transition-colors ${
-                ndiEnabled
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {ndiEnabled ? 'Disable' : 'Enable'}
-            </button>
-          </div>
-          <div className="p-3 bg-slate-800/50 rounded-lg">
-            <div className="text-slate-200 text-sm font-medium mb-2">OBS Integration</div>
-            <div className="text-xs text-slate-400 mb-3">Connect to OBS via WebSocket for scene control</div>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="ws://localhost:4455"
-                className="flex-1 bg-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 border border-slate-600"
-              />
-              <button className="px-4 py-2 bg-slate-600 hover:bg-slate-500 text-slate-200 text-sm rounded-lg transition-colors">
-                Connect
-              </button>
+          <div className="panel monitor live">
+            <div className="monitor-header"><span>Live Output</span><span className="live-pill">ON AIR</span></div>
+            <div className="slide-frame" style={{ backgroundColor: theme.bg, backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined, backgroundSize: 'cover', color: theme.color, fontSize: theme.fontSize }}>
+              <div className="slide-overlay live" />
+              <div className="slide-content">{liveSlide}</div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Output Configuration Section */}
-      <div className="p-4">
-        <h3 className="text-slate-200 font-semibold mb-3 flex items-center gap-2">
-          <span className="text-lg">📺</span> Output Configuration
-        </h3>
-        <div className="space-y-3">
-          {OUTPUT_IDS.map(renderLookControls)}
+        <div className="panel output-preview-panel" style={{ minHeight: paneSizes.consoleBottom }}>
+          <div className="panel-header"><h3>Output Preview Matrix</h3></div>
+          <div className="output-preview-grid">
+            {OUTPUT_IDS.map((id) => {
+              const state = outputStates[id] || {}
+              const label = state.mode === 'black' ? 'BLACK' : state.mode === 'logo' ? 'Church Logo' : (state.slideTitle || 'Idle')
+              return <div key={id} className="output-tile"><small>Output {id}</small><div className="output-box">{label}</div></div>
+            })}
+          </div>
         </div>
-      </div>
+      </section>
+    </div>
+  )
+
+  const renderLibrary = () => (
+    <div className="workspace-grid workspace-library">
+      <aside className="panel library-filters">
+        <div className="panel-header"><h3>Content Categories</h3></div>
+        <div className="filter-list">
+          <button className="filter-item active">Songs <span>{songs.length}</span></button>
+          <button className="filter-item">Bibles <span>2</span></button>
+          <button className="filter-item">Media <span>--</span></button>
+        </div>
+        <div className="chip-group">{['Worship', 'Uplifting', 'Sermon', '4K UHD', 'Announcement', 'Instrumental'].map((tag) => <span key={tag} className="chip">{tag}</span>)}</div>
+      </aside>
+      <section className="panel library-grid-panel">
+        <div className="library-toolbar">
+          <div><h2>Song Library</h2><p>{filteredSongs.length} arrangements</p></div>
+          <div className="toolbar-inline">
+            <input value={songSearchQuery} onChange={(event) => setSongSearchQuery(event.target.value)} placeholder="Search songs" className="input" />
+            <button className="soft-button" onClick={() => { addSong(); setWorkspace('editor') }}>Add Song</button>
+          </div>
+        </div>
+        <div className="bento-grid">
+          {filteredSongs.map((song) => (
+            <article key={song.id} className={`media-card ${song.id === selectedSongId ? 'live' : ''}`} onClick={() => { setSelectedSongId(song.id); setWorkspace('editor') }}>
+              <div className="media-thumb"><span>{song.title.slice(0, 1).toUpperCase()}</span></div>
+              <div className="media-meta"><strong>{song.title}</strong><small>{song.sections.length} sections</small></div>
+            </article>
+          ))}
+        </div>
+      </section>
     </div>
   )
 
   const renderEditor = () => {
-    if (activeTab !== 'songs' || !selectedSong) return null
-
-    // Section type colors for visual distinction (ProPresenter style)
-    const sectionTypeColors: Record<string, string> = {
-      'Verse': 'bg-blue-600',
-      'Chorus': 'bg-pink-600',
-      'Bridge': 'bg-purple-600',
-      'Pre-Chorus': 'bg-amber-600',
-      'Tag': 'bg-red-600',
-      'Intro': 'bg-emerald-600',
-      'Outro': 'bg-cyan-600'
+    const bgStyle: React.CSSProperties = {
+      backgroundColor: theme.bg,
+      backgroundImage: theme.gradient
+        ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})`
+        : theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
+      backgroundSize: 'cover',
+      color: theme.color,
+      filter: (theme.blur ?? 0) > 0 ? `blur(${theme.blur}px)` : undefined,
     }
-
     return (
-      <div className="flex flex-col h-full">
-        {/* Song header */}
-        <div className="p-4 border-b border-slate-700 bg-slate-800/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold text-white">{selectedSong.title}</h2>
-              {selectedSong.artist && (
-                <div className="text-sm text-slate-400 mt-1">{selectedSong.artist}</div>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowChords(!showChords)}
-                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                  showChords 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-slate-700 hover:bg-slate-600 text-slate-200'
-                }`}
-              >
-                {showChords ? '♫ Chords On' : '♫ Chords Off'}
-              </button>
-              <div className="flex items-center gap-1 bg-slate-700 rounded-lg p-1">
-                <button
-                  onClick={() => setTransposeSteps((v) => v - 1)}
-                  className="px-3 py-1.5 hover:bg-slate-600 text-slate-200 text-sm rounded transition-colors"
-                >
-                  ♭
-                </button>
-                <span className="px-2 text-xs text-slate-400 min-w-[60px] text-center">
-                  {transposeSteps === 0 ? 'Original' : `${transposeSteps > 0 ? '+' : ''}${transposeSteps}`}
-                </span>
-                <button
-                  onClick={() => setTransposeSteps((v) => v + 1)}
-                  className="px-3 py-1.5 hover:bg-slate-600 text-slate-200 text-sm rounded transition-colors"
-                >
-                  ♯
-                </button>
+    <div
+      className="workspace-grid workspace-editor"
+      style={{ gridTemplateColumns: `${paneSizes.editorLeft}px minmax(0, 1fr) ${paneSizes.editorRight}px` }}
+    >
+      <aside className="panel sequence-panel">
+        <div className="panel-header"><h3>Slide Sequence</h3><button className="text-button" onClick={() => selectedSong && addSongSection(selectedSong.id)}>Add</button></div>
+        <div className="sequence-list">
+          {(selectedSong?.sections || []).map((section, index) => (
+            <button key={section.id} className={`sequence-item ${selectedSectionId === section.id ? 'active' : ''}`} onClick={() => pickSection(section.id)} onDoubleClick={() => pickSection(section.id, true)}>
+              <span>{String(index + 1).padStart(2, '0')}</span>
+              <div><strong>{section.type}</strong><small>{stripChordMarkup(section.text).slice(0, 84) || 'Empty section'}</small></div>
+            </button>
+          ))}
+        </div>
+      </aside>
+      <section className="panel stage-panel">
+        <div className="panel-header">
+          <h3>{selectedSong?.title || 'Song Editor'}</h3>
+          <div className="toolbar-inline">
+            <button className="soft-button" onClick={() => setTransposeSteps((value) => value - 1)}>Flat</button>
+            <button className="soft-button" onClick={() => setTransposeSteps(0)}>Reset</button>
+            <button className="soft-button" onClick={() => setTransposeSteps((value) => value + 1)}>Sharp</button>
+            <button className="soft-button" onClick={() => setShowChords((value) => !value)}>{showChords ? 'Hide Chords' : 'Show Chords'}</button>
+          </div>
+        </div>
+        <div className="stage-canvas" style={{ position: 'relative', color: theme.color }}>
+          <div style={{ ...bgStyle, position: 'absolute', inset: 0, opacity: (theme.opacity ?? 100) / 100, borderRadius: 'inherit' }} />
+          <div className="slide-overlay live" />
+          <h1 style={{ position: 'relative', zIndex: 1 }}>{currentSlide || 'Select a section'}</h1>
+          <span className="live-pill stage">Live View</span>
+        </div>
+        <div className="stage-toolbar">
+          <span className="stage-label">Tt {selectedSection?.type || 'VERSE'} {selectedSectionId ? (selectedSong?.sections.findIndex(s => s.id === selectedSectionId) ?? 0) + 1 : 1}</span>
+          <span className="toolbar-divider" />
+          <button className="undo-redo-btn" onClick={undo} disabled={undoStack.length === 0} title="Undo">↩</button>
+          <button className="undo-redo-btn" onClick={redo} disabled={redoStack.length === 0} title="Redo">↪</button>
+        </div>
+      </section>
+      <aside className="panel inspector-panel">
+        <div className="panel-header"><h3>Background &amp; Style</h3></div>
+        <div className="inspector-content">
+          <div className="bg-tab-group">
+            <button className={`bg-tab ${bgManagerTab === 'media' ? 'active' : ''}`} onClick={() => setBgManagerTab('media')}>Media</button>
+            <button className={`bg-tab ${bgManagerTab === 'gradient' ? 'active' : ''}`} onClick={() => setBgManagerTab('gradient')}>Gradient</button>
+            <button className={`bg-tab ${bgManagerTab === 'color' ? 'active' : ''}`} onClick={() => setBgManagerTab('color')}>Color</button>
+          </div>
+
+          {bgManagerTab === 'media' && (
+            <>
+              <label>Active Media</label>
+              <div className="active-media-preview">
+                {theme.backgroundImage
+                  ? <img src={theme.backgroundImage.startsWith('file://') || theme.backgroundImage.startsWith('http') ? theme.backgroundImage : `file://${theme.backgroundImage}`} alt="Background" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                  : <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.78rem' }}>No media selected</div>
+                }
               </div>
-              <button
-                onClick={() => setTransposeSteps(0)}
-                className="px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded-lg transition-colors"
-              >
-                Reset
-              </button>
-            </div>
+              <label>Background Image</label>
+              <input className="input" value={theme.backgroundImage || ''} onChange={(event) => setTheme({ ...theme, backgroundImage: event.target.value, gradient: '' })} placeholder="file://... or https://..." />
+              <label>Quick Picker</label>
+              <div className="quick-picker-grid">
+                <button className="quick-picker-add" onClick={() => { /* future: open file picker */ }}>+</button>
+              </div>
+            </>
+          )}
+
+          {bgManagerTab === 'gradient' && (
+            <>
+              <label>Gradient Colors</label>
+              <div className="gradient-picker-row">
+                <input type="color" value={gradientStart} onChange={(e) => { setGradientStart(e.target.value); setTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: '' }) }} />
+                <div className="gradient-preview" style={{ background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` }} />
+                <input type="color" value={gradientEnd} onChange={(e) => { setGradientEnd(e.target.value); setTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: '' }) }} />
+              </div>
+            </>
+          )}
+
+          {bgManagerTab === 'color' && (
+            <>
+              <label>Background Color</label>
+              <input type="color" value={theme.bg} onChange={(event) => setTheme({ ...theme, bg: event.target.value, gradient: '', backgroundImage: '' })} />
+            </>
+          )}
+
+          <div className="slider-row">
+            <div className="slider-label"><span>Opacity</span><span>{theme.opacity ?? 100}%</span></div>
+            <input type="range" min={0} max={100} value={theme.opacity ?? 100} onChange={(e) => setTheme({ ...theme, opacity: Number(e.target.value) })} />
           </div>
-        </div>
-
-        {/* Sections grid - ProPresenter style */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-            {selectedSong.sections.map((section, index) => {
-              const transposed = transposeChordMarkup(section.text, transposeSteps)
-              const renderedText = showChords ? transposed : stripChordMarkup(transposed)
-              const isSelected = selectedSectionId === section.id
-              const sectionColor = sectionTypeColors[section.type] || 'bg-slate-600'
-
-              return (
-                <div
-                  key={section.id}
-                  onClick={() => {
-                    setCurrentSlide(renderedText)
-                    setSelectedSectionId(section.id)
-                  }}
-                  onDoubleClick={() => {
-                    setCurrentSlide(renderedText)
-                    setLiveSlide(renderedText)
-                    setSelectedSectionId(section.id)
-                    sendLiveState(renderedText)
-                  }}
-                  className={`relative rounded-lg overflow-hidden border-2 transition-all cursor-pointer group ${
-                    isSelected 
-                      ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/50' 
-                      : 'border-slate-700 hover:border-slate-500 hover:shadow-md'
-                  }`}
-                >
-                  {/* Section type header with color */}
-                  <div className={`${sectionColor} px-3 py-2 flex items-center justify-between`}>
-                    <span className="text-white text-xs font-semibold uppercase tracking-wide">
-                      {section.type}
-                    </span>
-                    <span className="text-white/70 text-xs">
-                      {index + 1}
-                    </span>
-                  </div>
-
-                  {/* Section content preview */}
-                  <div className="p-3 bg-slate-800/80 min-h-[80px]">
-                    <div className="text-slate-300 text-xs whitespace-pre-wrap line-clamp-4">
-                      {renderedText || 'Empty section'}
-                    </div>
-                  </div>
-
-                  {/* Go live indicator */}
-                  <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <div className="bg-red-600 text-white text-xs px-2 py-1 rounded font-medium">
-                      Double-click → Live
-                    </div>
-                  </div>
-
-                  {/* Selected indicator */}
-                  {isSelected && (
-                    <div className="absolute top-2 right-2">
-                      <div className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded">
-                        Preview
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+          <div className="slider-row">
+            <div className="slider-label"><span>Blur</span><span>{theme.blur ?? 0}px</span></div>
+            <input type="range" min={0} max={20} value={theme.blur ?? 0} onChange={(e) => setTheme({ ...theme, blur: Number(e.target.value) })} />
           </div>
 
-          {/* Add section button */}
-          <button
-            onClick={() => addSongSection(selectedSong.id)}
-            className="mt-4 w-full py-3 bg-slate-800 hover:bg-slate-700 border-2 border-dashed border-slate-600 hover:border-slate-500 text-slate-400 hover:text-slate-300 rounded-lg transition-colors font-medium"
-          >
-            + Add New Section
-          </button>
+          <label>Section Type</label>
+          <select className="input" value={editorType} onChange={(event) => setEditorType(event.target.value)}>{SECTION_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+          <label>Section Text</label>
+          <textarea className="input textarea" value={editorText} onChange={(event) => setEditorText(event.target.value)} />
+          <label>Font Size ({theme.fontSize}px)</label>
+          <input type="range" min={24} max={96} value={theme.fontSize} onChange={(event) => setTheme({ ...theme, fontSize: Number(event.target.value) })} />
+          <label>Text Color</label>
+          <input type="color" value={theme.color} onChange={(event) => setTheme({ ...theme, color: event.target.value })} />
+
+          <div className="button-row">
+            <button className="soft-button full" onClick={saveSectionEdits}>Save Section</button>
+            <button className="live-button full" onClick={goLive}>Send Live</button>
+            <button className="template-button" onClick={() => { const name = prompt('Template name:'); if (name) saveTemplate(name) }}>Save as Template</button>
+          </div>
         </div>
-      </div>
+      </aside>
+    </div>
     )
   }
 
-  const renderSchedule = () => (
-    <div className="p-4">
-      <h3 className="text-slate-200 font-semibold mb-4">Schedule</h3>
-      <div className="space-y-2">
-        {schedule.map((item, index) => (
-          <div
-            key={item.id}
-            draggable
-            onDragStart={() => setDragIndex(index)}
-            onDragOver={(event) => event.preventDefault()}
-            onDrop={() => {
-              if (dragIndex != null && dragIndex !== index) {
-                moveSchedule(dragIndex, index)
-              }
-              setDragIndex(null)
-            }}
-            onClick={() => setCurrentSlide(item.content)}
-            className="p-3 bg-slate-800/50 border border-slate-700 rounded-lg cursor-grab hover:bg-slate-700/50 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-slate-500 text-sm w-6">{index + 1}.</span>
-              <span className="text-slate-300 flex-1">{item.type} - {item.content}</span>
+  const renderSettings = () => (
+    <div className="workspace-grid workspace-settings">
+      <div className="settings-header">
+        <div>
+          <h1 className="settings-title">Display Settings</h1>
+          <p className="settings-subtitle">Configure output canvas and screen geometry</p>
+        </div>
+        <div className="settings-header-actions">
+          <button className="soft-button" onClick={() => { setAspectRatio('16:9'); setOverscanPercent(5); setOutputResolution('1920x1080') }}>Reset to Default</button>
+          <button className="live-button" onClick={() => window?.worship?.outputs?.actions?.fullscreen?.()}>Apply Changes</button>
+        </div>
+      </div>
+
+      <section className="panel canvas-layout-section">
+        <div className="canvas-layout-header">
+          <div className="canvas-layout-title">🖥 Canvas Layout</div>
+          <div className="ratio-chip-group">
+            {(['16:9', '4:3', '21:9', 'FREE'] as const).map((ratio) => (
+              <button key={ratio} className={`ratio-chip ${aspectRatio === ratio ? 'active' : ''}`} onClick={() => setAspectRatio(ratio)}>{ratio}</button>
+            ))}
+          </div>
+        </div>
+        <div className="canvas-visualizer">
+          <div className="canvas-display-rect" style={{ aspectRatio: aspectRatio === '4:3' ? '4/3' : aspectRatio === '21:9' ? '21/9' : '16/9' }}>
+            <span className="canvas-active-pill"><span className="dot" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--tertiary)' }} /> ACTIVE OUTPUT</span>
+            <span className="canvas-display-label">Primary Stage</span>
+            <span className="canvas-display-res">{outputResolution.replace('x', ' × ')}</span>
+            <span className="canvas-handle tl" /><span className="canvas-handle tc" /><span className="canvas-handle tr" />
+            <span className="canvas-handle ml" /><span className="canvas-handle mr" />
+            <span className="canvas-handle bl" /><span className="canvas-handle bc" /><span className="canvas-handle br" />
+          </div>
+        </div>
+      </section>
+
+      <aside className="panel dimensions-panel">
+        <div className="dimensions-title">📐 Dimensions</div>
+        <div className="dimension-field">
+          <label>Resolution</label>
+          <div className="dimension-input-row">
+            <input value={outputResolution} onChange={(e) => setOutputResolution(e.target.value)} />
+            <button className="edit-icon" title="Edit">✏️</button>
+          </div>
+        </div>
+        <div className="dimension-field">
+          <label>Aspect Ratio</label>
+          <div className="dimension-input-row">
+            <select value={aspectRatio} onChange={(e) => setAspectRatio(e.target.value as any)}>
+              <option value="16:9">16:9 Widescreen</option>
+              <option value="4:3">4:3 Standard</option>
+              <option value="21:9">21:9 Ultrawide</option>
+              <option value="FREE">Free</option>
+            </select>
+          </div>
+        </div>
+        <div className="overscan-slider">
+          <div className="slider-row">
+            <div className="slider-label"><span>Overscan</span><span>{overscanPercent}%</span></div>
+            <input type="range" min={0} max={20} value={overscanPercent} onChange={(e) => setOverscanPercent(Number(e.target.value))} />
+          </div>
+          <div className="overscan-labels"><span>0%</span><span>20%</span></div>
+        </div>
+        <div className="hardware-card">
+          <div className="hardware-card-title">Output Hardware</div>
+          <div className="hardware-card-content">
+            <div className="hardware-icon">🖥</div>
+            <div className="hardware-info">
+              <strong>{outputHardware}</strong>
+              <small>SDI Out 1 • 60fps • 10-bit</small>
             </div>
           </div>
-        ))}
+        </div>
+        <div className="preset-section">
+          <label>Theme Presets</label>
+          <div className="preset-grid">{THEME_PRESETS.slice(0, 6).map((preset) => <button key={preset.name} className="preset-chip" onClick={() => applyPreset(preset)}>{preset.name}</button>)}</div>
+        </div>
+        <div className="ndi-section">
+          <label>NDI Output</label>
+          <button className={`soft-button full ${ndiEnabled ? 'active' : ''}`} onClick={toggleNdi}>{ndiEnabled ? 'Disable NDI' : 'Enable NDI'}</button>
+        </div>
+      </aside>
+
+      <div className="info-card-row">
+        <div className="info-card">
+          <span className="info-card-badge">Pro Feature</span>
+          <div className="info-value" style={{ fontFamily: 'Manrope, Inter, sans-serif', fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>Multi-Display Sync</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.4 }}>Synchronize frame delivery across multiple graphics cards for ultra-high-resolution wall displays.</div>
+        </div>
+        <div className="info-card">
+          <div className="info-label">🎨 Color Space</div>
+          <div className="info-value">Rec.709 (High Dynamic)</div>
+          <div className="info-bar" />
+        </div>
+        <div className="info-card">
+          <div className="info-label">⏱ Frame Delay</div>
+          <div className="info-value">1.2ms (Ultra Low)</div>
+          <div className="info-sub">Optimized for IMAG systems</div>
+        </div>
+        <div className="info-card">
+          <div className="info-label">🔄 Refresh Rate</div>
+          <div className="info-value">60.00 Hz</div>
+          <div className="info-sub">Matched to Broadcast Clock</div>
+        </div>
       </div>
-      <button
-        onClick={addScheduleItem}
-        className="mt-4 w-full py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg transition-colors"
-      >
-        + Add Item
-      </button>
     </div>
   )
 
-  const previewStyle: React.CSSProperties = {
-    padding: 24,
-    minHeight: 200,
-    borderRadius: 12,
-    backgroundColor: theme.bg,
-    backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    color: theme.color,
-    fontSize: theme.fontSize,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    fontWeight: 'bold'
+  const sendMediaToPreview = (asset: MediaAsset) => {
+    setTheme({ ...theme, backgroundImage: asset.path })
+    setCurrentSlide(asset.name || 'Media')
   }
 
+  const sendMediaToLive = (asset: MediaAsset) => {
+    const updatedTheme = { ...theme, backgroundImage: asset.path }
+    setTheme(updatedTheme)
+    setCurrentSlide(asset.name || 'Media')
+    setLiveSlide(asset.name || 'Media')
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: asset.name || 'Media', theme: updatedTheme }))
+  }
+
+  const renderRibbon = () => (
+    <header className="topbar ribbon">
+      <div className="ribbon-row ribbon-main">
+        <div className="screen-title">
+          <strong>{workspace.charAt(0).toUpperCase() + workspace.slice(1)}</strong>
+          <small>{clockValue.toLocaleTimeString()}</small>
+        </div>
+        <div className="view-tabs">
+          {(['console', 'library', 'editor', 'scripture', 'media', 'settings'] as Workspace[]).map((item) => (
+            <button key={item} className={`tab ${workspace === item ? 'active' : ''}`} onClick={() => setWorkspace(item)}>
+              {item.charAt(0).toUpperCase() + item.slice(1)}
+            </button>
+          ))}
+        </div>
+        <div className="topbar-actions">
+          <button className="action-button dark" onClick={onBlack}>BLACK</button>
+          <button className="action-button" onClick={onLogo}>LOGO</button>
+          <button className="action-button" onClick={onClear}>CLEAR</button>
+          <button className="action-button live" onClick={goLive}>SEND LIVE</button>
+        </div>
+      </div>
+      <div className="ribbon-row ribbon-tools">
+        {(workspace === 'console' || workspace === 'editor') && (
+          <>
+            <label className="ribbon-control">
+              <span>Left Pane</span>
+              <input
+                type="range"
+                min={240}
+                max={480}
+                value={workspace === 'console' ? paneSizes.consoleLeft : paneSizes.editorLeft}
+                onChange={(event) => {
+                  const value = Number(event.target.value)
+                  setPaneSizes((prev) => ({
+                    ...prev,
+                    ...(workspace === 'console' ? { consoleLeft: value } : { editorLeft: value }),
+                  }))
+                }}
+              />
+            </label>
+            {workspace === 'console' && (
+              <label className="ribbon-control">
+                <span>Output Area</span>
+                <input
+                  type="range"
+                  min={150}
+                  max={340}
+                  value={paneSizes.consoleBottom}
+                  onChange={(event) => setPaneSizes((prev) => ({ ...prev, consoleBottom: Number(event.target.value) }))}
+                />
+              </label>
+            )}
+            {workspace === 'editor' && (
+              <label className="ribbon-control">
+                <span>Inspector Pane</span>
+                <input
+                  type="range"
+                  min={260}
+                  max={460}
+                  value={paneSizes.editorRight}
+                  onChange={(event) => setPaneSizes((prev) => ({ ...prev, editorRight: Number(event.target.value) }))}
+                />
+              </label>
+            )}
+          </>
+        )}
+        {workspace === 'editor' && (
+          <>
+            <button className="soft-button" onClick={() => selectedSong && addSongSection(selectedSong.id)}>Add Section</button>
+            <button className="soft-button" onClick={saveSectionEdits}>Save Section</button>
+          </>
+        )}
+        {workspace === 'media' && (
+          <span className="ribbon-note">Tip: click asset for inspector, double-click to preview, then push live when ready.</span>
+        )}
+      </div>
+    </header>
+  )
+
   return (
-    <div className="h-screen flex bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100 overflow-hidden">
-      {/* Left Sidebar - Navigation */}
-      <div className="w-64 bg-gradient-to-b from-slate-900 to-slate-950 border-r border-slate-800/50 flex flex-col shadow-2xl">
-        <div className="p-4 border-b border-slate-800/50 bg-gradient-to-r from-blue-900/20 to-purple-900/20">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent flex items-center gap-2">
-            <span className="text-3xl">✝️</span> WorshipOS
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">v0.2.0 Professional</p>
-        </div>
+    <div className="app-shell">
+      <aside className="app-sidebar">
+        <div className="brand-block"><h1>The Ethereal Stage</h1><p>Sanctuary Control</p></div>
+        <nav className="sidebar-nav">
+          <button className={`nav-button ${workspace === 'console' ? 'active' : ''}`} onClick={() => setWorkspace('console')}>Console</button>
+          <button className={`nav-button ${workspace === 'library' ? 'active' : ''}`} onClick={() => setWorkspace('library')}>Library</button>
+          <button className={`nav-button ${workspace === 'editor' ? 'active' : ''}`} onClick={() => setWorkspace('editor')}>Song Editor</button>
+          <button className={`nav-button ${workspace === 'scripture' ? 'active' : ''}`} onClick={() => setWorkspace('scripture')}>Scripture</button>
+          <button className={`nav-button ${workspace === 'media' ? 'active' : ''}`} onClick={() => setWorkspace('media')}>Media</button>
+          <button className={`nav-button ${workspace === 'settings' ? 'active' : ''}`} onClick={() => setWorkspace('settings')}>Settings</button>
+        </nav>
+        <div className="sidebar-footer"><button className="live-button full" onClick={goLive}>Go Live</button></div>
+      </aside>
 
-        <div className="flex-1 overflow-y-auto py-2 space-y-1">
-          <SidebarTab icon="🎵" label="Songs" active={activeTab === 'songs'} onClick={() => setActiveTab('songs')} />
-          <SidebarTab icon="📖" label="Bibles" active={activeTab === 'bibles'} onClick={() => setActiveTab('bibles')} />
-          <SidebarTab icon="🖼️" label="Images" active={activeTab === 'images'} onClick={() => setActiveTab('images')} />
-          <SidebarTab icon="🎬" label="Videos" active={activeTab === 'videos'} onClick={() => setActiveTab('videos')} />
-          <SidebarTab icon="⚙️" label="Settings" active={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-        </div>
+      <div className="app-main">
+        {renderRibbon()}
 
-        {/* Quick Actions */}
-        <div className="p-4 border-t border-slate-800/50 bg-slate-900/50 space-y-2">
-          <div className="text-xs text-slate-500 font-medium mb-2 uppercase tracking-wide">Quick Actions</div>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={onBlack}
-              className="py-2.5 bg-gradient-to-b from-slate-800 to-black hover:from-slate-700 hover:to-slate-900 text-white rounded-lg transition-all font-medium text-sm shadow-lg border border-slate-700 hover:border-slate-600 hover:shadow-xl"
-            >
-              ⬛ BLACK
-            </button>
-            <button
-              onClick={onLogo}
-              className="py-2.5 bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-slate-200 rounded-lg transition-all font-medium text-sm shadow-lg border border-slate-600 hover:border-slate-500 hover:shadow-xl"
-            >
-              🏠 LOGO
-            </button>
-            <button
-              onClick={onClear}
-              className="py-2.5 bg-gradient-to-b from-slate-700 to-slate-800 hover:from-slate-600 hover:to-slate-700 text-slate-200 rounded-lg transition-all font-medium text-sm shadow-lg border border-slate-600 hover:border-slate-500 hover:shadow-xl"
-            >
-              ✕ CLEAR
-            </button>
-            <button
-              onClick={goLive}
-              className="py-2.5 bg-gradient-to-b from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white rounded-lg transition-all font-medium text-sm shadow-lg border border-red-500 hover:border-red-400 hover:shadow-xl hover:shadow-red-500/20"
-            >
-              ▶ LIVE
-            </button>
-          </div>
-          <div className="text-xs text-slate-600 text-center pt-1">
-            Enter/Space to go live
-          </div>
-        </div>
-      </div>
-
-      {/* Left Panel - Content List */}
-      <div className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col">
-        {activeTab === 'songs' && renderSongsTab()}
-        {activeTab === 'bibles' && renderBiblesTab()}
-        {activeTab === 'images' && renderImagesTab()}
-        {activeTab === 'videos' && renderVideosTab()}
-        {activeTab === 'settings' && renderSettingsTab()}
-      </div>
-
-      {/* Middle Panel - Editor */}
-      <div className="flex-1 bg-slate-950 flex flex-col overflow-hidden">
-        {renderEditor()}
-      </div>
-
-      {/* Right Panel - Preview & Live */}
-      <div className="w-80 bg-slate-900 border-l border-slate-800 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto p-4 space-y-6">
-          {/* Preview */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <div className="text-xs text-slate-400 mb-3 font-medium uppercase tracking-wide">Preview</div>
-            <div style={previewStyle}>{currentSlide}</div>
-          </div>
-
-          {/* Live */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <div className="text-xs text-slate-400 mb-3 font-medium uppercase tracking-wide">Live Output</div>
-            <div style={previewStyle}>{liveSlide}</div>
-          </div>
-
-          {/* Schedule */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            {renderSchedule()}
-          </div>
-
-          {/* Output Previews */}
-          <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700">
-            <div className="text-xs text-slate-400 mb-3 font-medium uppercase tracking-wide">Output Previews</div>
-            <div className="space-y-3">
-              {OUTPUT_IDS.map((id) => {
-                const state = outputStates[id] || {}
-                const label = state.mode === 'black' ? 'BLACK' : state.mode === 'logo' ? 'Church Logo' : (state.slideTitle || 'Idle')
-                return (
-                  <div key={id}>
-                    <div className="text-xs text-slate-500 mb-2">Output {id}</div>
-                    <div style={{ ...previewStyle, minHeight: 100, fontSize: 14 }}>{label}</div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
+        <main className="workspace">
+          {workspace === 'console' && renderConsole()}
+          {workspace === 'library' && renderLibrary()}
+          {workspace === 'editor' && renderEditor()}
+          {workspace === 'scripture' && <BiblePicker />}
+          {workspace === 'media' && (
+            <MediaLibrary
+              mediaType={mediaType}
+              onMediaSelect={() => undefined}
+              onSendToPreview={sendMediaToPreview}
+              onSendToLive={sendMediaToLive}
+            />
+          )}
+          {workspace === 'settings' && renderSettings()}
+        </main>
       </div>
     </div>
   )
@@ -898,6 +725,4 @@ const App: React.FC = () => {
 
 const mountPoint = document.getElementById('root')
 const root = mountPoint ? createRoot(mountPoint) : null
-if (root) {
-  root.render(<App />)
-}
+if (root) root.render(<App />)

@@ -3,7 +3,7 @@ import { create } from 'zustand'
 export type Section = { id: number; type: string; text: string }
 export type Song = { id: number; title: string; artist?: string; sections: Section[] }
 export type ScheduleItem = { id: number; type: string; content: string }
-export type Theme = { bg: string; color: string; backgroundImage?: string; fontSize: number; name?: string }
+export type Theme = { bg: string; color: string; backgroundImage?: string; fontSize: number; name?: string; opacity?: number; blur?: number; gradient?: string }
 
 // Theme presets
 export const THEME_PRESETS: Theme[] = [
@@ -23,8 +23,13 @@ type Store = {
   theme: Theme
   currentSlide: string
   liveSlide: string
+  undoStack: string[]
+  redoStack: string[]
   setCurrentSlide: (s: string) => void
   setLiveSlide: (s: string) => void
+  pushSlideUndo: (s: string) => void
+  undo: () => void
+  redo: () => void
   addSong: () => void
   updateSongSection: (songId: number, sectionId: number, patch: Partial<Section>) => void
   addSongSection: (songId: number) => void
@@ -32,6 +37,7 @@ type Store = {
   moveSchedule: (from: number, to: number) => void
   setTheme: (t: Theme) => void
   applyPreset: (preset: Theme) => void
+  saveTemplate: (name: string) => void
   looks: Record<number, { background?: string; template?: string; layers?: string[] }>
   setLook: (outId: number, look: { background?: string; template?: string; layers?: string[] }) => void
 }
@@ -39,11 +45,26 @@ type Store = {
 export const useStore = create<Store>((set, get) => ({
   songs: [],
   schedule: [],
-  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42 },
+  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '' },
   currentSlide: 'Welcome',
   liveSlide: 'Welcome',
+  undoStack: [],
+  redoStack: [],
   setCurrentSlide: (s) => set({ currentSlide: s }),
   setLiveSlide: (s) => set({ liveSlide: s }),
+  pushSlideUndo: (s) => set((state) => ({ undoStack: [...state.undoStack.slice(-20), s], redoStack: [] })),
+  undo: () => {
+    const { undoStack, currentSlide } = get()
+    if (undoStack.length === 0) return
+    const prev = undoStack[undoStack.length - 1]
+    set({ undoStack: undoStack.slice(0, -1), redoStack: [...get().redoStack, currentSlide], currentSlide: prev })
+  },
+  redo: () => {
+    const { redoStack, currentSlide } = get()
+    if (redoStack.length === 0) return
+    const next = redoStack[redoStack.length - 1]
+    set({ redoStack: redoStack.slice(0, -1), undoStack: [...get().undoStack, currentSlide], currentSlide: next })
+  },
   addSong: () => {
     const id = Math.max(0, ...get().songs.map(s => s.id)) + 1
     const newSong: Song = { id, title: 'New Song ' + id, sections: [{ id: 1, type: 'Verse', text: '[C]Verse text' }] }
@@ -147,5 +168,18 @@ export const useStore = create<Store>((set, get) => ({
     set({ schedule: s })
   },
   setTheme: (t) => set({ theme: t }),
-  applyPreset: (preset) => set({ theme: preset }),
+  applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '' } }),
+  saveTemplate: (name: string) => {
+    const theme = get().theme
+    try {
+      if (typeof window !== 'undefined' && (window as any).worship?.db?.run) {
+        ;(window as any).worship.db.run(
+          'INSERT INTO themes (name, background, text_style, backgroundImage, text_color, font_size) VALUES (?, ?, ?, ?, ?, ?)',
+          [name, theme.bg, 'bold', theme.backgroundImage || '', theme.color, theme.fontSize]
+        )
+      }
+    } catch (err) {
+      console.error('Failed to save template:', err)
+    }
+  },
 }))
