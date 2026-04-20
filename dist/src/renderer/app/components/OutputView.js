@@ -32,6 +32,9 @@ const OutputView = ({ outId }) => {
     const bgColor = lookBg ?? theme?.bg ?? (mode === 'black' ? '#000' : '#111');
     const textColor = theme?.color ?? '#fff';
     const fontSize = theme?.fontSize ?? 48;
+    const fontFamily = theme?.fontFamily ?? 'Manrope';
+    const fontWeight = theme?.fontWeight ?? 700;
+    const textAlign = theme?.textAlign ?? 'center';
     // Check if background is a video
     const isVideo = bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm'));
     // Convert file path to file:// URL if needed
@@ -83,9 +86,11 @@ const OutputView = ({ outId }) => {
                     textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
                 }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" })) : ((0, jsx_runtime_1.jsx)("div", { style: {
                         fontSize: fontSize,
-                        fontWeight: 700,
+                        fontFamily,
+                        fontWeight,
                         lineHeight: 1.4,
-                        whiteSpace: 'pre-wrap'
+                        whiteSpace: 'pre-wrap',
+                        textAlign
                     }, children: slide })) }), (0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     top: 8,

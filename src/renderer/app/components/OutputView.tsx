@@ -13,6 +13,9 @@ type State = {
     color?: string
     backgroundImage?: string
     fontSize?: number
+    fontFamily?: string
+    fontWeight?: number
+    textAlign?: 'left' | 'center' | 'right'
   }
 }
 
@@ -44,6 +47,9 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
   const bgColor = lookBg ?? theme?.bg ?? (mode === 'black' ? '#000' : '#111')
   const textColor = theme?.color ?? '#fff'
   const fontSize = theme?.fontSize ?? 48
+  const fontFamily = theme?.fontFamily ?? 'Manrope'
+  const fontWeight = theme?.fontWeight ?? 700
+  const textAlign = theme?.textAlign ?? 'center'
 
   // Check if background is a video
   const isVideo = bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm'))
@@ -146,9 +152,11 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
           <div
             style={{
               fontSize: fontSize,
-              fontWeight: 700,
+              fontFamily,
+              fontWeight,
               lineHeight: 1.4,
-              whiteSpace: 'pre-wrap'
+              whiteSpace: 'pre-wrap',
+              textAlign
             }}
           >
             {slide}

@@ -4,6 +4,8 @@ import { useStore, THEME_PRESETS } from './store'
 import { OutputView } from './components/OutputView'
 import { BiblePicker } from './components/BiblePicker'
 import { MediaLibrary } from './components/MediaLibrary'
+import { Notifications, ToastItem, ToastTone } from './components/Notifications'
+import { Chip, MediaCard, Panel, Pill, SectionHeader } from './components/ui'
 import './styles.css'
 
 declare const window: any
@@ -67,6 +69,7 @@ const App: React.FC = () => {
   const looks = useStore((state) => state.looks)
   const addSong = useStore((state) => state.addSong)
   const addSongSection = useStore((state) => state.addSongSection)
+  const moveSongSection = useStore((state) => state.moveSongSection)
   const updateSongSection = useStore((state) => state.updateSongSection)
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
@@ -79,6 +82,8 @@ const App: React.FC = () => {
   const applyPreset = useStore((state) => state.applyPreset)
   const saveTemplate = useStore((state) => state.saveTemplate)
   const setLook = useStore((state) => state.setLook)
+  const outputConfigs = useStore((state) => state.outputConfigs)
+  const updateOutputConfig = useStore((state) => state.updateOutputConfig)
 
   const [workspace, setWorkspace] = React.useState<Workspace>('console')
   const [clockValue, setClockValue] = React.useState(new Date())
@@ -100,6 +105,7 @@ const App: React.FC = () => {
   const [selectedMediaId, setSelectedMediaId] = React.useState<number | null>(null)
   const [isImportingMedia, setIsImportingMedia] = React.useState(false)
   const [bgManagerTab, setBgManagerTab] = React.useState<'media' | 'gradient' | 'color'>('media')
+  const [editorDragIndex, setEditorDragIndex] = React.useState<number | null>(null)
   const [gradientStart, setGradientStart] = React.useState('#1a1a2e')
   const [gradientEnd, setGradientEnd] = React.useState('#0f4c75')
 
@@ -120,6 +126,9 @@ const App: React.FC = () => {
   const [overscanPercent, setOverscanPercent] = React.useState(5)
   const [outputResolution, setOutputResolution] = React.useState('1920x1080')
   const [outputHardware, setOutputHardware] = React.useState('Built-in Display')
+  const [librarySort, setLibrarySort] = React.useState<'name' | 'sections'>('name')
+  const [libraryViewMode, setLibraryViewMode] = React.useState<'grid' | 'list'>('grid')
+  const [toasts, setToasts] = React.useState<ToastItem[]>([])
   const [paneSizes, setPaneSizes] = React.useState<PaneSizes>(() => {
     try {
       const raw = localStorage.getItem('operator-pane-sizes')
@@ -140,7 +149,7 @@ const App: React.FC = () => {
   const selectedSection = selectedSong?.sections.find((section) => section.id === selectedSectionId) || selectedSong?.sections[0]
   const filteredSongs = songs
     .filter((song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase()))
-    .sort((a, b) => a.title.localeCompare(b.title))
+    .sort((a, b) => librarySort === 'name' ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length)
 
   React.useEffect(() => {
     if (isOutput) return
@@ -225,16 +234,30 @@ const App: React.FC = () => {
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, theme }))
   }
 
+  const notify = (title: string, detail?: string, tone: ToastTone = 'info') => {
+    const id = Date.now() + Math.floor(Math.random() * 1000)
+    setToasts((prev) => [...prev.slice(-3), { id, title, detail, tone }])
+    window.setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 4200)
+  }
+
   const goLive = () => {
     setLiveSlide(currentSlide)
     sendLiveState(currentSlide)
+    notify('Live updated', 'Preview pushed to all outputs', 'success')
   }
 
-  const onBlack = () => window?.worship?.outputs?.actions?.black?.()
-  const onLogo = () => window?.worship?.outputs?.actions?.logo?.()
+  const onBlack = () => {
+    window?.worship?.outputs?.actions?.black?.()
+    notify('Black screen enabled', 'Outputs set to black', 'warn')
+  }
+  const onLogo = () => {
+    window?.worship?.outputs?.actions?.logo?.()
+    notify('Logo mode', 'Outputs switched to logo standby', 'info')
+  }
   const onClear = () => {
     window?.worship?.outputs?.actions?.clear?.()
     sendLiveState(liveSlide)
+    notify('Cleared output mode', 'Live slide restored', 'success')
   }
 
   const pickSection = (sectionId: number, live = false) => {
@@ -277,8 +300,8 @@ const App: React.FC = () => {
         gridTemplateColumns: `${paneSizes.consoleLeft}px minmax(0, 1fr)`,
       }}
     >
-      <section className="panel schedule-panel">
-        <div className="panel-header"><h3>Order of Service</h3><span>{schedule.length} items</span></div>
+      <Panel className="schedule-panel">
+        <SectionHeader title="Order of Service" meta={`${schedule.length} items`} />
         <div className="schedule-list">
           {schedule.map((item, index) => (
             <div
@@ -299,28 +322,28 @@ const App: React.FC = () => {
             </div>
           ))}
         </div>
-        <button className="soft-button full" onClick={() => addScheduleItem()}>Add Item</button>
-      </section>
+        <button className="soft-button full" onClick={() => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success') }}>Add Item</button>
+      </Panel>
 
       <section className="console-stage">
         <div className="monitor-grid">
-          <div className="panel monitor">
+          <Panel className="monitor">
             <div className="monitor-header"><span>Preview</span><button className="text-button" onClick={() => setWorkspace('editor')}>Edit</button></div>
             <div className="slide-frame" style={{ backgroundColor: theme.bg, backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined, backgroundSize: 'cover', color: theme.color, fontSize: theme.fontSize }}>
               <div className="slide-overlay" />
               <div className="slide-content">{currentSlide}</div>
             </div>
-          </div>
-          <div className="panel monitor live">
-            <div className="monitor-header"><span>Live Output</span><span className="live-pill">ON AIR</span></div>
+          </Panel>
+          <Panel className="monitor live">
+            <div className="monitor-header"><span>Live Output</span><Pill className="live-pill">ON AIR</Pill></div>
             <div className="slide-frame" style={{ backgroundColor: theme.bg, backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined, backgroundSize: 'cover', color: theme.color, fontSize: theme.fontSize }}>
               <div className="slide-overlay live" />
               <div className="slide-content">{liveSlide}</div>
             </div>
-          </div>
+          </Panel>
         </div>
-        <div className="panel output-preview-panel" style={{ minHeight: paneSizes.consoleBottom }}>
-          <div className="panel-header"><h3>Output Preview Matrix</h3></div>
+        <Panel className="output-preview-panel" style={{ minHeight: paneSizes.consoleBottom }}>
+          <SectionHeader title="Output Preview Matrix" />
           <div className="output-preview-grid">
             {OUTPUT_IDS.map((id) => {
               const state = outputStates[id] || {}
@@ -328,39 +351,46 @@ const App: React.FC = () => {
               return <div key={id} className="output-tile"><small>Output {id}</small><div className="output-box">{label}</div></div>
             })}
           </div>
-        </div>
+        </Panel>
       </section>
     </div>
   )
 
   const renderLibrary = () => (
     <div className="workspace-grid workspace-library">
-      <aside className="panel library-filters">
-        <div className="panel-header"><h3>Content Categories</h3></div>
+      <Panel className="library-filters">
+        <SectionHeader title="Content Categories" />
         <div className="filter-list">
           <button className="filter-item active">Songs <span>{songs.length}</span></button>
           <button className="filter-item">Bibles <span>2</span></button>
           <button className="filter-item">Media <span>--</span></button>
+          <button className="filter-item">Videos <span>{mediaAssets.filter((item) => item.type === 'video').length}</span></button>
+          <button className="filter-item">Backgrounds <span>{mediaAssets.filter((item) => item.type === 'image').length}</span></button>
         </div>
-        <div className="chip-group">{['Worship', 'Uplifting', 'Sermon', '4K UHD', 'Announcement', 'Instrumental'].map((tag) => <span key={tag} className="chip">{tag}</span>)}</div>
-      </aside>
-      <section className="panel library-grid-panel">
+        <div className="chip-group">{['Worship', 'Uplifting', 'Sermon', '4K UHD', 'Announcement', 'Instrumental'].map((tag) => <Chip key={tag}>{tag}</Chip>)}</div>
+      </Panel>
+      <Panel className="library-grid-panel">
         <div className="library-toolbar">
           <div><h2>Song Library</h2><p>{filteredSongs.length} arrangements</p></div>
           <div className="toolbar-inline">
             <input value={songSearchQuery} onChange={(event) => setSongSearchQuery(event.target.value)} placeholder="Search songs" className="input" />
+            <select className="input" style={{ width: 130 }} value={librarySort} onChange={(event) => setLibrarySort(event.target.value as 'name' | 'sections')}>
+              <option value="name">Sort: Name</option>
+              <option value="sections">Sort: Sections</option>
+            </select>
+            <div className="view-toggle-group">
+              <button className={`view-toggle-btn ${libraryViewMode === 'grid' ? 'active' : ''}`} onClick={() => setLibraryViewMode('grid')}>Grid</button>
+              <button className={`view-toggle-btn ${libraryViewMode === 'list' ? 'active' : ''}`} onClick={() => setLibraryViewMode('list')}>List</button>
+            </div>
             <button className="soft-button" onClick={() => { addSong(); setWorkspace('editor') }}>Add Song</button>
           </div>
         </div>
-        <div className="bento-grid">
+        <div className={libraryViewMode === 'grid' ? 'bento-grid' : 'library-list'}>
           {filteredSongs.map((song) => (
-            <article key={song.id} className={`media-card ${song.id === selectedSongId ? 'live' : ''}`} onClick={() => { setSelectedSongId(song.id); setWorkspace('editor') }}>
-              <div className="media-thumb"><span>{song.title.slice(0, 1).toUpperCase()}</span></div>
-              <div className="media-meta"><strong>{song.title}</strong><small>{song.sections.length} sections</small></div>
-            </article>
+            <MediaCard key={song.id} title={song.title} subtitle={`${song.sections.length} sections`} active={song.id === selectedSongId} onClick={() => { setSelectedSongId(song.id); setWorkspace('editor') }} />
           ))}
         </div>
-      </section>
+      </Panel>
     </div>
   )
 
@@ -383,7 +413,21 @@ const App: React.FC = () => {
         <div className="panel-header"><h3>Slide Sequence</h3><button className="text-button" onClick={() => selectedSong && addSongSection(selectedSong.id)}>Add</button></div>
         <div className="sequence-list">
           {(selectedSong?.sections || []).map((section, index) => (
-            <button key={section.id} className={`sequence-item ${selectedSectionId === section.id ? 'active' : ''}`} onClick={() => pickSection(section.id)} onDoubleClick={() => pickSection(section.id, true)}>
+            <button
+              key={section.id}
+              draggable
+              onDragStart={() => setEditorDragIndex(index)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => {
+                if (!selectedSong || editorDragIndex == null || editorDragIndex === index) return
+                moveSongSection(selectedSong.id, editorDragIndex, index)
+                setEditorDragIndex(null)
+                notify('Section order updated', 'Slide sequence reordered', 'info')
+              }}
+              className={`sequence-item ${selectedSectionId === section.id ? 'active' : ''}`}
+              onClick={() => pickSection(section.id)}
+              onDoubleClick={() => pickSection(section.id, true)}
+            >
               <span>{String(index + 1).padStart(2, '0')}</span>
               <div><strong>{section.type}</strong><small>{stripChordMarkup(section.text).slice(0, 84) || 'Empty section'}</small></div>
             </button>
@@ -403,7 +447,7 @@ const App: React.FC = () => {
         <div className="stage-canvas" style={{ position: 'relative', color: theme.color }}>
           <div style={{ ...bgStyle, position: 'absolute', inset: 0, opacity: (theme.opacity ?? 100) / 100, borderRadius: 'inherit' }} />
           <div className="slide-overlay live" />
-          <h1 style={{ position: 'relative', zIndex: 1 }}>{currentSlide || 'Select a section'}</h1>
+          <h1 style={{ position: 'relative', zIndex: 1, textAlign: theme.textAlign || 'center', fontFamily: theme.fontFamily || 'Manrope', fontWeight: theme.fontWeight || 700 }}>{currentSlide || 'Select a section'}</h1>
           <span className="live-pill stage">Live View</span>
         </div>
         <div className="stage-toolbar">
@@ -473,6 +517,20 @@ const App: React.FC = () => {
           <textarea className="input textarea" value={editorText} onChange={(event) => setEditorText(event.target.value)} />
           <label>Font Size ({theme.fontSize}px)</label>
           <input type="range" min={24} max={96} value={theme.fontSize} onChange={(event) => setTheme({ ...theme, fontSize: Number(event.target.value) })} />
+          <label>Font Family</label>
+          <select className="input" value={theme.fontFamily || 'Manrope'} onChange={(event) => setTheme({ ...theme, fontFamily: event.target.value })}>
+            <option value="Manrope">Manrope</option>
+            <option value="Inter">Inter</option>
+            <option value="Segoe UI">Segoe UI</option>
+          </select>
+          <label>Font Weight ({theme.fontWeight || 700})</label>
+          <input type="range" min={300} max={900} step={100} value={theme.fontWeight || 700} onChange={(event) => setTheme({ ...theme, fontWeight: Number(event.target.value) })} />
+          <label>Text Alignment</label>
+          <select className="input" value={theme.textAlign || 'center'} onChange={(event) => setTheme({ ...theme, textAlign: event.target.value as 'left' | 'center' | 'right' })}>
+            <option value="left">Left</option>
+            <option value="center">Center</option>
+            <option value="right">Right</option>
+          </select>
           <label>Text Color</label>
           <input type="color" value={theme.color} onChange={(event) => setTheme({ ...theme, color: event.target.value })} />
 
@@ -489,16 +547,40 @@ const App: React.FC = () => {
 
   const renderSettings = () => (
     <div className="workspace-grid workspace-settings">
+      {/** Active output detail follows selected output card */}
       <div className="settings-header">
         <div>
           <h1 className="settings-title">Display Settings</h1>
           <p className="settings-subtitle">Configure output canvas and screen geometry</p>
         </div>
         <div className="settings-header-actions">
-          <button className="soft-button" onClick={() => { setAspectRatio('16:9'); setOverscanPercent(5); setOutputResolution('1920x1080') }}>Reset to Default</button>
-          <button className="live-button" onClick={() => window?.worship?.outputs?.actions?.fullscreen?.()}>Apply Changes</button>
+          <button className="soft-button" onClick={() => { setAspectRatio('16:9'); setOverscanPercent(5); setOutputResolution('1920x1080'); notify('Display reset', 'Restored default geometry', 'info') }}>Reset to Default</button>
+          <button className="live-button" onClick={() => { window?.worship?.outputs?.actions?.fullscreen?.(); notify('Display applied', `${outputResolution} ${aspectRatio}`, 'success') }}>Apply Changes</button>
         </div>
       </div>
+
+      <section className="panel output-routing-cards">
+        {outputConfigs.map((output) => (
+          <div key={output.id} className={`output-route-card ${output.active ? 'active' : ''}`} onClick={() => {
+            setActiveOutputId(output.id)
+            outputConfigs.forEach((item) => updateOutputConfig(item.id, { active: item.id === output.id }))
+          }}>
+            <div className="output-route-heading">
+              <strong>Output {output.id}</strong>
+              <small>{output.resolution}</small>
+            </div>
+            <select className="input" value={output.role} onChange={(event) => {
+              const role = event.target.value as 'primary' | 'extended' | 'stage'
+              updateOutputConfig(output.id, { role })
+              notify('Output role changed', `Output ${output.id} is now ${role}`, 'info')
+            }}>
+              <option value="primary">Primary</option>
+              <option value="extended">Extended</option>
+              <option value="stage">Stage</option>
+            </select>
+          </div>
+        ))}
+      </section>
 
       <section className="panel canvas-layout-section">
         <div className="canvas-layout-header">
@@ -512,7 +594,7 @@ const App: React.FC = () => {
         <div className="canvas-visualizer">
           <div className="canvas-display-rect" style={{ aspectRatio: aspectRatio === '4:3' ? '4/3' : aspectRatio === '21:9' ? '21/9' : '16/9' }}>
             <span className="canvas-active-pill"><span className="dot" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--tertiary)' }} /> ACTIVE OUTPUT</span>
-            <span className="canvas-display-label">Primary Stage</span>
+            <span className="canvas-display-label">Output {activeOutputId}</span>
             <span className="canvas-display-res">{outputResolution.replace('x', ' × ')}</span>
             <span className="canvas-handle tl" /><span className="canvas-handle tc" /><span className="canvas-handle tr" />
             <span className="canvas-handle ml" /><span className="canvas-handle mr" />
@@ -526,7 +608,7 @@ const App: React.FC = () => {
         <div className="dimension-field">
           <label>Resolution</label>
           <div className="dimension-input-row">
-            <input value={outputResolution} onChange={(e) => setOutputResolution(e.target.value)} />
+            <input value={outputResolution} onChange={(e) => { setOutputResolution(e.target.value); updateOutputConfig(activeOutputId, { resolution: e.target.value }) }} />
             <button className="edit-icon" title="Edit">✏️</button>
           </div>
         </div>
@@ -596,6 +678,7 @@ const App: React.FC = () => {
   const sendMediaToPreview = (asset: MediaAsset) => {
     setTheme({ ...theme, backgroundImage: asset.path })
     setCurrentSlide(asset.name || 'Media')
+    notify('Media to preview', asset.name || 'Preview media changed', 'info')
   }
 
   const sendMediaToLive = (asset: MediaAsset) => {
@@ -604,6 +687,7 @@ const App: React.FC = () => {
     setCurrentSlide(asset.name || 'Media')
     setLiveSlide(asset.name || 'Media')
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: asset.name || 'Media', theme: updatedTheme }))
+    notify('Media sent live', asset.name || 'Live outputs updated', 'success')
   }
 
   const renderRibbon = () => (
@@ -714,10 +798,12 @@ const App: React.FC = () => {
               onMediaSelect={() => undefined}
               onSendToPreview={sendMediaToPreview}
               onSendToLive={sendMediaToLive}
+              onNotify={notify}
             />
           )}
           {workspace === 'settings' && renderSettings()}
         </main>
+        <Notifications items={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))} />
       </div>
     </div>
   )

@@ -25,6 +25,8 @@ const NT_BOOKS = [
   'Jude', 'Revelation'
 ]
 
+const ALL_BOOKS = [...OT_BOOKS, ...NT_BOOKS]
+
 export const BiblePicker: React.FC = () => {
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
@@ -45,6 +47,8 @@ export const BiblePicker: React.FC = () => {
   const [selectedVerse, setSelectedVerse] = useState<any | null>(null)
   const [otExpanded, setOtExpanded] = useState(true)
   const [ntExpanded, setNtExpanded] = useState(false)
+  const [toast, setToast] = useState<{ title: string; detail?: string } | null>(null)
+  const [pendingVerseNumber, setPendingVerseNumber] = useState<number | null>(null)
 
   // Load translations
   useEffect(() => {
@@ -85,6 +89,41 @@ export const BiblePicker: React.FC = () => {
       loadSecondVerses()
     }
   }, [selectedChapter, secondTranslation, dualMode])
+
+  useEffect(() => {
+    if (pendingVerseNumber == null || !verses.length) return
+    const verse = verses.find((item) => item.verse === pendingVerseNumber)
+    if (verse) {
+      handleVerseSelect(verse)
+      setPendingVerseNumber(null)
+    }
+  }, [pendingVerseNumber, verses])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!verses.length) return
+      if (event.key === 'ArrowDown') {
+        event.preventDefault()
+        if (!selectedVerse) return handleVerseSelect(verses[0])
+        const currentIndex = verses.findIndex((item) => item.verse === selectedVerse.verse)
+        const nextIndex = Math.min(verses.length - 1, currentIndex + 1)
+        handleVerseSelect(verses[nextIndex])
+      }
+      if (event.key === 'ArrowUp') {
+        event.preventDefault()
+        if (!selectedVerse) return handleVerseSelect(verses[0])
+        const currentIndex = verses.findIndex((item) => item.verse === selectedVerse.verse)
+        const prevIndex = Math.max(0, currentIndex - 1)
+        handleVerseSelect(verses[prevIndex])
+      }
+      if (event.key === 'Enter' && selectedVerse) {
+        event.preventDefault()
+        sendToProjector()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [verses, selectedVerse])
 
   const loadChapters = async (book: string) => {
     try {
@@ -127,6 +166,18 @@ export const BiblePicker: React.FC = () => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return
+    const ref = searchQuery.trim().match(/^(.+?)\s+(\d+)(?::(\d+))?$/)
+    if (ref) {
+      const [, rawBook, rawChapter, rawVerse] = ref
+      const matchedBook = ALL_BOOKS.find((book) => book.toLowerCase() === rawBook.toLowerCase())
+      if (matchedBook) {
+        setSelectedBook(matchedBook)
+        setSelectedChapter(Number(rawChapter))
+        setSearchResults([])
+        if (rawVerse) setPendingVerseNumber(Number(rawVerse))
+        return
+      }
+    }
     setIsSearching(true)
     try {
       const translation = translations.find(t => t.code === selectedTranslation)
@@ -169,6 +220,7 @@ export const BiblePicker: React.FC = () => {
     // Also send to output windows
     const OUTPUT_IDS = [1, 2]
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }))
+    setToast({ title: 'Verse sent live', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
   }
 
   const addToSchedule = async () => {
@@ -179,6 +231,7 @@ export const BiblePicker: React.FC = () => {
         'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
         [1, 'scripture', content]
       )
+      setToast({ title: 'Added to schedule', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
     } catch (error) {
       console.error('Failed to add to schedule:', error)
     }
@@ -232,7 +285,7 @@ export const BiblePicker: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            placeholder={`${selectedBook} 1`}
+            placeholder={`${selectedBook} 1:1`}
           />
           <select className="translation-selector" value={selectedTranslation} onChange={(e) => setSelectedTranslation(e.target.value)}>
             {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>)}
@@ -282,7 +335,7 @@ export const BiblePicker: React.FC = () => {
               </div>
             ))
           ) : verses.length > 0 ? (
-            verses.map((verse) => (
+            verses.map((verse, index) => (
               <div key={verse.verse} className={`verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`} onClick={() => handleVerseSelect(verse)}>
                 <span className="verse-number">{verse.verse}</span>
                 <div style={{ flex: 1 }}>
@@ -291,6 +344,17 @@ export const BiblePicker: React.FC = () => {
                     <div className="verse-text-secondary">
                       {secondVerses.find(v => v.verse === verse.verse)?.text}
                     </div>
+                  )}
+                </div>
+                <div className="verse-row-hotkeys">
+                  {selectedVerse?.verse === verse.verse ? (
+                    <button className="soft-button" onClick={(event) => { event.stopPropagation(); sendToProjector() }}>Live</button>
+                  ) : (
+                    <button className="soft-button" onClick={(event) => {
+                      event.stopPropagation()
+                      handleVerseSelect(verse)
+                      if (index + 1 < verses.length) handleVerseSelect(verses[index + 1])
+                    }}>Next</button>
                   )}
                 </div>
               </div>
@@ -365,6 +429,14 @@ export const BiblePicker: React.FC = () => {
           <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
             <div style={{ fontSize: '2rem', marginBottom: 8 }}>📖</div>
             Select a verse to see details and send to projector
+          </div>
+        )}
+        {toast && (
+          <div style={{ padding: '8px 14px 14px' }}>
+            <div className="ui-inline-notice">
+              <strong>{toast.title}</strong>
+              {toast.detail ? <small>{toast.detail}</small> : null}
+            </div>
           </div>
         )}
       </aside>

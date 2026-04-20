@@ -3,7 +3,21 @@ import { create } from 'zustand'
 export type Section = { id: number; type: string; text: string }
 export type Song = { id: number; title: string; artist?: string; sections: Section[] }
 export type ScheduleItem = { id: number; type: string; content: string }
-export type Theme = { bg: string; color: string; backgroundImage?: string; fontSize: number; name?: string; opacity?: number; blur?: number; gradient?: string }
+export type Theme = {
+  bg: string
+  color: string
+  backgroundImage?: string
+  fontSize: number
+  name?: string
+  opacity?: number
+  blur?: number
+  gradient?: string
+  fontFamily?: string
+  fontWeight?: number
+  textAlign?: 'left' | 'center' | 'right'
+}
+export type OutputRole = 'primary' | 'extended' | 'stage'
+export type OutputConfig = { id: number; role: OutputRole; resolution: string; active: boolean }
 
 // Theme presets
 export const THEME_PRESETS: Theme[] = [
@@ -33,6 +47,7 @@ type Store = {
   addSong: () => void
   updateSongSection: (songId: number, sectionId: number, patch: Partial<Section>) => void
   addSongSection: (songId: number) => void
+  moveSongSection: (songId: number, from: number, to: number) => void
   addScheduleItem: () => Promise<void>
   moveSchedule: (from: number, to: number) => void
   setTheme: (t: Theme) => void
@@ -40,12 +55,14 @@ type Store = {
   saveTemplate: (name: string) => void
   looks: Record<number, { background?: string; template?: string; layers?: string[] }>
   setLook: (outId: number, look: { background?: string; template?: string; layers?: string[] }) => void
+  outputConfigs: OutputConfig[]
+  updateOutputConfig: (id: number, patch: Partial<OutputConfig>) => void
 }
 
 export const useStore = create<Store>((set, get) => ({
   songs: [],
   schedule: [],
-  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '' },
+  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center' },
   currentSlide: 'Welcome',
   liveSlide: 'Welcome',
   undoStack: [],
@@ -144,8 +161,47 @@ export const useStore = create<Store>((set, get) => ({
       console.error('Failed to persist new section:', err)
     }
   },
+  moveSongSection: (songId, from, to) => {
+    set((state) => ({
+      songs: state.songs.map((song) => {
+        if (song.id !== songId) return song
+        const sections = song.sections.slice()
+        const [item] = sections.splice(from, 1)
+        sections.splice(to, 0, item)
+        return { ...song, sections }
+      })
+    }))
+  },
   looks: {},
   setLook: (outId: number, look: { background?: string; template?: string; layers?: string[] }) => set((state) => ({ looks: { ...state.looks, [outId]: look } })),
+  outputConfigs: (() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const raw = window.localStorage.getItem('worship-output-configs')
+        if (raw) return JSON.parse(raw)
+      }
+    } catch {
+      // ignore parse and fallback
+    }
+    return [
+      { id: 1, role: 'primary', resolution: '1920x1080', active: true },
+      { id: 2, role: 'extended', resolution: '1920x1080', active: true },
+      { id: 3, role: 'stage', resolution: '1280x720', active: false },
+    ]
+  })(),
+  updateOutputConfig: (id, patch) => set((state) => ({
+    outputConfigs: (() => {
+      const next = state.outputConfigs.map((item) => (item.id === id ? { ...item, ...patch } : item))
+      try {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem('worship-output-configs', JSON.stringify(next))
+        }
+      } catch {
+        // ignore localStorage write issues
+      }
+      return next
+    })()
+  })),
   addScheduleItem: async () => {
     set((state) => ({ schedule: [...state.schedule, { id: state.schedule.length + 1, type: 'Song', content: 'New Item' }] }))
     // Persist to DB skeleton: create a schedule and log an item if DB is available

@@ -16,7 +16,7 @@ exports.THEME_PRESETS = [
 exports.useStore = (0, zustand_1.create)((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '' },
+    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center' },
     currentSlide: 'Welcome',
     liveSlide: 'Welcome',
     undoStack: [],
@@ -108,8 +108,51 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
             console.error('Failed to persist new section:', err);
         }
     },
+    moveSongSection: (songId, from, to) => {
+        set((state) => ({
+            songs: state.songs.map((song) => {
+                if (song.id !== songId)
+                    return song;
+                const sections = song.sections.slice();
+                const [item] = sections.splice(from, 1);
+                sections.splice(to, 0, item);
+                return { ...song, sections };
+            })
+        }));
+    },
     looks: {},
     setLook: (outId, look) => set((state) => ({ looks: { ...state.looks, [outId]: look } })),
+    outputConfigs: (() => {
+        try {
+            if (typeof window !== 'undefined') {
+                const raw = window.localStorage.getItem('worship-output-configs');
+                if (raw)
+                    return JSON.parse(raw);
+            }
+        }
+        catch {
+            // ignore parse and fallback
+        }
+        return [
+            { id: 1, role: 'primary', resolution: '1920x1080', active: true },
+            { id: 2, role: 'extended', resolution: '1920x1080', active: true },
+            { id: 3, role: 'stage', resolution: '1280x720', active: false },
+        ];
+    })(),
+    updateOutputConfig: (id, patch) => set((state) => ({
+        outputConfigs: (() => {
+            const next = state.outputConfigs.map((item) => (item.id === id ? { ...item, ...patch } : item));
+            try {
+                if (typeof window !== 'undefined') {
+                    window.localStorage.setItem('worship-output-configs', JSON.stringify(next));
+                }
+            }
+            catch {
+                // ignore localStorage write issues
+            }
+            return next;
+        })()
+    })),
     addScheduleItem: async () => {
         set((state) => ({ schedule: [...state.schedule, { id: state.schedule.length + 1, type: 'Song', content: 'New Item' }] }));
         // Persist to DB skeleton: create a schedule and log an item if DB is available

@@ -24,11 +24,12 @@ interface MediaLibraryProps {
   onMediaSelect: (asset: MediaAsset) => void
   onSendToPreview?: (asset: MediaAsset) => void
   onSendToLive?: (asset: MediaAsset) => void
+  onNotify?: (title: string, detail?: string, tone?: 'info' | 'success' | 'warn') => void
 }
 
 type MediaFilter = 'all' | 'image' | 'video' | 'background' | 'loop'
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
   const setTheme = useStore((state) => state.setTheme)
@@ -113,9 +114,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
           )
         }
         await loadMediaAssets()
+        onNotify?.('Media imported', `${filePaths.length} item(s) added`, 'success')
       }
     } catch (error) {
       console.error('Failed to import media:', error)
+      onNotify?.('Import failed', 'Could not import selected files', 'warn')
     } finally {
       setIsImporting(false)
     }
@@ -130,6 +133,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
         [name, currentFolderId]
       )
       await loadFolders()
+      onNotify?.('Folder created', name, 'success')
     } catch (error) {
       console.error('Failed to create folder:', error)
     }
@@ -142,6 +146,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
       if (selectedAsset?.id === asset.id) {
         setSelectedAsset(null)
       }
+      onNotify?.('Asset deleted', asset.name || 'Media asset removed', 'warn')
     } catch (error) {
       console.error('Failed to delete media:', error)
     }
@@ -155,6 +160,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
   const handleUseAsBackground = () => {
     if (!selectedAsset) return
     setTheme({ ...theme, backgroundImage: selectedAsset.path })
+    onNotify?.('Background updated', selectedAsset.name || 'Media background applied', 'success')
   }
 
   const handleSendToLive = () => {
@@ -164,6 +170,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
     setLiveSlide(selectedAsset.name || 'Media')
     const OUTPUT_IDS = [1, 2]
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: selectedAsset.name || 'Media', theme: { ...theme, backgroundImage: selectedAsset.path } }))
+    onNotify?.('Sent live', selectedAsset.name || 'Media pushed to outputs', 'success')
   }
 
   const handleSendToPreview = () => {
@@ -171,6 +178,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
     onSendToPreview?.(selectedAsset)
     setTheme({ ...theme, backgroundImage: selectedAsset.path })
     setCurrentSlide(selectedAsset.name || 'Media')
+    onNotify?.('Sent to preview', selectedAsset.name || 'Preview updated', 'info')
   }
 
   const handleAddToSchedule = async () => {
@@ -180,6 +188,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
         'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
         [1, selectedAsset.type === 'image' ? 'image' : 'video', selectedAsset.path]
       )
+      onNotify?.('Added to schedule', selectedAsset.name || 'Media queued', 'success')
     } catch (error) {
       console.error('Failed to add to schedule:', error)
     }
@@ -404,11 +413,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
               <button className="send-projector-btn" onClick={handleSendToLive}>
                 ▶ Send to Live
               </button>
+              <button className="ghost-button" onClick={handleUseAsBackground}>
+                🖼 Set as Background
+              </button>
               <button className="ghost-button" onClick={handleAddToSchedule}>
                 📋 Add to Schedule
               </button>
               <button className="ghost-button" onClick={() => handleDelete(selectedAsset)}>
-                ✏️ Edit Metadata
+                🗑 Delete Asset
               </button>
             </div>
           </>
