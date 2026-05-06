@@ -71,6 +71,7 @@ const App: React.FC = () => {
   const addSongSection = useStore((state) => state.addSongSection)
   const moveSongSection = useStore((state) => state.moveSongSection)
   const updateSongSection = useStore((state) => state.updateSongSection)
+  const updateSongTitle = useStore((state) => state.updateSongTitle)
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
   const pushSlideUndo = useStore((state) => state.pushSlideUndo)
@@ -95,6 +96,7 @@ const App: React.FC = () => {
   const [songSearchQuery, setSongSearchQuery] = React.useState('')
   const [editorText, setEditorText] = React.useState('')
   const [editorType, setEditorType] = React.useState('Verse')
+  const [songTitleDraft, setSongTitleDraft] = React.useState('')
   const [ndiEnabled, setNdiEnabled] = React.useState(false)
   const [outputStates, setOutputStates] = React.useState<Record<number, { slideTitle?: string; mode?: string }>>({})
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image')
@@ -175,6 +177,10 @@ const App: React.FC = () => {
   }, [selectedSection?.id, selectedSection?.text, selectedSection?.type])
 
   React.useEffect(() => {
+    setSongTitleDraft(selectedSong?.title || '')
+  }, [selectedSong?.id, selectedSong?.title])
+
+  React.useEffect(() => {
     if (isOutput) return
     if (!window?.worship?.outputs?.onOutputState) return
     window.worship.outputs.onOutputState((payload: any) => {
@@ -192,7 +198,7 @@ const App: React.FC = () => {
     if (isOutput) return
     const loadData = async () => {
       try {
-        const songsData = await window.worship.db.run('SELECT * FROM songs ORDER BY title')
+        const songsData = await window.worship.db.run('SELECT * FROM songs ORDER BY id')
         if (songsData?.length) {
           const songsWithSections = await Promise.all(
             songsData.map(async (song: any) => {
@@ -216,15 +222,28 @@ const App: React.FC = () => {
 
   React.useEffect(() => {
     if (isOutput) return
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      const node = target as HTMLElement | null
+      if (!node) return false
+      const tag = node.tagName?.toLowerCase()
+      return tag === 'input' || tag === 'textarea' || tag === 'select' || Boolean(node.closest('[contenteditable="true"]'))
+    }
     const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.key === 'Enter' || event.key === ' ') && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+      const isEditingSong = Boolean(
+        selectedSection &&
+        (
+          (editorText !== (selectedSection.text || '')) ||
+          (editorType !== (selectedSection.type || 'Verse'))
+        )
+      )
+      if (event.key === 'Enter' && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey && !isEditableTarget(event.target) && !isEditingSong) {
         event.preventDefault()
         goLive()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOutput, selectedSectionId, currentSlide])
+  }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType])
 
   React.useEffect(() => {
     if (isOutput) return
@@ -234,7 +253,7 @@ const App: React.FC = () => {
   if (isOutput) return <OutputView outId={outId} />
 
   const sendLiveState = (slideTitle: string) => {
-    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, theme }))
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: '', mediaType: undefined, theme }))
   }
 
   const notify = (title: string, detail?: string, tone: ToastTone = 'info') => {
@@ -294,6 +313,52 @@ const App: React.FC = () => {
   const updateLook = (targetOutId: number, patch: { background?: string; template?: string; layers?: string[] }) => {
     const currentLook = looks[targetOutId] || { background: '#111111', template: 'default', layers: ['slide_content'] }
     setLook(targetOutId, { ...currentLook, ...patch })
+  }
+
+  const commitSongTitle = (songId?: number) => {
+    if (!songId) return
+    updateSongTitle(songId, songTitleDraft)
+  }
+
+  const importSongs = async () => {
+    try {
+      const filePaths: string[] = await window.worship.dialog.openFiles({
+        title: 'Import Songs',
+        filters: [{ name: 'Song Files', extensions: ['txt', 'json'] }],
+        multiSelections: true
+      })
+      if (!filePaths.length) return
+      const importedSongs: any[] = []
+      for (const filePath of filePaths) {
+        const data = await window.worship.fs.readTextFile(filePath)
+        let title = filePath.split('\\').pop()?.split('/').pop()?.replace(/\.[^.]+$/, '') || 'Imported Song'
+        let sectionText = data
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed && typeof parsed === 'object') {
+            title = String(parsed.title || title)
+            sectionText = String(parsed.text || parsed.lyrics || sectionText)
+          }
+        } catch {
+          // plain text input is valid
+        }
+        const songInsert: any = await window.worship.db.run('INSERT INTO songs (title) VALUES (?)', [title])
+        const songId = Number(songInsert?.lastInsertRowid)
+        await window.worship.db.run(
+          'INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)',
+          [songId, 'Verse', sectionText, 1]
+        )
+        importedSongs.push({ id: songId, title, sections: [{ id: 1, type: 'Verse', text: sectionText }] })
+      }
+      if (importedSongs.length) {
+        useStore.setState((state: any) => ({ songs: [...state.songs, ...importedSongs] }))
+        setSelectedSongId(importedSongs[0].id)
+        notify('Songs imported', `${importedSongs.length} song(s) added`, 'success')
+      }
+    } catch (error) {
+      console.error('Failed to import songs:', error)
+      notify('Import failed', 'Could not import selected songs', 'warn')
+    }
   }
 
   const connectSync = () => {
@@ -379,7 +444,16 @@ const App: React.FC = () => {
             {OUTPUT_IDS.map((id) => {
               const state = outputStates[id] || {}
               const label = state.mode === 'black' ? 'BLACK' : state.mode === 'logo' ? 'Church Logo' : (state.slideTitle || 'Idle')
-              return <div key={id} className="output-tile"><small>Output {id}</small><div className="output-box">{label}</div></div>
+              return (
+                <div key={id} className="output-tile">
+                  <small>Output {id}</small>
+                  <div className="output-box">{label}</div>
+                  <div className="toolbar-inline" style={{ marginTop: 6 }}>
+                    <button className="soft-button" onClick={() => window?.worship?.outputs?.windowControl?.(id, 'show')}>Show</button>
+                    <button className="soft-button" onClick={() => window?.worship?.outputs?.windowControl?.(id, 'toggle-fullscreen')}>Full View</button>
+                  </div>
+                </div>
+              )
             })}
           </div>
         </Panel>
@@ -405,6 +479,7 @@ const App: React.FC = () => {
           <div><h2>Song Library</h2><p>{filteredSongs.length} arrangements</p></div>
           <div className="toolbar-inline">
             <input value={songSearchQuery} onChange={(event) => setSongSearchQuery(event.target.value)} placeholder="Search songs" className="input" />
+            <button className="soft-button" onClick={importSongs}>Import Songs</button>
             <select className="input" style={{ width: 130 }} value={librarySort} onChange={(event) => setLibrarySort(event.target.value as 'name' | 'sections')}>
               <option value="name">Sort: Name</option>
               <option value="sections">Sort: Sections</option>
@@ -418,7 +493,22 @@ const App: React.FC = () => {
         </div>
         <div className={libraryViewMode === 'grid' ? 'bento-grid' : 'library-list'}>
           {filteredSongs.map((song) => (
-            <MediaCard key={song.id} title={song.title} subtitle={`${song.sections.length} sections`} active={song.id === selectedSongId} onClick={() => { setSelectedSongId(song.id); setWorkspace('editor') }} />
+            <div key={song.id} style={{ display: 'grid', gap: 6 }}>
+              <MediaCard title={song.title || 'Untitled Song'} subtitle={`${song.sections.length} sections`} active={song.id === selectedSongId} onClick={() => { setSelectedSongId(song.id); setWorkspace('editor') }} />
+              <button
+                className="soft-button"
+                style={{ width: '100%' }}
+                onClick={() => {
+                  const next = prompt('Rename song', song.title || '') ?? song.title
+                  if (next == null) return
+                  updateSongTitle(song.id, next)
+                  if (song.id === selectedSongId) setSongTitleDraft(next)
+                  notify('Song renamed', next.trim() || 'Untitled Song', 'success')
+                }}
+              >
+                Rename
+              </button>
+            </div>
           ))}
         </div>
       </Panel>
@@ -467,7 +557,20 @@ const App: React.FC = () => {
       </aside>
       <section className="panel stage-panel">
         <div className="panel-header">
-          <h3>{selectedSong?.title || 'Song Editor'}</h3>
+          <input
+            className="input"
+            style={{ maxWidth: 360 }}
+            value={songTitleDraft}
+            onChange={(event) => setSongTitleDraft(event.target.value)}
+            onBlur={() => commitSongTitle(selectedSong?.id)}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                commitSongTitle(selectedSong?.id)
+              }
+            }}
+            placeholder="Song title"
+          />
           <div className="toolbar-inline">
             <button className="soft-button" onClick={() => setTransposeSteps((value) => value - 1)}>Flat</button>
             <button className="soft-button" onClick={() => setTransposeSteps(0)}>Reset</button>
@@ -478,7 +581,9 @@ const App: React.FC = () => {
         <div className="stage-canvas" style={{ position: 'relative', color: theme.color }}>
           <div style={{ ...bgStyle, position: 'absolute', inset: 0, opacity: (theme.opacity ?? 100) / 100, borderRadius: 'inherit' }} />
           <div className="slide-overlay live" />
-          <h1 style={{ position: 'relative', zIndex: 1, textAlign: theme.textAlign || 'center', fontFamily: theme.fontFamily || 'Manrope', fontWeight: theme.fontWeight || 700 }}>{currentSlide || 'Select a section'}</h1>
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1, display: 'flex', alignItems: (theme.verticalAlign || 'center') === 'top' ? 'flex-start' : (theme.verticalAlign || 'center') === 'bottom' ? 'flex-end' : 'center', justifyContent: 'center', padding: '40px 60px' }}>
+            <h1 style={{ textAlign: theme.textAlign || 'center', fontFamily: theme.fontFamily || 'Manrope', fontWeight: theme.fontWeight || 700, width: '90%' }}>{currentSlide || 'Select a section'}</h1>
+          </div>
           <span className="live-pill stage">Live View</span>
         </div>
         <div className="stage-toolbar">
@@ -562,6 +667,12 @@ const App: React.FC = () => {
             <option value="center">Center</option>
             <option value="right">Right</option>
           </select>
+          <label>Vertical Position</label>
+          <select className="input" value={theme.verticalAlign || 'center'} onChange={(event) => setTheme({ ...theme, verticalAlign: event.target.value as 'top' | 'center' | 'bottom' })}>
+            <option value="top">Top Half</option>
+            <option value="center">Center</option>
+            <option value="bottom">Bottom Half</option>
+          </select>
           <label>Text Color</label>
           <input type="color" value={theme.color} onChange={(event) => setTheme({ ...theme, color: event.target.value })} />
 
@@ -609,6 +720,14 @@ const App: React.FC = () => {
               <option value="extended">Extended</option>
               <option value="stage">Stage</option>
             </select>
+            <div className="toolbar-inline" style={{ marginTop: 8 }}>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'minimize') }}>Min</button>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'maximize') }}>Max</button>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'restore') }}>Restore</button>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'toggle-fullscreen') }}>Full View</button>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'restore') }}>Exit Full</button>
+              <button className="soft-button" onClick={(event) => { event.stopPropagation(); window?.worship?.outputs?.windowControl?.(output.id, 'close') }}>Close</button>
+            </div>
           </div>
         ))}
       </section>
@@ -774,16 +893,16 @@ const App: React.FC = () => {
 
   const sendMediaToPreview = (asset: MediaAsset) => {
     setTheme({ ...theme, backgroundImage: asset.path })
-    setCurrentSlide(asset.name || 'Media')
+    setCurrentSlide('')
     notify('Media to preview', asset.name || 'Preview media changed', 'info')
   }
 
-  const sendMediaToLive = (asset: MediaAsset) => {
+  const sendMediaToLive = (asset: MediaAsset, playback?: { loop: boolean; muted: boolean; playbackRate: number }) => {
     const updatedTheme = { ...theme, backgroundImage: asset.path }
     setTheme(updatedTheme)
-    setCurrentSlide(asset.name || 'Media')
-    setLiveSlide(asset.name || 'Media')
-    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: asset.name || 'Media', theme: updatedTheme }))
+    setCurrentSlide('')
+    setLiveSlide('')
+    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: '', mediaPath: asset.path, mediaType: asset.type, mediaPlayback: playback, theme: updatedTheme }))
     notify('Media sent live', asset.name || 'Live outputs updated', 'success')
   }
 

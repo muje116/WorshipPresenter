@@ -9,6 +9,7 @@ type OutputAPI = {
     clear: () => void
     fullscreen: () => void
   }
+  windowControl: (outId: number, action: string, bounds?: { width?: number; height?: number; x?: number; y?: number }) => void
 }
 
 type API = {
@@ -36,6 +37,9 @@ type API = {
       multiSelections?: boolean
     }) => Promise<string[]>
   }
+  fs: {
+    readTextFile: (filePath: string) => Promise<string>
+  }
 }
 
 const api: API = {
@@ -50,7 +54,9 @@ const api: API = {
       logo: () => ipcRenderer.send('output-action', { action: 'LOGO' }),
       clear: () => ipcRenderer.send('output-action', { action: 'CLEAR' }),
       fullscreen: () => ipcRenderer.send('output-action', { action: 'FULLSCREEN' })
-    }
+    },
+    windowControl: (outId: number, action: string, bounds?: { width?: number; height?: number; x?: number; y?: number }) =>
+      ipcRenderer.send('output-window-control', { outId, action, bounds })
   },
   bibles: {
     listTranslations: () => ipcRenderer.invoke('bibles.listTranslations'),
@@ -71,6 +77,9 @@ const api: API = {
       filters?: Array<{ name: string; extensions: string[] }>
       multiSelections?: boolean
     }) => ipcRenderer.invoke('dialog.openFiles', options || {})
+  },
+  fs: {
+    readTextFile: (filePath: string) => ipcRenderer.invoke('fs.readTextFile', filePath)
   }
 }
 

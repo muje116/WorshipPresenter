@@ -23,7 +23,7 @@ interface MediaLibraryProps {
   mediaType: 'image' | 'video'
   onMediaSelect: (asset: MediaAsset) => void
   onSendToPreview?: (asset: MediaAsset) => void
-  onSendToLive?: (asset: MediaAsset) => void
+  onSendToLive?: (asset: MediaAsset, playback?: { loop: boolean; muted: boolean; playbackRate: number }) => void
   onNotify?: (title: string, detail?: string, tone?: 'info' | 'success' | 'warn') => void
 }
 
@@ -44,6 +44,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortMode, setSortMode] = useState<'recent' | 'name'>('recent')
   const [searchQuery, setSearchQuery] = useState('')
+  const [videoLoop, setVideoLoop] = useState(true)
+  const [videoMuted, setVideoMuted] = useState(true)
+  const [videoPlaybackRate, setVideoPlaybackRate] = useState(1)
 
   useEffect(() => {
     loadMediaAssets()
@@ -165,11 +168,9 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const handleSendToLive = () => {
     if (!selectedAsset) return
-    onSendToLive?.(selectedAsset)
+    onSendToLive?.(selectedAsset, { loop: videoLoop, muted: videoMuted, playbackRate: videoPlaybackRate })
     setTheme({ ...theme, backgroundImage: selectedAsset.path })
-    setLiveSlide(selectedAsset.name || 'Media')
-    const OUTPUT_IDS = [1, 2]
-    OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: selectedAsset.name || 'Media', theme: { ...theme, backgroundImage: selectedAsset.path } }))
+    setLiveSlide('')
     onNotify?.('Sent live', selectedAsset.name || 'Media pushed to outputs', 'success')
   }
 
@@ -177,7 +178,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
     if (!selectedAsset) return
     onSendToPreview?.(selectedAsset)
     setTheme({ ...theme, backgroundImage: selectedAsset.path })
-    setCurrentSlide(selectedAsset.name || 'Media')
+    setCurrentSlide('')
     onNotify?.('Sent to preview', selectedAsset.name || 'Preview updated', 'info')
   }
 
@@ -372,9 +373,39 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
                   onError={(e) => { e.currentTarget.style.display = 'none' }}
                 />
               ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '2.5rem', opacity: 0.5 }}>🎬</div>
+                <video
+                  src={`file://${selectedAsset.path}`}
+                  autoPlay
+                  loop={videoLoop}
+                  muted={videoMuted}
+                  playsInline
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
               )}
             </div>
+
+            {selectedAsset.type === 'video' && (
+              <div className="asset-meta-grid" style={{ marginBottom: 12 }}>
+                <div className="meta-card">
+                  <div className="meta-card-label">Loop</div>
+                  <label><input type="checkbox" checked={videoLoop} onChange={(e) => setVideoLoop(e.target.checked)} /> On</label>
+                </div>
+                <div className="meta-card">
+                  <div className="meta-card-label">Muted</div>
+                  <label><input type="checkbox" checked={videoMuted} onChange={(e) => setVideoMuted(e.target.checked)} /> On</label>
+                </div>
+                <div className="meta-card">
+                  <div className="meta-card-label">Speed</div>
+                  <select value={videoPlaybackRate} onChange={(e) => setVideoPlaybackRate(Number(e.target.value))}>
+                    <option value={0.5}>0.5x</option>
+                    <option value={0.75}>0.75x</option>
+                    <option value={1}>1.0x</option>
+                    <option value={1.25}>1.25x</option>
+                    <option value={1.5}>1.5x</option>
+                  </select>
+                </div>
+              </div>
+            )}
 
             <div className="asset-identity">
               <div className="asset-identity-label">Asset Identity</div>

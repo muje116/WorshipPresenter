@@ -10,6 +10,7 @@ const db_1 = require("./db");
 const sync_1 = require("./sync");
 const osisLoader_1 = require("./osisLoader");
 const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
 let outputWindows = [];
 let ipcRegistered = false;
 const ndiState = {
@@ -50,6 +51,37 @@ function setupIPC() {
                     w.webContents.send('output-action', { action });
                 }
             }
+        }
+    });
+    electron_1.ipcMain.on('output-window-control', (_ev, payload) => {
+        const target = outputWindows[payload.outId - 1];
+        if (!target || target.isDestroyed())
+            return;
+        const action = payload.action;
+        if (action === 'minimize')
+            target.minimize();
+        else if (action === 'maximize')
+            target.maximize();
+        else if (action === 'restore')
+            target.restore();
+        else if (action === 'close')
+            target.hide();
+        else if (action === 'show')
+            target.show();
+        else if (action === 'toggle-fullscreen')
+            target.setFullScreen(!target.isFullScreen());
+        else if (action === 'resize' && payload.bounds?.width && payload.bounds?.height) {
+            const [x, y] = target.getPosition();
+            target.setBounds({
+                x: payload.bounds.x ?? x,
+                y: payload.bounds.y ?? y,
+                width: Math.max(320, payload.bounds.width),
+                height: Math.max(180, payload.bounds.height),
+            });
+        }
+        else if (action === 'move') {
+            const [x, y] = target.getPosition();
+            target.setPosition(payload.bounds?.x ?? x, payload.bounds?.y ?? y);
         }
     });
     // State updates to outputs (operator can push a new slide state)
@@ -93,6 +125,9 @@ function setupIPC() {
         if (result.canceled)
             return [];
         return result.filePaths;
+    });
+    electron_1.ipcMain.handle('fs.readTextFile', async (_ev, filePath) => {
+        return fs_1.default.promises.readFile(filePath, 'utf8');
     });
     registerBibleHandlers();
 }

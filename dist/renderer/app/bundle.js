@@ -12803,6 +12803,7 @@
     { name: "Blue Ocean", bg: "#0f4c75", color: "#ffffff", fontSize: 44 },
     { name: "Sunset Warm", bg: "#2d132c", color: "#ffd700", fontSize: 42 },
     { name: "Forest Green", bg: "#1b4332", color: "#d8f3dc", fontSize: 44 },
+    { name: "Green Screen", bg: "#00ff00", color: "#101010", fontSize: 44 },
     { name: "Royal Purple", bg: "#3c096c", color: "#e0aaff", fontSize: 42 },
     { name: "Minimal Black", bg: "#000000", color: "#ffffff", fontSize: 48 },
     { name: "Soft Gray", bg: "#2d2d2d", color: "#f0f0f0", fontSize: 42 }
@@ -12810,7 +12811,7 @@
   var useStore2 = create((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center" },
+    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center", verticalAlign: "center" },
     currentSlide: "Welcome",
     liveSlide: "Welcome",
     undoStack: [],
@@ -12877,6 +12878,20 @@
         console.error("Failed to persist section update:", err);
       }
     },
+    updateSongTitle: (songId, title) => {
+      const nextTitle = title.trim();
+      set((state) => ({
+        songs: state.songs.map((song) => song.id === songId ? { ...song, title: nextTitle || "" } : song)
+      }));
+      try {
+        if (typeof window !== "undefined" && window.worship?.db?.run) {
+          ;
+          window.worship.db.run("UPDATE songs SET title = ? WHERE id = ?", [nextTitle || "Untitled Song", songId]);
+        }
+      } catch (err) {
+        console.error("Failed to persist song title update:", err);
+      }
+    },
     addSongSection: (songId) => {
       set((state) => ({
         songs: state.songs.map((song) => {
@@ -12913,6 +12928,22 @@
           return { ...song, sections };
         })
       }));
+      try {
+        if (typeof window !== "undefined" && window.worship?.db?.run) {
+          const song = get().songs.find((s) => s.id === songId);
+          if (song) {
+            song.sections.forEach((section, index) => {
+              ;
+              window.worship.db.run(
+                "UPDATE song_sections SET order_num = ? WHERE id = ? AND song_id = ?",
+                [index + 1, section.id, songId]
+              );
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Failed to persist section order:", err);
+      }
     },
     looks: {},
     setLook: (outId, look) => set((state) => ({ looks: { ...state.looks, [outId]: look } })),
@@ -12962,7 +12993,7 @@
       set({ schedule: s });
     },
     setTheme: (t) => set({ theme: t }),
-    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "" } }),
+    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "", textAlign: preset.textAlign ?? "center", verticalAlign: preset.verticalAlign ?? "center" } }),
     saveTemplate: (name) => {
       const theme = get().theme;
       try {
@@ -12982,9 +13013,17 @@
   // src/renderer/app/components/OutputView.tsx
   var import_react2 = __toESM(require_react());
   var import_jsx_runtime = __toESM(require_jsx_runtime());
+  var toFileUrl = (input) => {
+    if (!input) return null;
+    if (input.startsWith("http://") || input.startsWith("https://") || input.startsWith("file://")) return input;
+    const normalized = input.replace(/\\/g, "/");
+    const absolutePath = normalized.startsWith("/") ? normalized : `/${normalized}`;
+    return encodeURI(`file://${absolutePath}`);
+  };
   var OutputView = ({ outId }) => {
     const perOutLook = useStore2((state2) => state2.looks?.[outId]) || {};
     const [state, setState] = import_react2.default.useState({ slideTitle: "Idle" });
+    const videoRef = import_react2.default.useRef(null);
     import_react2.default.useEffect(() => {
       if (window.worship?.outputs?.onOutputState) {
         window.worship.outputs.onOutputState((payload) => {
@@ -13001,16 +13040,24 @@
     const slide = state?.slideTitle ?? "Idle";
     const theme = state?.theme;
     const lookBg = perOutLook.background;
-    const bgImage = theme?.backgroundImage;
+    const bgImage = state?.mediaPath || theme?.backgroundImage;
     const bgColor = lookBg ?? theme?.bg ?? (mode === "black" ? "#000" : "#111");
     const textColor = theme?.color ?? "#fff";
     const fontSize = theme?.fontSize ?? 48;
     const fontFamily = theme?.fontFamily ?? "Manrope";
     const fontWeight = theme?.fontWeight ?? 700;
     const textAlign = theme?.textAlign ?? "center";
-    const isVideo = bgImage && (bgImage.endsWith(".mp4") || bgImage.endsWith(".mov") || bgImage.endsWith(".webm"));
-    const bgImageUrl = bgImage ? bgImage.startsWith("http") || bgImage.startsWith("file://") ? bgImage : `file://${bgImage}` : null;
-    const layers = perOutLook.layers || ["slide_content"];
+    const verticalAlign = theme?.verticalAlign ?? "center";
+    const mediaPlayback = state?.mediaPlayback || {};
+    import_react2.default.useEffect(() => {
+      if (videoRef.current) {
+        videoRef.current.playbackRate = mediaPlayback.playbackRate || 1;
+      }
+    }, [mediaPlayback.playbackRate, state?.mediaPath]);
+    const inferredType = state?.mediaType || bgImage && (bgImage.endsWith(".mp4") || bgImage.endsWith(".mov") || bgImage.endsWith(".webm") || bgImage.endsWith(".mkv") || bgImage.endsWith(".avi") ? "video" : "image");
+    const isVideo = inferredType === "video";
+    const bgImageUrl = toFileUrl(bgImage);
+    const layers = perOutLook.layers || ["background", "media", "slide_content"];
     const has = (layer) => layers.includes(layer);
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "div",
@@ -13049,10 +13096,11 @@
           has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "video",
             {
+              ref: videoRef,
               src: bgImageUrl,
               autoPlay: true,
-              loop: true,
-              muted: true,
+              loop: mediaPlayback.loop !== false,
+              muted: mediaPlayback.muted !== false,
               playsInline: true,
               style: {
                 position: "absolute",
@@ -13082,15 +13130,19 @@
               }
             }
           ),
-          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && !state?.mediaPath && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
-                position: "relative",
+                position: "absolute",
+                inset: 0,
                 zIndex: 2,
                 textAlign: "center",
+                display: "flex",
+                alignItems: verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center",
+                justifyContent: "center",
                 padding: "40px 60px",
-                maxWidth: "90%",
+                maxWidth: "100%",
                 textShadow: "2px 2px 8px rgba(0,0,0,0.8)"
               },
               children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
@@ -13102,7 +13154,8 @@
                     fontWeight,
                     lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
-                    textAlign
+                    textAlign,
+                    maxWidth: "90%"
                   },
                   children: slide
                 }
@@ -13605,6 +13658,9 @@ ${selectedVerse.text}`;
     const [viewMode, setViewMode] = (0, import_react4.useState)("grid");
     const [sortMode, setSortMode] = (0, import_react4.useState)("recent");
     const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
+    const [videoLoop, setVideoLoop] = (0, import_react4.useState)(true);
+    const [videoMuted, setVideoMuted] = (0, import_react4.useState)(true);
+    const [videoPlaybackRate, setVideoPlaybackRate] = (0, import_react4.useState)(1);
     (0, import_react4.useEffect)(() => {
       loadMediaAssets();
       loadFolders();
@@ -13714,18 +13770,16 @@ ${selectedVerse.text}`;
     };
     const handleSendToLive = () => {
       if (!selectedAsset) return;
-      onSendToLive?.(selectedAsset);
+      onSendToLive?.(selectedAsset, { loop: videoLoop, muted: videoMuted, playbackRate: videoPlaybackRate });
       setTheme({ ...theme, backgroundImage: selectedAsset.path });
-      setLiveSlide(selectedAsset.name || "Media");
-      const OUTPUT_IDS2 = [1, 2];
-      OUTPUT_IDS2.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: selectedAsset.name || "Media", theme: { ...theme, backgroundImage: selectedAsset.path } }));
+      setLiveSlide("");
       onNotify?.("Sent live", selectedAsset.name || "Media pushed to outputs", "success");
     };
     const handleSendToPreview = () => {
       if (!selectedAsset) return;
       onSendToPreview?.(selectedAsset);
       setTheme({ ...theme, backgroundImage: selectedAsset.path });
-      setCurrentSlide(selectedAsset.name || "Media");
+      setCurrentSlide("");
       onNotify?.("Sent to preview", selectedAsset.name || "Preview updated", "info");
     };
     const handleAddToSchedule = async () => {
@@ -13878,7 +13932,43 @@ ${selectedVerse.text}`;
                 e.currentTarget.style.display = "none";
               }
             }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "2.5rem", opacity: 0.5 }, children: "\u{1F3AC}" }) }),
+          ) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+            "video",
+            {
+              src: `file://${selectedAsset.path}`,
+              autoPlay: true,
+              loop: videoLoop,
+              muted: videoMuted,
+              playsInline: true,
+              style: { width: "100%", height: "100%", objectFit: "cover" }
+            }
+          ) }),
+          selectedAsset.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-meta-grid", style: { marginBottom: 12 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Loop" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", checked: videoLoop, onChange: (e) => setVideoLoop(e.target.checked) }),
+                " On"
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Muted" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", checked: videoMuted, onChange: (e) => setVideoMuted(e.target.checked) }),
+                " On"
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Speed" }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { value: videoPlaybackRate, onChange: (e) => setVideoPlaybackRate(Number(e.target.value)), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 0.5, children: "0.5x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 0.75, children: "0.75x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1, children: "1.0x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1.25, children: "1.25x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1.5, children: "1.5x" })
+              ] })
+            ] })
+          ] }),
           /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-identity", children: [
             /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-identity-label", children: "Asset Identity" }),
             /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-identity-name", children: selectedAsset.name })
@@ -14010,6 +14100,7 @@ ${selectedVerse.text}`;
     const addSongSection = useStore2((state) => state.addSongSection);
     const moveSongSection = useStore2((state) => state.moveSongSection);
     const updateSongSection = useStore2((state) => state.updateSongSection);
+    const updateSongTitle = useStore2((state) => state.updateSongTitle);
     const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
     const setLiveSlide = useStore2((state) => state.setLiveSlide);
     const pushSlideUndo = useStore2((state) => state.pushSlideUndo);
@@ -14033,6 +14124,7 @@ ${selectedVerse.text}`;
     const [songSearchQuery, setSongSearchQuery] = import_react5.default.useState("");
     const [editorText, setEditorText] = import_react5.default.useState("");
     const [editorType, setEditorType] = import_react5.default.useState("Verse");
+    const [songTitleDraft, setSongTitleDraft] = import_react5.default.useState("");
     const [ndiEnabled, setNdiEnabled] = import_react5.default.useState(false);
     const [outputStates, setOutputStates] = import_react5.default.useState({});
     const [mediaType, setMediaType] = import_react5.default.useState("image");
@@ -14104,6 +14196,9 @@ ${selectedVerse.text}`;
       setEditorType(selectedSection.type || "Verse");
     }, [selectedSection?.id, selectedSection?.text, selectedSection?.type]);
     import_react5.default.useEffect(() => {
+      setSongTitleDraft(selectedSong?.title || "");
+    }, [selectedSong?.id, selectedSong?.title]);
+    import_react5.default.useEffect(() => {
       if (isOutput) return;
       if (!window?.worship?.outputs?.onOutputState) return;
       window.worship.outputs.onOutputState((payload) => {
@@ -14119,7 +14214,7 @@ ${selectedVerse.text}`;
       if (isOutput) return;
       const loadData = async () => {
         try {
-          const songsData = await window.worship.db.run("SELECT * FROM songs ORDER BY title");
+          const songsData = await window.worship.db.run("SELECT * FROM songs ORDER BY id");
           if (songsData?.length) {
             const songsWithSections = await Promise.all(
               songsData.map(async (song) => {
@@ -14142,22 +14237,31 @@ ${selectedVerse.text}`;
     }, [isOutput]);
     import_react5.default.useEffect(() => {
       if (isOutput) return;
+      const isEditableTarget = (target) => {
+        const node = target;
+        if (!node) return false;
+        const tag = node.tagName?.toLowerCase();
+        return tag === "input" || tag === "textarea" || tag === "select" || Boolean(node.closest('[contenteditable="true"]'));
+      };
       const handleKeyDown = (event) => {
-        if ((event.key === "Enter" || event.key === " ") && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+        const isEditingSong = Boolean(
+          selectedSection && (editorText !== (selectedSection.text || "") || editorType !== (selectedSection.type || "Verse"))
+        );
+        if (event.key === "Enter" && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey && !isEditableTarget(event.target) && !isEditingSong) {
           event.preventDefault();
           goLive();
         }
       };
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOutput, selectedSectionId, currentSlide]);
+    }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType]);
     import_react5.default.useEffect(() => {
       if (isOutput) return;
       localStorage.setItem("operator-pane-sizes", JSON.stringify(paneSizes));
     }, [isOutput, paneSizes]);
     if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(OutputView, { outId });
     const sendLiveState = (slideTitle) => {
-      OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, theme }));
+      OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: "", mediaType: void 0, theme }));
     };
     const notify = (title, detail, tone = "info") => {
       const id = Date.now() + Math.floor(Math.random() * 1e3);
@@ -14210,6 +14314,49 @@ ${selectedVerse.text}`;
     const updateLook = (targetOutId, patch) => {
       const currentLook = looks[targetOutId] || { background: "#111111", template: "default", layers: ["slide_content"] };
       setLook(targetOutId, { ...currentLook, ...patch });
+    };
+    const commitSongTitle = (songId) => {
+      if (!songId) return;
+      updateSongTitle(songId, songTitleDraft);
+    };
+    const importSongs = async () => {
+      try {
+        const filePaths = await window.worship.dialog.openFiles({
+          title: "Import Songs",
+          filters: [{ name: "Song Files", extensions: ["txt", "json"] }],
+          multiSelections: true
+        });
+        if (!filePaths.length) return;
+        const importedSongs = [];
+        for (const filePath of filePaths) {
+          const data = await window.worship.fs.readTextFile(filePath);
+          let title = filePath.split("\\").pop()?.split("/").pop()?.replace(/\.[^.]+$/, "") || "Imported Song";
+          let sectionText = data;
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed && typeof parsed === "object") {
+              title = String(parsed.title || title);
+              sectionText = String(parsed.text || parsed.lyrics || sectionText);
+            }
+          } catch {
+          }
+          const songInsert = await window.worship.db.run("INSERT INTO songs (title) VALUES (?)", [title]);
+          const songId = Number(songInsert?.lastInsertRowid);
+          await window.worship.db.run(
+            "INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)",
+            [songId, "Verse", sectionText, 1]
+          );
+          importedSongs.push({ id: songId, title, sections: [{ id: 1, type: "Verse", text: sectionText }] });
+        }
+        if (importedSongs.length) {
+          useStore2.setState((state) => ({ songs: [...state.songs, ...importedSongs] }));
+          setSelectedSongId(importedSongs[0].id);
+          notify("Songs imported", `${importedSongs.length} song(s) added`, "success");
+        }
+      } catch (error) {
+        console.error("Failed to import songs:", error);
+        notify("Import failed", "Could not import selected songs", "warn");
+      }
     };
     const connectSync = () => {
       if (syncSocket || !syncUrl) return;
@@ -14307,7 +14454,11 @@ ${selectedVerse.text}`;
                     "Output ",
                     id
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "output-box", children: label })
+                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "output-box", children: label }),
+                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline", style: { marginTop: 6 }, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "show"), children: "Show" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "toggle-fullscreen"), children: "Full View" })
+                  ] })
                 ] }, id);
               }) })
             ] })
@@ -14353,6 +14504,7 @@ ${selectedVerse.text}`;
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline", children: [
             /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("input", { value: songSearchQuery, onChange: (event) => setSongSearchQuery(event.target.value), placeholder: "Search songs", className: "input" }),
+            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: importSongs, children: "Import Songs" }),
             /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("select", { className: "input", style: { width: 130 }, value: librarySort, onChange: (event) => setLibrarySort(event.target.value), children: [
               /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "name", children: "Sort: Name" }),
               /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "sections", children: "Sort: Sections" })
@@ -14367,10 +14519,27 @@ ${selectedVerse.text}`;
             }, children: "Add Song" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: libraryViewMode === "grid" ? "bento-grid" : "library-list", children: filteredSongs.map((song) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(MediaCard, { title: song.title, subtitle: `${song.sections.length} sections`, active: song.id === selectedSongId, onClick: () => {
-          setSelectedSongId(song.id);
-          setWorkspace("editor");
-        } }, song.id)) })
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: libraryViewMode === "grid" ? "bento-grid" : "library-list", children: filteredSongs.map((song) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { style: { display: "grid", gap: 6 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(MediaCard, { title: song.title || "Untitled Song", subtitle: `${song.sections.length} sections`, active: song.id === selectedSongId, onClick: () => {
+            setSelectedSongId(song.id);
+            setWorkspace("editor");
+          } }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+            "button",
+            {
+              className: "soft-button",
+              style: { width: "100%" },
+              onClick: () => {
+                const next = prompt("Rename song", song.title || "") ?? song.title;
+                if (next == null) return;
+                updateSongTitle(song.id, next);
+                if (song.id === selectedSongId) setSongTitleDraft(next);
+                notify("Song renamed", next.trim() || "Untitled Song", "success");
+              },
+              children: "Rename"
+            }
+          )
+        ] }, song.id)) })
       ] })
     ] });
     const renderEditor = () => {
@@ -14420,7 +14589,23 @@ ${selectedVerse.text}`;
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "panel stage-panel", children: [
               /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "panel-header", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h3", { children: selectedSong?.title || "Song Editor" }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+                  "input",
+                  {
+                    className: "input",
+                    style: { maxWidth: 360 },
+                    value: songTitleDraft,
+                    onChange: (event) => setSongTitleDraft(event.target.value),
+                    onBlur: () => commitSongTitle(selectedSong?.id),
+                    onKeyDown: (event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        commitSongTitle(selectedSong?.id);
+                      }
+                    },
+                    placeholder: "Song title"
+                  }
+                ),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline", children: [
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: () => setTransposeSteps((value) => value - 1), children: "Flat" }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: () => setTransposeSteps(0), children: "Reset" }),
@@ -14431,7 +14616,7 @@ ${selectedVerse.text}`;
               /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "stage-canvas", style: { position: "relative", color: theme.color }, children: [
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { ...bgStyle, position: "absolute", inset: 0, opacity: (theme.opacity ?? 100) / 100, borderRadius: "inherit" } }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-overlay live" }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h1", { style: { position: "relative", zIndex: 1, textAlign: theme.textAlign || "center", fontFamily: theme.fontFamily || "Manrope", fontWeight: theme.fontWeight || 700 }, children: currentSlide || "Select a section" }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { style: { position: "absolute", inset: 0, zIndex: 1, display: "flex", alignItems: (theme.verticalAlign || "center") === "top" ? "flex-start" : (theme.verticalAlign || "center") === "bottom" ? "flex-end" : "center", justifyContent: "center", padding: "40px 60px" }, children: /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h1", { style: { textAlign: theme.textAlign || "center", fontFamily: theme.fontFamily || "Manrope", fontWeight: theme.fontWeight || 700, width: "90%" }, children: currentSlide || "Select a section" }) }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "live-pill stage", children: "Live View" })
               ] }),
               /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "stage-toolbar", children: [
@@ -14531,6 +14716,12 @@ ${selectedVerse.text}`;
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "center", children: "Center" }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "right", children: "Right" })
                 ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("label", { children: "Vertical Position" }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("select", { className: "input", value: theme.verticalAlign || "center", onChange: (event) => setTheme({ ...theme, verticalAlign: event.target.value }), children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "top", children: "Top Half" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "center", children: "Center" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "bottom", children: "Bottom Half" })
+                ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("label", { children: "Text Color" }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("input", { type: "color", value: theme.color, onChange: (event) => setTheme({ ...theme, color: event.target.value }) }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "button-row", children: [
@@ -14585,6 +14776,32 @@ ${selectedVerse.text}`;
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "primary", children: "Primary" }),
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "extended", children: "Extended" }),
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "stage", children: "Stage" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline", style: { marginTop: 8 }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "minimize");
+          }, children: "Min" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "maximize");
+          }, children: "Max" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "restore");
+          }, children: "Restore" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "toggle-fullscreen");
+          }, children: "Full View" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "restore");
+          }, children: "Exit Full" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: (event) => {
+            event.stopPropagation();
+            window?.worship?.outputs?.windowControl?.(output.id, "close");
+          }, children: "Close" })
         ] })
       ] }, output.id)) }),
       /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "panel settings-looks-panel", children: [
@@ -14754,15 +14971,15 @@ ${selectedVerse.text}`;
     ] });
     const sendMediaToPreview = (asset) => {
       setTheme({ ...theme, backgroundImage: asset.path });
-      setCurrentSlide(asset.name || "Media");
+      setCurrentSlide("");
       notify("Media to preview", asset.name || "Preview media changed", "info");
     };
-    const sendMediaToLive = (asset) => {
+    const sendMediaToLive = (asset, playback) => {
       const updatedTheme = { ...theme, backgroundImage: asset.path };
       setTheme(updatedTheme);
-      setCurrentSlide(asset.name || "Media");
-      setLiveSlide(asset.name || "Media");
-      OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: asset.name || "Media", theme: updatedTheme }));
+      setCurrentSlide("");
+      setLiveSlide("");
+      OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: "", mediaPath: asset.path, mediaType: asset.type, mediaPlayback: playback, theme: updatedTheme }));
       notify("Media sent live", asset.name || "Live outputs updated", "success");
     };
     const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("header", { className: "topbar ribbon", children: [

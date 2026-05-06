@@ -7,9 +7,19 @@ exports.OutputView = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importDefault(require("react"));
 const store_1 = require("../store");
+const toFileUrl = (input) => {
+    if (!input)
+        return null;
+    if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://'))
+        return input;
+    const normalized = input.replace(/\\/g, '/');
+    const absolutePath = normalized.startsWith('/') ? normalized : `/${normalized}`;
+    return encodeURI(`file://${absolutePath}`);
+};
 const OutputView = ({ outId }) => {
     const perOutLook = (0, store_1.useStore)((state) => state.looks?.[outId]) || {};
     const [state, setState] = react_1.default.useState({ slideTitle: 'Idle' });
+    const videoRef = react_1.default.useRef(null);
     react_1.default.useEffect(() => {
         if (window.worship?.outputs?.onOutputState) {
             window.worship.outputs.onOutputState((payload) => {
@@ -28,18 +38,26 @@ const OutputView = ({ outId }) => {
     const theme = state?.theme;
     const lookBg = perOutLook.background;
     // Determine background
-    const bgImage = theme?.backgroundImage;
+    const bgImage = state?.mediaPath || theme?.backgroundImage;
     const bgColor = lookBg ?? theme?.bg ?? (mode === 'black' ? '#000' : '#111');
     const textColor = theme?.color ?? '#fff';
     const fontSize = theme?.fontSize ?? 48;
     const fontFamily = theme?.fontFamily ?? 'Manrope';
     const fontWeight = theme?.fontWeight ?? 700;
     const textAlign = theme?.textAlign ?? 'center';
+    const verticalAlign = theme?.verticalAlign ?? 'center';
+    const mediaPlayback = state?.mediaPlayback || {};
+    react_1.default.useEffect(() => {
+        if (videoRef.current) {
+            videoRef.current.playbackRate = mediaPlayback.playbackRate || 1;
+        }
+    }, [mediaPlayback.playbackRate, state?.mediaPath]);
     // Check if background is a video
-    const isVideo = bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm'));
+    const inferredType = state?.mediaType || (bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm') || bgImage.endsWith('.mkv') || bgImage.endsWith('.avi') ? 'video' : 'image'));
+    const isVideo = inferredType === 'video';
     // Convert file path to file:// URL if needed
-    const bgImageUrl = bgImage ? (bgImage.startsWith('http') || bgImage.startsWith('file://') ? bgImage : `file://${bgImage}`) : null;
-    const layers = perOutLook.layers || ['slide_content'];
+    const bgImageUrl = toFileUrl(bgImage);
+    const layers = perOutLook.layers || ['background', 'media', 'slide_content'];
     const has = (layer) => layers.includes(layer);
     return ((0, jsx_runtime_1.jsxs)("div", { style: {
             height: '100vh',
@@ -61,7 +79,7 @@ const OutputView = ({ outId }) => {
                     zIndex: 0
                 }, onError: (e) => {
                     e.currentTarget.style.display = 'none';
-                } })), has('media') && bgImageUrl && isVideo && ((0, jsx_runtime_1.jsx)("video", { src: bgImageUrl, autoPlay: true, loop: true, muted: true, playsInline: true, style: {
+                } })), has('media') && bgImageUrl && isVideo && ((0, jsx_runtime_1.jsx)("video", { ref: videoRef, src: bgImageUrl, autoPlay: true, loop: mediaPlayback.loop !== false, muted: mediaPlayback.muted !== false, playsInline: true, style: {
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -79,12 +97,16 @@ const OutputView = ({ outId }) => {
                     height: '100%',
                     backgroundColor: mode === 'black' ? '#000' : 'rgba(0,0,0,0.4)',
                     zIndex: 1
-                } })), has('slide_content') && (0, jsx_runtime_1.jsx)("div", { style: {
-                    position: 'relative',
+                } })), has('slide_content') && !state?.mediaPath && (0, jsx_runtime_1.jsx)("div", { style: {
+                    position: 'absolute',
+                    inset: 0,
                     zIndex: 2,
                     textAlign: 'center',
+                    display: 'flex',
+                    alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
+                    justifyContent: 'center',
                     padding: '40px 60px',
-                    maxWidth: '90%',
+                    maxWidth: '100%',
                     textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
                 }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" })) : ((0, jsx_runtime_1.jsx)("div", { style: {
                         fontSize: fontSize,
@@ -92,7 +114,8 @@ const OutputView = ({ outId }) => {
                         fontWeight,
                         lineHeight: 1.4,
                         whiteSpace: 'pre-wrap',
-                        textAlign
+                        textAlign,
+                        maxWidth: '90%'
                     }, children: slide })) }), has('lower_thirds') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     left: 32,

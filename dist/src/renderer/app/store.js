@@ -9,6 +9,7 @@ exports.THEME_PRESETS = [
     { name: 'Blue Ocean', bg: '#0f4c75', color: '#ffffff', fontSize: 44 },
     { name: 'Sunset Warm', bg: '#2d132c', color: '#ffd700', fontSize: 42 },
     { name: 'Forest Green', bg: '#1b4332', color: '#d8f3dc', fontSize: 44 },
+    { name: 'Green Screen', bg: '#00ff00', color: '#101010', fontSize: 44 },
     { name: 'Royal Purple', bg: '#3c096c', color: '#e0aaff', fontSize: 42 },
     { name: 'Minimal Black', bg: '#000000', color: '#ffffff', fontSize: 48 },
     { name: 'Soft Gray', bg: '#2d2d2d', color: '#f0f0f0', fontSize: 42 },
@@ -16,7 +17,7 @@ exports.THEME_PRESETS = [
 exports.useStore = (0, zustand_1.create)((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center' },
+    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center', verticalAlign: 'center' },
     currentSlide: 'Welcome',
     liveSlide: 'Welcome',
     undoStack: [],
@@ -82,6 +83,21 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
             console.error('Failed to persist section update:', err);
         }
     },
+    updateSongTitle: (songId, title) => {
+        const nextTitle = title.trim();
+        set((state) => ({
+            songs: state.songs.map((song) => (song.id === songId ? { ...song, title: nextTitle || '' } : song))
+        }));
+        try {
+            if (typeof window !== 'undefined' && window.worship?.db?.run) {
+                ;
+                window.worship.db.run('UPDATE songs SET title = ? WHERE id = ?', [nextTitle || 'Untitled Song', songId]);
+            }
+        }
+        catch (err) {
+            console.error('Failed to persist song title update:', err);
+        }
+    },
     addSongSection: (songId) => {
         set((state) => ({
             songs: state.songs.map((song) => {
@@ -119,6 +135,20 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
                 return { ...song, sections };
             })
         }));
+        try {
+            if (typeof window !== 'undefined' && window.worship?.db?.run) {
+                const song = get().songs.find((s) => s.id === songId);
+                if (song) {
+                    song.sections.forEach((section, index) => {
+                        ;
+                        window.worship.db.run('UPDATE song_sections SET order_num = ? WHERE id = ? AND song_id = ?', [index + 1, section.id, songId]);
+                    });
+                }
+            }
+        }
+        catch (err) {
+            console.error('Failed to persist section order:', err);
+        }
     },
     looks: {},
     setLook: (outId, look) => set((state) => ({ looks: { ...state.looks, [outId]: look } })),
@@ -176,7 +206,7 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
         set({ schedule: s });
     },
     setTheme: (t) => set({ theme: t }),
-    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '' } }),
+    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center' } }),
     saveTemplate: (name) => {
         const theme = get().theme;
         try {

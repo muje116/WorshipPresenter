@@ -13,7 +13,8 @@ const api = {
             logo: () => electron_1.ipcRenderer.send('output-action', { action: 'LOGO' }),
             clear: () => electron_1.ipcRenderer.send('output-action', { action: 'CLEAR' }),
             fullscreen: () => electron_1.ipcRenderer.send('output-action', { action: 'FULLSCREEN' })
-        }
+        },
+        windowControl: (outId, action, bounds) => electron_1.ipcRenderer.send('output-window-control', { outId, action, bounds })
     },
     bibles: {
         listTranslations: () => electron_1.ipcRenderer.invoke('bibles.listTranslations'),
@@ -30,6 +31,9 @@ const api = {
     },
     dialog: {
         openFiles: (options) => electron_1.ipcRenderer.invoke('dialog.openFiles', options || {})
+    },
+    fs: {
+        readTextFile: (filePath) => electron_1.ipcRenderer.invoke('fs.readTextFile', filePath)
     }
 };
 electron_1.contextBridge.exposeInMainWorld('worship', api);

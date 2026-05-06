@@ -8,6 +8,13 @@ type Props = {
 type State = {
   slideTitle?: string
   mode?: string
+  mediaPath?: string
+  mediaType?: 'image' | 'video'
+  mediaPlayback?: {
+    loop?: boolean
+    muted?: boolean
+    playbackRate?: number
+  }
   theme?: {
     bg?: string
     color?: string
@@ -16,12 +23,22 @@ type State = {
     fontFamily?: string
     fontWeight?: number
     textAlign?: 'left' | 'center' | 'right'
+    verticalAlign?: 'top' | 'center' | 'bottom'
   }
+}
+
+const toFileUrl = (input?: string): string | null => {
+  if (!input) return null
+  if (input.startsWith('http://') || input.startsWith('https://') || input.startsWith('file://')) return input
+  const normalized = input.replace(/\\/g, '/')
+  const absolutePath = normalized.startsWith('/') ? normalized : `/${normalized}`
+  return encodeURI(`file://${absolutePath}`)
 }
 
 export const OutputView: React.FC<Props> = ({ outId }) => {
   const perOutLook = useStore((state) => state.looks?.[outId]) || {}
   const [state, setState] = React.useState<State>({ slideTitle: 'Idle' })
+  const videoRef = React.useRef<HTMLVideoElement | null>(null)
 
   React.useEffect(() => {
     if ((window as any).worship?.outputs?.onOutputState) {
@@ -43,20 +60,29 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
   const lookBg = perOutLook.background
 
   // Determine background
-  const bgImage = theme?.backgroundImage
+  const bgImage = state?.mediaPath || theme?.backgroundImage
   const bgColor = lookBg ?? theme?.bg ?? (mode === 'black' ? '#000' : '#111')
   const textColor = theme?.color ?? '#fff'
   const fontSize = theme?.fontSize ?? 48
   const fontFamily = theme?.fontFamily ?? 'Manrope'
   const fontWeight = theme?.fontWeight ?? 700
   const textAlign = theme?.textAlign ?? 'center'
+  const verticalAlign = theme?.verticalAlign ?? 'center'
+  const mediaPlayback = state?.mediaPlayback || {}
+
+  React.useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = mediaPlayback.playbackRate || 1
+    }
+  }, [mediaPlayback.playbackRate, state?.mediaPath])
 
   // Check if background is a video
-  const isVideo = bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm'))
+  const inferredType = state?.mediaType || (bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm') || bgImage.endsWith('.mkv') || bgImage.endsWith('.avi') ? 'video' : 'image'))
+  const isVideo = inferredType === 'video'
 
   // Convert file path to file:// URL if needed
-  const bgImageUrl = bgImage ? (bgImage.startsWith('http') || bgImage.startsWith('file://') ? bgImage : `file://${bgImage}`) : null
-  const layers = perOutLook.layers || ['slide_content']
+  const bgImageUrl = toFileUrl(bgImage)
+  const layers = perOutLook.layers || ['background', 'media', 'slide_content']
   const has = (layer: string) => layers.includes(layer)
 
   return (
@@ -96,10 +122,11 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
       {/* Layer: media/video */}
       {has('media') && bgImageUrl && isVideo && (
         <video
+          ref={videoRef}
           src={bgImageUrl}
           autoPlay
-          loop
-          muted
+          loop={mediaPlayback.loop !== false}
+          muted={mediaPlayback.muted !== false}
           playsInline
           style={{
             position: 'absolute',
@@ -132,13 +159,17 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
       )}
 
       {/* Layer: slide_content */}
-      {has('slide_content') && <div
+      {has('slide_content') && !state?.mediaPath && <div
         style={{
-          position: 'relative',
+          position: 'absolute',
+          inset: 0,
           zIndex: 2,
           textAlign: 'center',
+          display: 'flex',
+          alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
+          justifyContent: 'center',
           padding: '40px 60px',
-          maxWidth: '90%',
+          maxWidth: '100%',
           textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
         }}
       >
@@ -158,7 +189,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
               fontWeight,
               lineHeight: 1.4,
               whiteSpace: 'pre-wrap',
-              textAlign
+              textAlign,
+              maxWidth: '90%'
             }}
           >
             {slide}
