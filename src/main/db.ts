@@ -21,7 +21,7 @@ function ensureColumn(table: string, column: string, definition: string) {
 }
 
 export function initDB() {
-  const dbPath = path.join(app.getPath('userData'), 'worshipos.db')
+  const dbPath = path.join(app.getPath('userData'), 'worshipresenter.db')
   db = new Database(dbPath)
 
   // Comprehensive schema (extensible)

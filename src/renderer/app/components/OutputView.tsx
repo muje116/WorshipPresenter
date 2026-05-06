@@ -56,6 +56,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
 
   // Convert file path to file:// URL if needed
   const bgImageUrl = bgImage ? (bgImage.startsWith('http') || bgImage.startsWith('file://') ? bgImage : `file://${bgImage}`) : null
+  const layers = perOutLook.layers || ['slide_content']
+  const has = (layer: string) => layers.includes(layer)
 
   return (
     <div
@@ -71,8 +73,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
         overflow: 'hidden'
       }}
     >
-      {/* Background Image */}
-      {bgImageUrl && !isVideo && (
+      {/* Layer: background/image */}
+      {has('background') && bgImageUrl && !isVideo && (
         <img
           src={bgImageUrl}
           alt=""
@@ -91,8 +93,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
         />
       )}
 
-      {/* Background Video */}
-      {bgImageUrl && isVideo && (
+      {/* Layer: media/video */}
+      {has('media') && bgImageUrl && isVideo && (
         <video
           src={bgImageUrl}
           autoPlay
@@ -114,8 +116,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
         />
       )}
 
-      {/* Overlay for better text readability */}
-      {(bgImageUrl || mode === 'black') && (
+      {/* Layer: announcements / overlays readability */}
+      {(has('announcements') || has('props_overlays')) && (bgImageUrl || mode === 'black') && (
         <div
           style={{
             position: 'absolute',
@@ -129,8 +131,8 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
         />
       )}
 
-      {/* Content */}
-      <div
+      {/* Layer: slide_content */}
+      {has('slide_content') && <div
         style={{
           position: 'relative',
           zIndex: 2,
@@ -162,7 +164,49 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
             {slide}
           </div>
         )}
-      </div>
+      </div>}
+
+      {/* Layer: lower_thirds */}
+      {has('lower_thirds') && mode !== 'black' && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 32,
+            right: 32,
+            bottom: 24,
+            zIndex: 4,
+            background: 'rgba(0,0,0,0.55)',
+            border: '1px solid rgba(255,255,255,0.15)',
+            borderRadius: 8,
+            padding: '8px 12px',
+            fontSize: 18,
+            color: '#fff'
+          }}
+        >
+          Lower Third: {slide}
+        </div>
+      )}
+
+      {/* Layer: props_overlays */}
+      {has('props_overlays') && mode !== 'black' && (
+        <div style={{ position: 'absolute', left: 16, top: 48, zIndex: 5, padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 12 }}>
+          Props Overlay
+        </div>
+      )}
+
+      {/* Layer: live_video (placeholder for camera/NDI feed) */}
+      {has('live_video') && (
+        <div style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 5, width: 220, height: 124, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d7e3ff', fontSize: 12 }}>
+          Live Video Layer
+        </div>
+      )}
+
+      {/* Layer: alerts */}
+      {has('alerts') && (
+        <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 6, background: '#ff5252', color: '#fff', padding: '4px 8px', borderRadius: 6, fontSize: 12 }}>
+          Alert Layer
+        </div>
+      )}
 
       {/* Debug info (top left corner, very subtle) */}
       <div

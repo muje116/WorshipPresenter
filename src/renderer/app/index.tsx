@@ -144,6 +144,9 @@ const App: React.FC = () => {
       return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 }
     }
   })
+  const [syncUrl, setSyncUrl] = React.useState('ws://localhost:9090')
+  const [syncConnected, setSyncConnected] = React.useState(false)
+  const [syncSocket, setSyncSocket] = React.useState<WebSocket | null>(null)
 
   const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0]
   const selectedSection = selectedSong?.sections.find((section) => section.id === selectedSectionId) || selectedSong?.sections[0]
@@ -291,6 +294,34 @@ const App: React.FC = () => {
   const updateLook = (targetOutId: number, patch: { background?: string; template?: string; layers?: string[] }) => {
     const currentLook = looks[targetOutId] || { background: '#111111', template: 'default', layers: ['slide_content'] }
     setLook(targetOutId, { ...currentLook, ...patch })
+  }
+
+  const connectSync = () => {
+    if (syncSocket || !syncUrl) return
+    const socket = new WebSocket(syncUrl)
+    socket.onopen = () => setSyncConnected(true)
+    socket.onclose = () => {
+      setSyncConnected(false)
+      setSyncSocket(null)
+    }
+    socket.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(String(event.data || '{}'))
+        if (msg?.type === 'state' && msg.payload?.outId && msg.payload?.state) {
+          window?.worship?.outputs?.setState?.(msg.payload.outId, msg.payload.state)
+        }
+      } catch {
+        // ignore malformed sync messages
+      }
+    }
+    setSyncSocket(socket)
+  }
+
+  const disconnectSync = () => {
+    if (!syncSocket) return
+    syncSocket.close()
+    setSyncSocket(null)
+    setSyncConnected(false)
   }
 
   const renderConsole = () => (
@@ -580,6 +611,72 @@ const App: React.FC = () => {
             </select>
           </div>
         ))}
+      </section>
+
+      <section className="panel settings-looks-panel">
+        <SectionHeader title="Per-Output Looks" meta="8-layer compositor" />
+        <div className="settings-looks-grid">
+          {OUTPUT_IDS.map((id) => {
+            const look = looks[id] || { background: '#111111', template: 'default', layers: ['slide_content'] }
+            return (
+              <div key={id} className="settings-look-card">
+                <div className="output-route-heading">
+                  <strong>Output {id}</strong>
+                  <small>{(look.template || 'default').replace('_', ' ')}</small>
+                </div>
+                <div className="settings-look-row">
+                  <label className="settings-look-label">Background</label>
+                  <label className="settings-look-label">Template</label>
+                </div>
+                <div className="settings-look-row">
+                <input
+                  type="color"
+                  className="settings-color-input"
+                  value={look.background || '#111111'}
+                  onChange={(event) => updateLook(id, { background: event.target.value })}
+                />
+                <select className="input" value={look.template || 'default'} onChange={(event) => updateLook(id, { template: event.target.value })}>
+                  <option value="default">Default</option>
+                  <option value="lower_thirds">Lower Thirds</option>
+                  <option value="full">Full</option>
+                </select>
+                </div>
+                <div className="settings-layer-grid">
+                  {LAYERS.map((layer) => {
+                    const enabled = (look.layers || []).includes(layer)
+                    return (
+                      <label key={layer} className={`settings-layer-chip ${enabled ? 'active' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={enabled}
+                          onChange={() => {
+                            const next = enabled
+                              ? (look.layers || []).filter((item) => item !== layer)
+                              : [...(look.layers || []), layer]
+                            updateLook(id, { layers: next })
+                          }}
+                        /> <span>{layer.replace('_', ' ')}</span>
+                      </label>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="panel settings-sync-panel">
+        <SectionHeader title="Sync" meta={syncConnected ? 'Connected' : 'Disconnected'} />
+        <div className="settings-sync-inline">
+          <input className="input" value={syncUrl} onChange={(e) => setSyncUrl(e.target.value)} placeholder="ws://host:9090" />
+          {!syncConnected ? (
+            <button className="soft-button" onClick={connectSync}>Connect</button>
+          ) : (
+            <button className="soft-button" onClick={disconnectSync}>Disconnect</button>
+          )}
+          <span className={`settings-sync-status ${syncConnected ? 'online' : 'offline'}`}>{syncConnected ? 'ONLINE' : 'OFFLINE'}</span>
+        </div>
       </section>
 
       <section className="panel canvas-layout-section">

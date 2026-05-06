@@ -1,7 +1,7 @@
-# WorshipOS UI Revamp Implementation Plan (Screen-by-Screen)
+# WorshipPresenter UI Revamp Implementation Plan (Screen-by-Screen)
 
 ## Objective
-Revamp the operator UI to match the attached wireframes in `_wireframes_zip/stitch_worship_media_presenter`, while preserving WorshipOS feature scope and Electron architecture.
+Revamp the operator UI to match the attached wireframes in `_wireframes_zip/stitch_worship_media_presenter`, while preserving WorshipPresenter feature scope and Electron architecture.
 
 ## Source Wireframes
 - `main_presentation_console_1..3`

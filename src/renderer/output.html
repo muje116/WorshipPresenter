@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>WorshipOS Output</title>
+    <title>WorshipPresenter Output</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style> body { font-family: sans-serif; padding: 16px; background: #000; color: #fff; } .output { border: 1px solid #555; height: 100%; display: flex; align-items: center; justify-content: center; } </style>
   </head>
@@ -11,7 +11,7 @@
     <script>
       const urlParams = new URLSearchParams(window.location.search)
       const outId = urlParams.get('out') || '1'
-      document.title = 'WorshipOS Output ' + outId
+      document.title = 'WorshipPresenter Output ' + outId
       const root = document.getElementById('outputRoot')
       root.textContent = 'Output ' + outId + ' — idle'
 

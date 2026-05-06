@@ -1,7 +1,7 @@
 {
-  "name": "worshipos",
+  "name": "worship-presenter",
   "version": "0.1.0",
-  "description": "Cross-platform worship presentation software",
+  "description": "WorshipPresenter - Cross-platform worship presentation software",
   "main": "dist/src/main/electron.js",
   "scripts": {
     "start": "electron .",
@@ -10,6 +10,7 @@
     "build:renderer": "node scripts/build-renderer.js",
     "postinstall": "electron-builder install-app-deps",
     "test": "jest",
+    "test:e2e": "playwright test",
     "dev": "tsc && node scripts/build-renderer.js && electron ."
   },
   "devDependencies": {
@@ -25,7 +26,10 @@
     "jest": "^30.3.0",
     "ts-jest": "^29.4.9",
     "tslib": "^2.8.1",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "@playwright/test": "^1.56.1"
+    ,"@testing-library/react": "^16.3.0"
+    ,"@testing-library/jest-dom": "^6.9.1"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",
@@ -37,7 +41,7 @@
     "zustand": "^5.0.12"
   },
   "build": {
-    "appId": "com.yourcompany.worshipos",
+    "appId": "com.yourcompany.worshipresenter",
     "files": [
       "dist/**/*",
       "package.json"

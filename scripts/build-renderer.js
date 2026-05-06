@@ -1,4 +1,4 @@
-// Simple esbuild-based renderer bundler for WorshipOS
+// Simple esbuild-based renderer bundler for WorshipPresenter
 const esbuild = require('esbuild')
 const path = require('path')
 const fs = require('fs')

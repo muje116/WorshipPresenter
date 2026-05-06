@@ -1,4 +1,4 @@
-WorshipOS MVP - Testing Plan (Milestone 2)
+WorshipPresenter MVP - Testing Plan (Milestone 2)
 
 - Objective
   Validate two outputs reflect operator state, IPC channels function, and basic editor state persistence.

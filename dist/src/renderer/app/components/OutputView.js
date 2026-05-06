@@ -39,6 +39,8 @@ const OutputView = ({ outId }) => {
     const isVideo = bgImage && (bgImage.endsWith('.mp4') || bgImage.endsWith('.mov') || bgImage.endsWith('.webm'));
     // Convert file path to file:// URL if needed
     const bgImageUrl = bgImage ? (bgImage.startsWith('http') || bgImage.startsWith('file://') ? bgImage : `file://${bgImage}`) : null;
+    const layers = perOutLook.layers || ['slide_content'];
+    const has = (layer) => layers.includes(layer);
     return ((0, jsx_runtime_1.jsxs)("div", { style: {
             height: '100vh',
             width: '100%',
@@ -49,7 +51,7 @@ const OutputView = ({ outId }) => {
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden'
-        }, children: [bgImageUrl && !isVideo && ((0, jsx_runtime_1.jsx)("img", { src: bgImageUrl, alt: "", style: {
+        }, children: [has('background') && bgImageUrl && !isVideo && ((0, jsx_runtime_1.jsx)("img", { src: bgImageUrl, alt: "", style: {
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -59,7 +61,7 @@ const OutputView = ({ outId }) => {
                     zIndex: 0
                 }, onError: (e) => {
                     e.currentTarget.style.display = 'none';
-                } })), bgImageUrl && isVideo && ((0, jsx_runtime_1.jsx)("video", { src: bgImageUrl, autoPlay: true, loop: true, muted: true, playsInline: true, style: {
+                } })), has('media') && bgImageUrl && isVideo && ((0, jsx_runtime_1.jsx)("video", { src: bgImageUrl, autoPlay: true, loop: true, muted: true, playsInline: true, style: {
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -69,7 +71,7 @@ const OutputView = ({ outId }) => {
                     zIndex: 0
                 }, onError: (e) => {
                     e.currentTarget.style.display = 'none';
-                } })), (bgImageUrl || mode === 'black') && ((0, jsx_runtime_1.jsx)("div", { style: {
+                } })), (has('announcements') || has('props_overlays')) && (bgImageUrl || mode === 'black') && ((0, jsx_runtime_1.jsx)("div", { style: {
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -77,7 +79,7 @@ const OutputView = ({ outId }) => {
                     height: '100%',
                     backgroundColor: mode === 'black' ? '#000' : 'rgba(0,0,0,0.4)',
                     zIndex: 1
-                } })), (0, jsx_runtime_1.jsx)("div", { style: {
+                } })), has('slide_content') && (0, jsx_runtime_1.jsx)("div", { style: {
                     position: 'relative',
                     zIndex: 2,
                     textAlign: 'center',
@@ -91,7 +93,19 @@ const OutputView = ({ outId }) => {
                         lineHeight: 1.4,
                         whiteSpace: 'pre-wrap',
                         textAlign
-                    }, children: slide })) }), (0, jsx_runtime_1.jsxs)("div", { style: {
+                    }, children: slide })) }), has('lower_thirds') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: {
+                    position: 'absolute',
+                    left: 32,
+                    right: 32,
+                    bottom: 24,
+                    zIndex: 4,
+                    background: 'rgba(0,0,0,0.55)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    borderRadius: 8,
+                    padding: '8px 12px',
+                    fontSize: 18,
+                    color: '#fff'
+                }, children: ["Lower Third: ", slide] })), has('props_overlays') && mode !== 'black' && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', left: 16, top: 48, zIndex: 5, padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 12 }, children: "Props Overlay" })), has('live_video') && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', right: 16, bottom: 16, zIndex: 5, width: 220, height: 124, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d7e3ff', fontSize: 12 }, children: "Live Video Layer" })), has('alerts') && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: 16, right: 16, zIndex: 6, background: '#ff5252', color: '#fff', padding: '4px 8px', borderRadius: 6, fontSize: 12 }, children: "Alert Layer" })), (0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     top: 8,
                     left: 12,

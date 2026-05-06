@@ -13010,6 +13010,8 @@
     const textAlign = theme?.textAlign ?? "center";
     const isVideo = bgImage && (bgImage.endsWith(".mp4") || bgImage.endsWith(".mov") || bgImage.endsWith(".webm"));
     const bgImageUrl = bgImage ? bgImage.startsWith("http") || bgImage.startsWith("file://") ? bgImage : `file://${bgImage}` : null;
+    const layers = perOutLook.layers || ["slide_content"];
+    const has = (layer) => layers.includes(layer);
     return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
       "div",
       {
@@ -13025,7 +13027,7 @@
           overflow: "hidden"
         },
         children: [
-          bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("background") && bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "img",
             {
               src: bgImageUrl,
@@ -13044,7 +13046,7 @@
               }
             }
           ),
-          bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "video",
             {
               src: bgImageUrl,
@@ -13066,7 +13068,7 @@
               }
             }
           ),
-          (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          (has("announcements") || has("props_overlays")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13080,7 +13082,7 @@
               }
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13107,6 +13109,31 @@
               )
             }
           ),
+          has("lower_thirds") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+            "div",
+            {
+              style: {
+                position: "absolute",
+                left: 32,
+                right: 32,
+                bottom: 24,
+                zIndex: 4,
+                background: "rgba(0,0,0,0.55)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 18,
+                color: "#fff"
+              },
+              children: [
+                "Lower Third: ",
+                slide
+              ]
+            }
+          ),
+          has("props_overlays") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { position: "absolute", left: 16, top: 48, zIndex: 5, padding: "6px 10px", borderRadius: 6, background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 12 }, children: "Props Overlay" }),
+          has("live_video") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { position: "absolute", right: 16, bottom: 16, zIndex: 5, width: 220, height: 124, borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", color: "#d7e3ff", fontSize: 12 }, children: "Live Video Layer" }),
+          has("alerts") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { position: "absolute", top: 16, right: 16, zIndex: 6, background: "#ff5252", color: "#fff", padding: "4px 8px", borderRadius: 6, fontSize: 12 }, children: "Alert Layer" }),
           /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
             "div",
             {
@@ -13928,6 +13955,7 @@ ${selectedVerse.text}`;
   var import_jsx_runtime6 = __toESM(require_jsx_runtime());
   var OUTPUT_IDS = [1, 2];
   var SECTION_TYPES = ["Intro", "Verse", "Chorus", "Bridge", "Pre-Chorus", "Post-Chorus", "Tag", "Outro", "Interlude", "Instrumental"];
+  var LAYERS = ["background", "media", "slide_content", "props_overlays", "announcements", "lower_thirds", "live_video", "alerts"];
   var NOTE_INDEX = {
     C: 0,
     "C#": 1,
@@ -14052,6 +14080,9 @@ ${selectedVerse.text}`;
         return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 };
       }
     });
+    const [syncUrl, setSyncUrl] = import_react5.default.useState("ws://localhost:9090");
+    const [syncConnected, setSyncConnected] = import_react5.default.useState(false);
+    const [syncSocket, setSyncSocket] = import_react5.default.useState(null);
     const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
     const selectedSection = selectedSong?.sections.find((section) => section.id === selectedSectionId) || selectedSong?.sections[0];
     const filteredSongs = songs.filter((song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())).sort((a, b) => librarySort === "name" ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length);
@@ -14179,6 +14210,31 @@ ${selectedVerse.text}`;
     const updateLook = (targetOutId, patch) => {
       const currentLook = looks[targetOutId] || { background: "#111111", template: "default", layers: ["slide_content"] };
       setLook(targetOutId, { ...currentLook, ...patch });
+    };
+    const connectSync = () => {
+      if (syncSocket || !syncUrl) return;
+      const socket = new WebSocket(syncUrl);
+      socket.onopen = () => setSyncConnected(true);
+      socket.onclose = () => {
+        setSyncConnected(false);
+        setSyncSocket(null);
+      };
+      socket.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(String(event.data || "{}"));
+          if (msg?.type === "state" && msg.payload?.outId && msg.payload?.state) {
+            window?.worship?.outputs?.setState?.(msg.payload.outId, msg.payload.state);
+          }
+        } catch {
+        }
+      };
+      setSyncSocket(socket);
+    };
+    const disconnectSync = () => {
+      if (!syncSocket) return;
+      syncSocket.close();
+      setSyncSocket(null);
+      setSyncConnected(false);
     };
     const renderConsole = () => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
       "div",
@@ -14531,6 +14587,67 @@ ${selectedVerse.text}`;
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "stage", children: "Stage" })
         ] })
       ] }, output.id)) }),
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "panel settings-looks-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SectionHeader, { title: "Per-Output Looks", meta: "8-layer compositor" }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "settings-looks-grid", children: OUTPUT_IDS.map((id) => {
+          const look = looks[id] || { background: "#111111", template: "default", layers: ["slide_content"] };
+          return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "settings-look-card", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-route-heading", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("strong", { children: [
+                "Output ",
+                id
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: (look.template || "default").replace("_", " ") })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "settings-look-row", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("label", { className: "settings-look-label", children: "Background" }),
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("label", { className: "settings-look-label", children: "Template" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "settings-look-row", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+                "input",
+                {
+                  type: "color",
+                  className: "settings-color-input",
+                  value: look.background || "#111111",
+                  onChange: (event) => updateLook(id, { background: event.target.value })
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("select", { className: "input", value: look.template || "default", onChange: (event) => updateLook(id, { template: event.target.value }), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "default", children: "Default" }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "lower_thirds", children: "Lower Thirds" }),
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("option", { value: "full", children: "Full" })
+              ] })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "settings-layer-grid", children: LAYERS.map((layer) => {
+              const enabled = (look.layers || []).includes(layer);
+              return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("label", { className: `settings-layer-chip ${enabled ? "active" : ""}`, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
+                  "input",
+                  {
+                    type: "checkbox",
+                    checked: enabled,
+                    onChange: () => {
+                      const next = enabled ? (look.layers || []).filter((item) => item !== layer) : [...look.layers || [], layer];
+                      updateLook(id, { layers: next });
+                    }
+                  }
+                ),
+                " ",
+                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: layer.replace("_", " ") })
+              ] }, layer);
+            }) })
+          ] }, id);
+        }) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "panel settings-sync-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SectionHeader, { title: "Sync", meta: syncConnected ? "Connected" : "Disconnected" }),
+        /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "settings-sync-inline", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("input", { className: "input", value: syncUrl, onChange: (e) => setSyncUrl(e.target.value), placeholder: "ws://host:9090" }),
+          !syncConnected ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: connectSync, children: "Connect" }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button", onClick: disconnectSync, children: "Disconnect" }),
+          /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `settings-sync-status ${syncConnected ? "online" : "offline"}`, children: syncConnected ? "ONLINE" : "OFFLINE" })
+        ] })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "panel canvas-layout-section", children: [
         /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "canvas-layout-header", children: [
           /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "canvas-layout-title", children: "\u{1F5A5} Canvas Layout" }),

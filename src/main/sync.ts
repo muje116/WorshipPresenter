@@ -16,7 +16,7 @@ export class SyncServer {
         }
       })
     })
-    console.log(`WorshipOS SyncServer listening on ws://localhost:${port}`)
+    console.log(`WorshipPresenter SyncServer listening on ws://localhost:${port}`)
   }
 
   static get instance(): SyncServer | null {

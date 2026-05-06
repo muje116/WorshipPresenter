@@ -23,7 +23,7 @@ function ensureColumn(table, column, definition) {
     }
 }
 function initDB() {
-    const dbPath = path_1.default.join(electron_1.app.getPath('userData'), 'worshipos.db');
+    const dbPath = path_1.default.join(electron_1.app.getPath('userData'), 'worshipresenter.db');
     exports.db = new better_sqlite3_1.default(dbPath);
     // Comprehensive schema (extensible)
     exports.db.exec(`
