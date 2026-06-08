@@ -157,12 +157,12 @@ export function parseOsisXml(xml: string): VerseRecord[] {
   return out
 }
 
-export async function importOsisBibleFromFile(translationCode: string, language: string, filePath: string): Promise<number> {
-  // Use the shared DB singleton
-  // Import DB is placed at module scope; no need to require here
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  // (db is imported at top)
-  
+export async function importOsisBibleFromFile(
+  translationCode: string,
+  language: string,
+  filePath: string,
+  onProgress?: (percent: number) => void
+): Promise<number> {
   let bibleId: number
   const bibleRow = db.prepare('SELECT id FROM bibles WHERE translation = ?').get(translationCode) as { id: number } | undefined
   if (bibleRow?.id) {
@@ -171,13 +171,123 @@ export async function importOsisBibleFromFile(translationCode: string, language:
     const info = db.prepare('INSERT INTO bibles (translation, language, path) VALUES (?, ?, ?)').run(translationCode, language, filePath)
     bibleId = info.lastInsertRowid as number
   }
-  const xml = fs.readFileSync(filePath, 'utf8')
-  const verses = parseOsisXml(xml)
-  if (!verses.length) return bibleId
+
+  const stats = await fs.promises.stat(filePath)
+  const totalSize = stats.size
+  let processedSize = 0
+
+  const stream = fs.createReadStream(filePath, { encoding: 'utf8', highWaterMark: 128 * 1024 })
+  let buffer = ''
+  
   const insertVerse = db.prepare('INSERT INTO verses (bible_id, book, chapter, verse, text) VALUES (?, ?, ?, ?, ?)')
-  const insertMany = db.transaction((versesToInsert: VerseRecord[]) => {
-    for (const v of versesToInsert) insertVerse.run([bibleId, v.book, v.chapter, v.verse, v.text])
+  
+  let batch: VerseRecord[] = []
+  const flushBatch = () => {
+    if (batch.length === 0) return
+    const insertMany = db.transaction((versesToInsert: VerseRecord[]) => {
+      for (const v of versesToInsert) {
+        insertVerse.run([bibleId, v.book, v.chapter, v.verse, v.text])
+      }
+    })
+    insertMany(batch)
+    batch = []
+  }
+
+  let currentBookCode = ''
+  let currentChapter = 0
+  const seen = new Set<string>()
+
+  return new Promise((resolve, reject) => {
+    stream.on('data', (chunk: string) => {
+      buffer += chunk
+      processedSize += Buffer.byteLength(chunk, 'utf8')
+      
+      const chapRe = /<div[^>]*type=["']chapter["'][^>]*osisID=["']([^"']+)["']/g
+      let chapMatch: RegExpExecArray | null
+      while ((chapMatch = chapRe.exec(buffer)) !== null) {
+        const parts = chapMatch[1].split('.')
+        currentBookCode = parts[0]
+        if (parts.length > 1) {
+          currentChapter = parseInt(parts[1], 10) || 1
+        }
+      }
+
+      const verseRe = /<verse[^>]*osisID=["']([^"']+)["'][^>]*>([\s\S]*?)<\/verse>/g
+      let m: RegExpExecArray | null
+      let lastIndex = 0
+      
+      while ((m = verseRe.exec(buffer)) !== null) {
+        const osisID = m[1]
+        let text = m[2] ?? ''
+        text = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        const parts = osisID.split('.')
+        const bookCode = parts[0] || currentBookCode
+        const chapter = parts.length > 1 ? parseInt(parts[1], 10) : currentChapter
+        const verse = parts.length > 2 ? parseInt(parts[2], 10) : 0
+        
+        const bookName = toBookName(bookCode)
+        const vKey = `${bookName}:${chapter}:${verse}`
+        
+        if (!seen.has(vKey)) {
+          seen.add(vKey)
+          batch.push({
+            book: bookName,
+            chapter: isNaN(chapter) ? 0 : chapter,
+            verse: isNaN(verse) ? 0 : verse,
+            text
+          })
+        }
+        
+        if (batch.length >= 1000) {
+          flushBatch()
+        }
+        
+        lastIndex = verseRe.lastIndex
+      }
+      
+      if (lastIndex > 0) {
+        buffer = buffer.slice(lastIndex)
+      } else if (buffer.length > 500 * 1024) {
+        buffer = buffer.slice(buffer.length - 100 * 1024)
+      }
+      
+      if (onProgress) {
+        onProgress(Math.round((processedSize / totalSize) * 100))
+      }
+    })
+    
+    stream.on('end', () => {
+      const verseRe = /<verse[^>]*osisID=["']([^"']+)["'][^>]*>([\s\S]*?)<\/verse>/g
+      let m: RegExpExecArray | null
+      while ((m = verseRe.exec(buffer)) !== null) {
+        const osisID = m[1]
+        let text = m[2] ?? ''
+        text = text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+        const parts = osisID.split('.')
+        const bookCode = parts[0] || currentBookCode
+        const chapter = parts.length > 1 ? parseInt(parts[1], 10) : currentChapter
+        const verse = parts.length > 2 ? parseInt(parts[2], 10) : 0
+        
+        const bookName = toBookName(bookCode)
+        const vKey = `${bookName}:${chapter}:${verse}`
+        
+        if (!seen.has(vKey)) {
+          seen.add(vKey)
+          batch.push({
+            book: bookName,
+            chapter: isNaN(chapter) ? 0 : chapter,
+            verse: isNaN(verse) ? 0 : verse,
+            text
+          })
+        }
+      }
+      flushBatch()
+      if (onProgress) onProgress(100)
+      resolve(bibleId)
+    })
+    
+    stream.on('error', (err) => {
+      reject(err)
+    })
   })
-  insertMany(verses)
-  return bibleId
 }

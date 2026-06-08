@@ -11,6 +11,7 @@ async function createWindows() {
   const operatorPreloadPath = path.join(__dirname, '../preload.js')
   const outputPreloadPath = path.join(__dirname, '../preload-output.js')
   const rendererEntryPath = path.join(__dirname, '../../renderer/app/index.html')
+  const rendererOutputEntryPath = path.join(__dirname, '../../renderer/app/output.html')
 
   // Main operator window - uses the new React app
   mainWindow = new BrowserWindow({
@@ -57,7 +58,7 @@ async function createWindows() {
         nodeIntegration: false,
       }
     })
-    w.loadFile(rendererEntryPath, { query: { out: String(i + 1) } })
+    w.loadFile(rendererOutputEntryPath, { query: { out: String(i + 1) } })
     outputWindows.push(w)
   }
   

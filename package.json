@@ -11,7 +11,8 @@
     "postinstall": "electron-builder install-app-deps",
     "test": "jest",
     "test:e2e": "playwright test",
-    "dev": "tsc && node scripts/build-renderer.js && electron ."
+    "dev": "tsc && node scripts/build-renderer.js && electron .",
+    "dev:watch": "tsc && node scripts/build-renderer.js && start tsc -w && start node scripts/build-renderer.js --watch && electron ."
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -30,6 +31,7 @@
     "@playwright/test": "^1.56.1"
     ,"@testing-library/react": "^16.3.0"
     ,"@testing-library/jest-dom": "^6.9.1"
+    ,"jest-environment-jsdom": "^30.2.0"
   },
   "dependencies": {
     "better-sqlite3": "^12.9.0",

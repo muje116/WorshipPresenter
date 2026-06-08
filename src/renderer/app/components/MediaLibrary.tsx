@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { dbService } from '../services/db'
 
 declare const window: any
 
@@ -55,24 +56,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const loadMediaAssets = async () => {
     try {
-      let sql = 'SELECT * FROM media_assets'
-      const params: any[] = []
-      const conditions: string[] = []
-
-      if (activeFilter === 'image') { conditions.push('type = ?'); params.push('image') }
-      else if (activeFilter === 'video') { conditions.push('type = ?'); params.push('video') }
-
-      if (currentFolderId !== null) {
-        conditions.push('folder_id = ?')
-        params.push(currentFolderId)
-      }
-
-      if (conditions.length > 0) {
-        sql += ' WHERE ' + conditions.join(' AND ')
-      }
-      sql += ' ORDER BY id DESC'
-
-      const results = await window.worship.db.run(sql, params)
+      const typeFilter = activeFilter === 'all' ? undefined : activeFilter
+      const results = await dbService.media.getAssets(currentFolderId, typeFilter)
       const normalized = (results || []).map((asset: any) => ({
         ...asset,
         name: asset.name || asset.path?.split('\\').pop() || asset.path?.split('/').pop() || 'Untitled'
@@ -86,7 +71,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const loadFolders = async () => {
     try {
-      const results = await window.worship.db.run('SELECT * FROM media_folders ORDER BY name')
+      const results = await dbService.media.getFolders()
       setFolders(results || [])
     } catch {
       setFolders([])
@@ -111,9 +96,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
       if (filePaths.length > 0) {
         for (const filePath of filePaths) {
           const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || ''
-          await window.worship.db.run(
-            'INSERT INTO media_assets (path, type, name, duration, folder_id) VALUES (?, ?, ?, ?, ?)',
-            [filePath, type, fileName, type === 'video' ? 0 : null, currentFolderId]
+          await dbService.media.createAsset(
+            filePath,
+            type,
+            fileName,
+            type === 'video' ? 0 : null,
+            currentFolderId
           )
         }
         await loadMediaAssets()
@@ -131,10 +119,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
     const name = prompt('Folder name:')
     if (!name) return
     try {
-      await window.worship.db.run(
-        'INSERT INTO media_folders (name, parent_id) VALUES (?, ?)',
-        [name, currentFolderId]
-      )
+      await dbService.media.createFolder(name, currentFolderId)
       await loadFolders()
       onNotify?.('Folder created', name, 'success')
     } catch (error) {
@@ -144,7 +129,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const handleDelete = async (asset: MediaAsset) => {
     try {
-      await window.worship.db.run('DELETE FROM media_assets WHERE id = ?', [asset.id])
+      await dbService.media.deleteAsset(asset.id)
       await loadMediaAssets()
       if (selectedAsset?.id === asset.id) {
         setSelectedAsset(null)
@@ -185,10 +170,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
   const handleAddToSchedule = async () => {
     if (!selectedAsset) return
     try {
-      await window.worship.db.run(
-        'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
-        [1, selectedAsset.type === 'image' ? 'image' : 'video', selectedAsset.path]
+      await dbService.schedule.addItem(
+        selectedAsset.type === 'image' ? 'image' : 'video',
+        selectedAsset.path
       )
+      // Note: in a real application, we might also want to update the store's schedule state
+      // Let's reload the store schedule items to keep UI in sync
+      const nextItems = await dbService.schedule.getItems()
+      useStore.setState({ schedule: nextItems })
       onNotify?.('Added to schedule', selectedAsset.name || 'Media queued', 'success')
     } catch (error) {
       console.error('Failed to add to schedule:', error)

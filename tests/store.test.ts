@@ -6,10 +6,10 @@ describe('Store basics', () => {
     expect(Array.isArray(s.songs)).toBe(true)
   })
 
-  test('can add a song', () => {
+  test('can add a song', async () => {
     const store = useStore.getState()
     const initialCount = store.songs.length
-    store.addSong()
+    await store.addSong()
     const next = useStore.getState()
     expect(next.songs.length).toBe(initialCount + 1)
   })
@@ -23,10 +23,10 @@ describe('Store basics', () => {
     expect(next.liveSlide).toBe('Live Only')
   })
 
-  test('can edit song section metadata', () => {
+  test('can edit song section metadata', async () => {
     // First add a song to test with
     const store = useStore.getState()
-    store.addSong()
+    await store.addSong()
     const state = useStore.getState()
     const song = state.songs[state.songs.length - 1]
     const section = song.sections[0]

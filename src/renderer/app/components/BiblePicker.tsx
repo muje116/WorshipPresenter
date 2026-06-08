@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
+import { dbService } from '../services/db'
 
 declare const window: any
 
@@ -42,6 +43,7 @@ export const BiblePicker: React.FC = () => {
   const [secondVerses, setSecondVerses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+  const [importProgress, setImportProgress] = useState<number | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const [dualMode, setDualMode] = useState(false)
   const [selectedVerse, setSelectedVerse] = useState<any | null>(null)
@@ -194,15 +196,35 @@ export const BiblePicker: React.FC = () => {
   const handleImportOsis = async () => {
     const filePath = await window.worship?.bibles?.openOsisFile?.()
     if (!filePath) return
+    const translationCodeToUse = prompt('Enter Bible translation code (e.g. NIV, KJV, ESV):')
+    if (!translationCodeToUse || !translationCodeToUse.trim()) return
+    const code = translationCodeToUse.trim().toUpperCase()
+
+    let cleanup: (() => void) | undefined
+    if (window.worship?.bibles?.onImportProgress) {
+      cleanup = window.worship.bibles.onImportProgress((payload: any) => {
+        if (payload.translationCode === code) {
+          setImportProgress(payload.progress)
+        }
+      })
+    }
+
+    setImportProgress(0)
+
     try {
-      const translationCodeToUse = selectedTranslation || (translations[0]?.code ?? 'NIV')
-      await window.worship.bibles.importFromOsis(translationCodeToUse, 'en', filePath)
+      await window.worship.bibles.importFromOsis(code, 'en', filePath)
+      setImportProgress(null)
+      alert('Bible import completed successfully!')
       const translationsList = await window.worship.bibles.listTranslations()
       if (translationsList && translationsList.length) {
         setTranslations(translationsList)
       }
     } catch (e) {
       console.error(e)
+      setImportProgress(null)
+      alert('Bible import failed: ' + (e as Error).message)
+    } finally {
+      if (cleanup) cleanup()
     }
   }
 
@@ -227,10 +249,10 @@ export const BiblePicker: React.FC = () => {
     if (!selectedVerse) return
     try {
       const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`
-      await window.worship.db.run(
-        'INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))',
-        [1, 'scripture', content]
-      )
+      await dbService.schedule.addItem('scripture', content)
+      // Reload schedule items in Zustand store
+      const nextItems = await dbService.schedule.getItems()
+      useStore.setState({ schedule: nextItems })
       setToast({ title: 'Added to schedule', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
     } catch (error) {
       console.error('Failed to add to schedule:', error)
@@ -244,7 +266,14 @@ export const BiblePicker: React.FC = () => {
       {/* LEFT: Explorer Panel */}
       <aside className="panel explorer-panel">
         <div className="import-osis-row">
-          <button className="live-button full" onClick={handleImportOsis}>📥 Import OSIS Bible</button>
+          <button className="live-button full" onClick={handleImportOsis} disabled={importProgress !== null}>
+            {importProgress !== null ? `Importing (${importProgress}%)` : '📥 Import OSIS Bible'}
+          </button>
+          {importProgress !== null && (
+            <div style={{ width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
+              <div style={{ width: `${importProgress}%`, height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.2s ease-in-out' }} />
+            </div>
+          )}
         </div>
 
         <div className="explorer-section-header" onClick={() => setOtExpanded(!otExpanded)}>

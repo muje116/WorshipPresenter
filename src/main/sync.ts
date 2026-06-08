@@ -10,7 +10,7 @@ export class SyncServer {
       ws.on('message', (data: RawData) => {
         try {
           const msg = JSON.parse(data.toString())
-          this.broadcast(msg.type, msg.payload)
+          this.broadcast(msg.type, msg.payload, ws)
         } catch {
           // ignore malformed messages
         }
@@ -30,13 +30,18 @@ export class SyncServer {
     return this._instance
   }
 
-  broadcast(type: string, payload: any) {
+  broadcast(type: string, payload: any, excludeWs?: WebSocket) {
     const msg = JSON.stringify({ type, payload })
     this.wss.clients.forEach((client: WebSocket) => {
-      if (client.readyState === WebSocket.OPEN) {
+      if (client.readyState === WebSocket.OPEN && client !== excludeWs) {
         client.send(msg)
       }
     })
+  }
+
+  close() {
+    this.wss.close()
+    SyncServer._instance = null
   }
 }
 
