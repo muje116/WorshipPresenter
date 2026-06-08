@@ -4,6 +4,16 @@ declare const window: any
 
 const SECTION_TYPES = ['Intro', 'Verse', 'Chorus', 'Bridge', 'Pre-Chorus', 'Post-Chorus', 'Tag', 'Outro', 'Interlude', 'Instrumental']
 const LAYERS = ['background', 'media', 'slide_content', 'props_overlays', 'announcements', 'lower_thirds', 'live_video', 'alerts']
+const LAYER_META: Record<string, { icon: string; label: string }> = {
+  background: { icon: '◼', label: 'background' },
+  media: { icon: '▶', label: 'media' },
+  slide_content: { icon: 'T', label: 'slide content' },
+  props_overlays: { icon: '▤', label: 'props overlays' },
+  announcements: { icon: '✦', label: 'announcements' },
+  lower_thirds: { icon: '⌴', label: 'lower thirds' },
+  live_video: { icon: '▣', label: 'live video' },
+  alerts: { icon: '!', label: 'alerts' }
+}
 
 export type OutputRole = 'primary' | 'extended' | 'stage'
 export type OutputConfig = { id: number; role: OutputRole; resolution: string; active: boolean }
@@ -99,11 +109,11 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </div>
 
-      <section className="panel output-routing-cards">
+      <section className="panel output-routing-cards settings-card-group">
         {outputConfigs.map((output) => (
           <div
             key={output.id}
-            className={`output-route-card ${output.active ? 'active' : ''}`}
+            className={`output-route-card settings-output-card ${output.active ? 'active' : ''}`}
             onClick={() => {
               onSetActiveOutputId(output.id)
               outputConfigs.forEach((item) => onUpdateOutputConfig(item.id, { active: item.id === output.id }))
@@ -111,10 +121,10 @@ export const SettingsWorkspace: React.FC<Props> = ({
           >
             <div className="output-route-heading">
               <strong>Output {output.id}</strong>
-              <small>{output.resolution}</small>
+              <small>{output.role} · {output.resolution}</small>
             </div>
             <select
-              className="input"
+              className="input settings-select"
               value={output.role}
               onChange={(event) => {
                 const role = event.target.value as OutputRole
@@ -126,7 +136,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
               <option value="extended">Extended</option>
               <option value="stage">Stage</option>
             </select>
-            <div className="toolbar-inline" style={{ marginTop: 8 }}>
+            <div className="toolbar-inline settings-window-actions">
               {['minimize', 'maximize', 'restore'].map((action) => (
                 <button
                   key={action}
@@ -163,12 +173,12 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </section>
 
       {/* Logo Image Configuration */}
-      <section className="panel settings-logo-panel">
+      <section className="panel settings-logo-panel settings-card-group">
         <div className="panel-header">
           <h3>Logo Mode Image</h3>
           <small>Shown when LOGO button is pressed</small>
         </div>
-        <div className="logo-picker-row">
+        <div className="logo-picker-row settings-logo-row">
           <div className="logo-preview">
             {logoImage ? (
               <img
@@ -180,7 +190,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
               <div className="logo-placeholder">No logo set</div>
             )}
           </div>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="settings-inline-stack">
             <input
               className="input"
               value={logoImage}
@@ -194,14 +204,14 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel settings-looks-panel">
+      <section className="panel settings-looks-panel settings-card-group">
         <div className="panel-header"><h3>Per-Output Looks</h3><small>8-layer compositor</small></div>
         <div className="settings-looks-grid">
           {OUTPUT_IDS.map((id) => {
             const look = looks[id] || { background: '#111111', template: 'default', layers: ['slide_content'] }
             return (
               <div key={id} className="settings-look-card">
-                <div className="output-route-heading">
+                <div className="output-route-heading settings-look-heading">
                   <strong>Output {id}</strong>
                   <small>{(look.template || 'default').replace('_', ' ')}</small>
                 </div>
@@ -229,8 +239,9 @@ export const SettingsWorkspace: React.FC<Props> = ({
                 <div className="settings-layer-grid">
                   {LAYERS.map((layer) => {
                     const enabled = (look.layers || []).includes(layer)
+                    const meta = LAYER_META[layer] || { icon: '•', label: layer.replace('_', ' ') }
                     return (
-                      <label key={layer} className={`settings-layer-chip ${enabled ? 'active' : ''}`}>
+                      <label key={layer} className={`settings-layer-chip ${enabled ? 'active' : ''}`} title={meta.label}>
                         <input
                           type="checkbox"
                           checked={enabled}
@@ -241,7 +252,8 @@ export const SettingsWorkspace: React.FC<Props> = ({
                             onUpdateLook(id, { layers: next })
                           }}
                         />
-                        <span>{layer.replace('_', ' ')}</span>
+                        <span className="settings-layer-icon">{meta.icon}</span>
+                        <span>{meta.label}</span>
                       </label>
                     )
                   })}
@@ -252,7 +264,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel settings-sync-panel">
+      <section className="panel settings-sync-panel settings-card-group">
         <div className="panel-header">
           <h3>Sync</h3>
           <small className={syncConnected ? 'text-success' : 'text-muted'}>
@@ -277,7 +289,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel canvas-layout-section">
+      <section className="panel canvas-layout-section settings-card-group">
         <div className="canvas-layout-header">
           <div className="canvas-layout-title">🖥 Canvas Layout</div>
           <div className="ratio-chip-group">

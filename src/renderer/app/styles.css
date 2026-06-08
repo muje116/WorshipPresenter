@@ -2053,11 +2053,16 @@ textarea {
 
 .settings-looks-panel,
 .settings-sync-panel {
-  padding: 12px;
+  padding: 10px 12px;
   border: 1px solid rgba(69, 70, 82, 0.35);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(23,31,51,0.88), rgba(19,27,46,0.88));
   box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.settings-card-group {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .settings-looks-grid {
@@ -2070,7 +2075,7 @@ textarea {
   background: rgba(34, 42, 61, 0.75);
   border: 1px solid rgba(69, 70, 82, 0.45);
   border-radius: 10px;
-  padding: 10px;
+  padding: 9px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2082,6 +2087,16 @@ textarea {
   gap: 8px;
 }
 
+.settings-look-heading strong {
+  font-size: 0.9rem;
+}
+
+.settings-look-heading small {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
 .settings-look-label {
   font-size: 0.68rem;
   color: var(--text-muted);
@@ -2091,14 +2106,14 @@ textarea {
 
 .settings-color-input {
   width: 100%;
-  min-height: 34px;
+  min-height: 30px;
   border: 1px solid rgba(69, 70, 82, 0.45);
   border-radius: 8px;
   background: var(--surface-mid);
 }
 
 .settings-layer-grid {
-  margin-top: 4px;
+  margin-top: 2px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 4px;
@@ -2107,13 +2122,25 @@ textarea {
 .settings-layer-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
+  gap: 5px;
+  padding: 3px 6px;
   border: 1px solid rgba(69, 70, 82, 0.4);
   border-radius: 7px;
   color: var(--text-muted);
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   background: rgba(19, 27, 46, 0.6);
+}
+
+.settings-layer-chip input {
+  margin: 0;
+}
+
+.settings-layer-icon {
+  width: 12px;
+  display: inline-flex;
+  justify-content: center;
+  color: var(--primary);
+  font-weight: 700;
 }
 
 .settings-layer-chip.active {
@@ -2127,6 +2154,27 @@ textarea {
   grid-template-columns: 1fr auto auto;
   gap: 8px;
   align-items: center;
+}
+
+.settings-window-actions {
+  margin-top: 6px;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.settings-inline-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-output-card {
+  gap: 7px;
+}
+
+.settings-select {
+  min-height: 32px;
 }
 
 .settings-sync-status {

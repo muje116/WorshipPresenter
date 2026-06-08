@@ -87,6 +87,7 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
 
   return (
     <div
+      data-testid="output-root"
       style={{
         height: '100vh',
         width: '100%',
