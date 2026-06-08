@@ -25,18 +25,159 @@ function setupIPC() {
     if (ipcRegistered)
         return;
     ipcRegistered = true;
-    // Simple DB bridge: execute read/write SQL via IPC
-    electron_1.ipcMain.handle('db.run', (_event, payload) => {
-        const { sql, params } = payload;
-        const stmt = db_1.db.prepare(sql);
-        const upper = sql.trim().toUpperCase();
-        if (upper.startsWith('SELECT')) {
-            return stmt.all(params || []);
+    // Typed database handlers (removes raw SQL passthrough)
+    electron_1.ipcMain.handle('songs.getAll', async () => {
+        const rows = db_1.db.prepare(`
+      SELECT 
+        s.id AS song_id, s.title, s.artist, s.tempo, s.key,
+        sec.id AS section_id, sec.type AS section_type, sec.content AS section_content, sec.order_num AS section_order
+      FROM songs s
+      LEFT JOIN song_sections sec ON s.id = sec.song_id
+      ORDER BY s.id, sec.order_num
+    `).all();
+        const songsMap = new Map();
+        for (const row of rows) {
+            if (!songsMap.has(row.song_id)) {
+                songsMap.set(row.song_id, {
+                    id: row.song_id,
+                    title: row.title,
+                    artist: row.artist,
+                    tempo: row.tempo,
+                    key: row.key,
+                    sections: []
+                });
+            }
+            if (row.section_id !== null) {
+                songsMap.get(row.song_id).sections.push({
+                    id: row.section_id,
+                    type: row.section_type,
+                    text: row.section_content
+                });
+            }
         }
-        else {
-            const info = stmt.run(params || []);
-            return { changes: info.changes, lastInsertRowid: info.lastInsertRowid };
+        return Array.from(songsMap.values());
+    });
+    electron_1.ipcMain.handle('songs.create', async (_ev, args) => {
+        const info = db_1.db.prepare('INSERT INTO songs (title, artist, tempo, key) VALUES (?, ?, ?, ?)').run(args.title, args.artist || null, args.tempo || null, args.key || null);
+        const songId = info.lastInsertRowid;
+        const secInfo = db_1.db.prepare('INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)').run(songId, 'Verse', '[C]Verse text', 1);
+        return {
+            id: songId,
+            title: args.title,
+            artist: args.artist,
+            tempo: args.tempo,
+            key: args.key,
+            sections: [{ id: secInfo.lastInsertRowid, type: 'Verse', text: '[C]Verse text' }]
+        };
+    });
+    electron_1.ipcMain.handle('songs.updateTitle', async (_ev, args) => {
+        db_1.db.prepare('UPDATE songs SET title = ? WHERE id = ?').run(args.title, args.id);
+    });
+    electron_1.ipcMain.handle('songs.delete', async (_ev, args) => {
+        const deleteTx = db_1.db.transaction((id) => {
+            db_1.db.prepare('DELETE FROM song_sections WHERE song_id = ?').run(id);
+            db_1.db.prepare('DELETE FROM songs WHERE id = ?').run(id);
+        });
+        deleteTx(args.id);
+    });
+    electron_1.ipcMain.handle('songs.addSection', async (_ev, args) => {
+        const maxOrderRow = db_1.db.prepare('SELECT COALESCE(MAX(order_num), 0) AS m FROM song_sections WHERE song_id = ?').get(args.songId);
+        const nextOrder = maxOrderRow.m + 1;
+        const info = db_1.db.prepare('INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)').run(args.songId, args.type, args.text, nextOrder);
+        return { id: info.lastInsertRowid, type: args.type, text: args.text };
+    });
+    electron_1.ipcMain.handle('songs.updateSection', async (_ev, args) => {
+        if (args.type !== undefined) {
+            db_1.db.prepare('UPDATE song_sections SET type = ? WHERE id = ? AND song_id = ?').run(args.type, args.sectionId, args.songId);
         }
+        if (args.text !== undefined) {
+            db_1.db.prepare('UPDATE song_sections SET content = ? WHERE id = ? AND song_id = ?').run(args.text, args.sectionId, args.songId);
+        }
+    });
+    electron_1.ipcMain.handle('songs.deleteSection', async (_ev, args) => {
+        db_1.db.prepare('DELETE FROM song_sections WHERE id = ? AND song_id = ?').run(args.sectionId, args.songId);
+    });
+    electron_1.ipcMain.handle('songs.moveSections', async (_ev, args) => {
+        const updateStmt = db_1.db.prepare('UPDATE song_sections SET order_num = ? WHERE id = ? AND song_id = ?');
+        const moveTx = db_1.db.transaction((songId, sectionIds) => {
+            sectionIds.forEach((id, idx) => {
+                updateStmt.run(idx + 1, id, songId);
+            });
+        });
+        moveTx(args.songId, args.sectionIds);
+    });
+    electron_1.ipcMain.handle('schedule.getItems', async () => {
+        return db_1.db.prepare('SELECT * FROM schedule_items ORDER BY order_num').all();
+    });
+    electron_1.ipcMain.handle('schedule.addItem', async (_ev, args) => {
+        const maxOrderRow = db_1.db.prepare('SELECT COALESCE(MAX(order_num), 0) AS m FROM schedule_items WHERE schedule_id = ?').get(args.scheduleId);
+        const nextOrder = maxOrderRow.m + 1;
+        const info = db_1.db.prepare('INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, ?)').run(args.scheduleId, args.type, args.content, nextOrder);
+        return { id: info.lastInsertRowid, item_type: args.type, content: args.content };
+    });
+    electron_1.ipcMain.handle('schedule.updateItem', async (_ev, args) => {
+        if (args.type !== undefined) {
+            db_1.db.prepare('UPDATE schedule_items SET item_type = ? WHERE id = ?').run(args.type, args.id);
+        }
+        if (args.content !== undefined) {
+            db_1.db.prepare('UPDATE schedule_items SET content = ? WHERE id = ?').run(args.content, args.id);
+        }
+    });
+    electron_1.ipcMain.handle('schedule.deleteItem', async (_ev, args) => {
+        db_1.db.prepare('DELETE FROM schedule_items WHERE id = ?').run(args.id);
+    });
+    electron_1.ipcMain.handle('schedule.moveItems', async (_ev, args) => {
+        const updateStmt = db_1.db.prepare('UPDATE schedule_items SET order_num = ? WHERE id = ? AND schedule_id = ?');
+        const moveTx = db_1.db.transaction((scheduleId, itemIds) => {
+            itemIds.forEach((id, idx) => {
+                updateStmt.run(idx + 1, id, scheduleId);
+            });
+        });
+        moveTx(args.scheduleId, args.itemIds);
+    });
+    electron_1.ipcMain.handle('themes.getAll', async () => {
+        return db_1.db.prepare('SELECT * FROM themes ORDER BY id').all();
+    });
+    electron_1.ipcMain.handle('themes.create', async (_ev, args) => {
+        const info = db_1.db.prepare('INSERT INTO themes (name, background, text_style, backgroundImage, text_color, font_size) VALUES (?, ?, ?, ?, ?, ?)').run(args.name, args.bg, args.textStyle, args.backgroundImage || '', args.textColor || '#ffffff', args.fontSize || 42);
+        return { id: info.lastInsertRowid, ...args };
+    });
+    electron_1.ipcMain.handle('media.getFolders', async () => {
+        return db_1.db.prepare('SELECT * FROM media_folders ORDER BY name').all();
+    });
+    electron_1.ipcMain.handle('media.createFolder', async (_ev, args) => {
+        const info = db_1.db.prepare('INSERT INTO media_folders (name, parent_id) VALUES (?, ?)').run(args.name, args.parentId !== undefined ? args.parentId : null);
+        return { id: info.lastInsertRowid, name: args.name, parent_id: args.parentId };
+    });
+    electron_1.ipcMain.handle('media.getAssets', async (_ev, args) => {
+        let sql = 'SELECT * FROM media_assets';
+        const params = [];
+        const conditions = [];
+        if (args.type) {
+            conditions.push('type = ?');
+            params.push(args.type);
+        }
+        if (args.folderId !== undefined) {
+            if (args.folderId === null) {
+                conditions.push('folder_id IS NULL');
+            }
+            else {
+                conditions.push('folder_id = ?');
+                params.push(args.folderId);
+            }
+        }
+        if (conditions.length > 0) {
+            sql += ' WHERE ' + conditions.join(' AND ');
+        }
+        sql += ' ORDER BY id DESC';
+        return db_1.db.prepare(sql).all(...params);
+    });
+    electron_1.ipcMain.handle('media.createAsset', async (_ev, args) => {
+        const info = db_1.db.prepare('INSERT INTO media_assets (path, type, name, duration, folder_id, thumbnail) VALUES (?, ?, ?, ?, ?, ?)').run(args.path, args.type, args.name, args.duration !== undefined ? args.duration : null, args.folderId !== undefined ? args.folderId : null, args.thumbnail || null);
+        return { id: info.lastInsertRowid, ...args };
+    });
+    electron_1.ipcMain.handle('media.deleteAsset', async (_ev, args) => {
+        db_1.db.prepare('DELETE FROM media_assets WHERE id = ?').run(args.id);
     });
     // Output control: BLACK/LOGO/CLEAR
     electron_1.ipcMain.on('output-action', (_ev, payload) => {
@@ -132,10 +273,12 @@ function setupIPC() {
     registerBibleHandlers();
 }
 function registerBibleHandlers() {
-    electron_1.ipcMain.handle('bibles.importFromOsis', async (_ev, args) => {
+    electron_1.ipcMain.handle('bibles.importFromOsis', async (event, args) => {
         const { translationCode, language, filePath } = args;
         try {
-            const bibleId = await (0, osisLoader_1.importOsisBibleFromFile)(translationCode, language, filePath);
+            const bibleId = await (0, osisLoader_1.importOsisBibleFromFile)(translationCode, language, filePath, (percent) => {
+                event.sender.send('bible-import-progress', { translationCode, progress: percent });
+            });
             return bibleId;
         }
         catch (err) {
@@ -202,17 +345,46 @@ function registerBibleHandlers() {
     });
     electron_1.ipcMain.handle('bibles.search', async (_ev, args) => {
         const { query, translationId } = args;
+        if (!query || !query.trim())
+            return [];
         try {
-            let sql = 'SELECT book, chapter, verse, text FROM verses WHERE text LIKE ? ORDER BY book, chapter, verse LIMIT 100';
-            const params = [`%${query}%`];
+            const matchQuery = query.trim().replace(/["']/g, '');
+            let sql = `
+        SELECT v.book, v.chapter, v.verse, v.text 
+        FROM verses v
+        JOIN verses_fts f ON v.id = f.rowid
+        WHERE f.text MATCH ?
+        ORDER BY v.book, v.chapter, v.verse 
+        LIMIT 100
+      `;
+            const params = [`"${matchQuery}"`];
             if (translationId) {
-                sql = 'SELECT v.book, v.chapter, v.verse, v.text FROM verses v WHERE v.bible_id = ? AND v.text LIKE ? ORDER BY v.book, v.chapter, v.verse LIMIT 100';
+                sql = `
+          SELECT v.book, v.chapter, v.verse, v.text 
+          FROM verses v
+          JOIN verses_fts f ON v.id = f.rowid
+          WHERE v.bible_id = ? AND f.text MATCH ?
+          ORDER BY v.book, v.chapter, v.verse 
+          LIMIT 100
+        `;
                 params.unshift(translationId);
             }
             return db_1.db.prepare(sql).all(...params);
         }
-        catch {
-            return [];
+        catch (e) {
+            console.error('Bible search FTS5 failed, falling back to LIKE:', e);
+            try {
+                let sql = 'SELECT book, chapter, verse, text FROM verses WHERE text LIKE ? ORDER BY book, chapter, verse LIMIT 100';
+                const params = [`%${query}%`];
+                if (translationId) {
+                    sql = 'SELECT v.book, v.chapter, v.verse, v.text FROM verses v WHERE v.bible_id = ? AND v.text LIKE ? ORDER BY v.book, v.chapter, v.verse LIMIT 100';
+                    params.unshift(translationId);
+                }
+                return db_1.db.prepare(sql).all(...params);
+            }
+            catch {
+                return [];
+            }
         }
     });
 }

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.useStore = exports.THEME_PRESETS = void 0;
 const zustand_1 = require("zustand");
+const db_1 = require("./services/db");
 // Theme presets
 exports.THEME_PRESETS = [
     { name: 'Light Classic', bg: '#ffffff', color: '#000000', fontSize: 48 },
@@ -39,22 +40,30 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
         const next = redoStack[redoStack.length - 1];
         set({ redoStack: redoStack.slice(0, -1), undoStack: [...get().undoStack, currentSlide], currentSlide: next });
     },
-    addSong: () => {
-        const id = Math.max(0, ...get().songs.map(s => s.id)) + 1;
-        const newSong = { id, title: 'New Song ' + id, sections: [{ id: 1, type: 'Verse', text: '[C]Verse text' }] };
-        set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }));
-        // Persist to DB
+    addSong: async () => {
         try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                window.worship.db.run('INSERT INTO songs (id, title) VALUES (?, ?)', [newSong.id, newSong.title]);
-                newSong.sections.forEach(section => {
-                    ;
-                    window.worship.db.run('INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)', [newSong.id, section.type, section.text, section.id]);
-                });
-            }
+            const tempId = Math.max(0, ...get().songs.map(s => s.id)) + 1;
+            const title = 'New Song ' + tempId;
+            const newSong = await db_1.dbService.songs.create(title);
+            set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }));
         }
         catch (err) {
             console.error('Failed to persist new song:', err);
+        }
+    },
+    deleteSong: async (id) => {
+        try {
+            await db_1.dbService.songs.delete(id);
+            set((state) => {
+                const nextSongs = state.songs.filter((song) => song.id !== id);
+                return {
+                    songs: nextSongs,
+                    currentSlide: nextSongs[0]?.title || 'Welcome'
+                };
+            });
+        }
+        catch (err) {
+            console.error('Failed to delete song:', err);
         }
     },
     updateSongSection: (songId, sectionId, patch) => {
@@ -66,89 +75,71 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
                     sections: song.sections.map((section) => (section.id !== sectionId ? section : { ...section, ...patch }))
                 }))
         }));
-        // Persist to DB
-        try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                if (patch.type) {
-                    ;
-                    window.worship.db.run('UPDATE song_sections SET type = ? WHERE id = ? AND song_id = ?', [patch.type, sectionId, songId]);
-                }
-                if (patch.text !== undefined) {
-                    ;
-                    window.worship.db.run('UPDATE song_sections SET content = ? WHERE id = ? AND song_id = ?', [patch.text, sectionId, songId]);
-                }
-            }
-        }
-        catch (err) {
+        db_1.dbService.songs.updateSection(songId, sectionId, patch).catch(err => {
             console.error('Failed to persist section update:', err);
-        }
+        });
     },
     updateSongTitle: (songId, title) => {
         const nextTitle = title.trim();
         set((state) => ({
             songs: state.songs.map((song) => (song.id === songId ? { ...song, title: nextTitle || '' } : song))
         }));
-        try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                ;
-                window.worship.db.run('UPDATE songs SET title = ? WHERE id = ?', [nextTitle || 'Untitled Song', songId]);
-            }
-        }
-        catch (err) {
+        db_1.dbService.songs.updateTitle(songId, nextTitle).catch(err => {
             console.error('Failed to persist song title update:', err);
-        }
+        });
     },
-    addSongSection: (songId) => {
-        set((state) => ({
-            songs: state.songs.map((song) => {
-                if (song.id !== songId)
-                    return song;
-                const nextId = Math.max(0, ...song.sections.map((section) => section.id)) + 1;
-                return {
-                    ...song,
-                    sections: [...song.sections, { id: nextId, type: 'Verse', text: '' }]
-                };
-            })
-        }));
-        // Persist to DB
+    addSongSection: async (songId) => {
         try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                const song = get().songs.find(s => s.id === songId);
-                if (song) {
-                    const newSection = song.sections[song.sections.length - 1];
-                    window.worship.db.run('INSERT INTO song_sections (song_id, type, content, order_num) VALUES (?, ?, ?, ?)', [songId, newSection.type, newSection.text, newSection.id]);
-                }
-            }
+            const newSection = await db_1.dbService.songs.addSection(songId, 'Verse', '');
+            set((state) => ({
+                songs: state.songs.map((song) => {
+                    if (song.id !== songId)
+                        return song;
+                    return {
+                        ...song,
+                        sections: [...song.sections, newSection]
+                    };
+                })
+            }));
         }
         catch (err) {
             console.error('Failed to persist new section:', err);
         }
     },
-    moveSongSection: (songId, from, to) => {
-        set((state) => ({
-            songs: state.songs.map((song) => {
-                if (song.id !== songId)
-                    return song;
-                const sections = song.sections.slice();
-                const [item] = sections.splice(from, 1);
-                sections.splice(to, 0, item);
-                return { ...song, sections };
-            })
-        }));
+    deleteSongSection: async (songId, sectionId) => {
         try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                const song = get().songs.find((s) => s.id === songId);
-                if (song) {
-                    song.sections.forEach((section, index) => {
-                        ;
-                        window.worship.db.run('UPDATE song_sections SET order_num = ? WHERE id = ? AND song_id = ?', [index + 1, section.id, songId]);
-                    });
-                }
-            }
+            await db_1.dbService.songs.deleteSection(songId, sectionId);
+            set((state) => ({
+                songs: state.songs.map((song) => {
+                    if (song.id !== songId)
+                        return song;
+                    return {
+                        ...song,
+                        sections: song.sections.filter((sec) => sec.id !== sectionId)
+                    };
+                })
+            }));
         }
         catch (err) {
-            console.error('Failed to persist section order:', err);
+            console.error('Failed to delete song section:', err);
         }
+    },
+    moveSongSection: (songId, from, to) => {
+        set((state) => {
+            const targetSong = state.songs.find((s) => s.id === songId);
+            if (!targetSong)
+                return {};
+            const sections = targetSong.sections.slice();
+            const [item] = sections.splice(from, 1);
+            sections.splice(to, 0, item);
+            const sectionIds = sections.map((s) => s.id);
+            db_1.dbService.songs.moveSections(songId, sectionIds).catch((err) => {
+                console.error('Failed to persist section order:', err);
+            });
+            return {
+                songs: state.songs.map((song) => (song.id === songId ? { ...song, sections } : song))
+            };
+        });
     },
     looks: {},
     setLook: (outId, look) => set((state) => ({ looks: { ...state.looks, [outId]: look } })),
@@ -184,19 +175,12 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
         })()
     })),
     addScheduleItem: async () => {
-        set((state) => ({ schedule: [...state.schedule, { id: state.schedule.length + 1, type: 'Song', content: 'New Item' }] }));
-        // Persist to DB skeleton: create a schedule and log an item if DB is available
         try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                const res = await window.worship.db.run('INSERT INTO schedules (name, service_time) VALUES (?, ?)', ['Service', new Date().toISOString()]);
-                const schedId = res?.lastInsertRowid;
-                if (schedId) {
-                    await window.worship.db.run('INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, ?)', [schedId, 'Song', 'New Item', 1]);
-                }
-            }
+            const newItem = await db_1.dbService.schedule.addItem('Song', 'New Item');
+            set((state) => ({ schedule: [...state.schedule, newItem] }));
         }
-        catch {
-            // ignore failures in MVP phase
+        catch (err) {
+            console.error('Failed to add schedule item:', err);
         }
     },
     moveSchedule: (from, to) => {
@@ -204,19 +188,17 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
         const [item] = s.splice(from, 1);
         s.splice(to, 0, item);
         set({ schedule: s });
+        const itemIds = s.map((item) => item.id);
+        db_1.dbService.schedule.moveItems(itemIds).catch((err) => {
+            console.error('Failed to persist schedule item order:', err);
+        });
     },
     setTheme: (t) => set({ theme: t }),
     applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center' } }),
     saveTemplate: (name) => {
         const theme = get().theme;
-        try {
-            if (typeof window !== 'undefined' && window.worship?.db?.run) {
-                ;
-                window.worship.db.run('INSERT INTO themes (name, background, text_style, backgroundImage, text_color, font_size) VALUES (?, ?, ?, ?, ?, ?)', [name, theme.bg, 'bold', theme.backgroundImage || '', theme.color, theme.fontSize]);
-            }
-        }
-        catch (err) {
+        db_1.dbService.themes.create(name, theme).catch(err => {
             console.error('Failed to save template:', err);
-        }
+        });
     },
 }));

@@ -45,4 +45,20 @@ test_1.test.describe('WorshipPresenter E2E', () => {
         await (0, test_1.expect)(outputWindow.getByText(/BLACK/i)).toBeVisible({ timeout: 10000 });
         await electronApp.close();
     });
+    (0, test_1.test)('output background color updates from operator state', async () => {
+        const appPath = path_1.default.resolve(__dirname, '../../');
+        const electronApp = await test_1._electron.launch({ args: [appPath] });
+        const operator = await electronApp.firstWindow();
+        const windows = await electronApp.windows();
+        const outputWindow = windows.find((w) => /Output/i.test(String(w.url()))) || windows[1];
+        await operator.evaluate(() => {
+            const appWindow = window;
+            appWindow.worship.outputs.setState(1, {
+                slideTitle: 'Color Test',
+                theme: { bg: '#123456', color: '#ffffff' }
+            });
+        });
+        await (0, test_1.expect)(outputWindow.locator('[data-testid="output-root"]')).toHaveCSS('background-color', 'rgb(18, 52, 86)', { timeout: 10000 });
+        await electronApp.close();
+    });
 });

@@ -768,7 +768,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React8 = require_react();
+      var React4 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -808,7 +808,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React8.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React4.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -944,7 +944,7 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React8 = require_react();
+      var React4 = require_react();
       var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
@@ -1135,7 +1135,7 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React8.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React4.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
@@ -1431,17 +1431,17 @@
             return lanes;
         }
       }
-      function getNextLanes(root3, wipLanes, rootHasPendingCommit) {
-        var pendingLanes = root3.pendingLanes;
+      function getNextLanes(root2, wipLanes, rootHasPendingCommit) {
+        var pendingLanes = root2.pendingLanes;
         if (0 === pendingLanes) return 0;
-        var nextLanes = 0, suspendedLanes = root3.suspendedLanes, pingedLanes = root3.pingedLanes;
-        root3 = root3.warmLanes;
+        var nextLanes = 0, suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes;
+        root2 = root2.warmLanes;
         var nonIdlePendingLanes = pendingLanes & 134217727;
-        0 !== nonIdlePendingLanes ? (pendingLanes = nonIdlePendingLanes & ~suspendedLanes, 0 !== pendingLanes ? nextLanes = getHighestPriorityLanes(pendingLanes) : (pingedLanes &= nonIdlePendingLanes, 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = nonIdlePendingLanes & ~root3, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))))) : (nonIdlePendingLanes = pendingLanes & ~suspendedLanes, 0 !== nonIdlePendingLanes ? nextLanes = getHighestPriorityLanes(nonIdlePendingLanes) : 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = pendingLanes & ~root3, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))));
+        0 !== nonIdlePendingLanes ? (pendingLanes = nonIdlePendingLanes & ~suspendedLanes, 0 !== pendingLanes ? nextLanes = getHighestPriorityLanes(pendingLanes) : (pingedLanes &= nonIdlePendingLanes, 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = nonIdlePendingLanes & ~root2, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))))) : (nonIdlePendingLanes = pendingLanes & ~suspendedLanes, 0 !== nonIdlePendingLanes ? nextLanes = getHighestPriorityLanes(nonIdlePendingLanes) : 0 !== pingedLanes ? nextLanes = getHighestPriorityLanes(pingedLanes) : rootHasPendingCommit || (rootHasPendingCommit = pendingLanes & ~root2, 0 !== rootHasPendingCommit && (nextLanes = getHighestPriorityLanes(rootHasPendingCommit))));
         return 0 === nextLanes ? 0 : 0 !== wipLanes && wipLanes !== nextLanes && 0 === (wipLanes & suspendedLanes) && (suspendedLanes = nextLanes & -nextLanes, rootHasPendingCommit = wipLanes & -wipLanes, suspendedLanes >= rootHasPendingCommit || 32 === suspendedLanes && 0 !== (rootHasPendingCommit & 4194048)) ? wipLanes : nextLanes;
       }
-      function checkIfRootIsPrerendering(root3, renderLanes2) {
-        return 0 === (root3.pendingLanes & ~(root3.suspendedLanes & ~root3.pingedLanes) & renderLanes2);
+      function checkIfRootIsPrerendering(root2, renderLanes2) {
+        return 0 === (root2.pendingLanes & ~(root2.suspendedLanes & ~root2.pingedLanes) & renderLanes2);
       }
       function computeExpirationTime(lane, currentTime) {
         switch (lane) {
@@ -1494,21 +1494,21 @@
         for (var laneMap = [], i = 0; 31 > i; i++) laneMap.push(initial);
         return laneMap;
       }
-      function markRootUpdated$1(root3, updateLane) {
-        root3.pendingLanes |= updateLane;
-        268435456 !== updateLane && (root3.suspendedLanes = 0, root3.pingedLanes = 0, root3.warmLanes = 0);
+      function markRootUpdated$1(root2, updateLane) {
+        root2.pendingLanes |= updateLane;
+        268435456 !== updateLane && (root2.suspendedLanes = 0, root2.pingedLanes = 0, root2.warmLanes = 0);
       }
-      function markRootFinished(root3, finishedLanes, remainingLanes, spawnedLane, updatedLanes, suspendedRetryLanes) {
-        var previouslyPendingLanes = root3.pendingLanes;
-        root3.pendingLanes = remainingLanes;
-        root3.suspendedLanes = 0;
-        root3.pingedLanes = 0;
-        root3.warmLanes = 0;
-        root3.expiredLanes &= remainingLanes;
-        root3.entangledLanes &= remainingLanes;
-        root3.errorRecoveryDisabledLanes &= remainingLanes;
-        root3.shellSuspendCounter = 0;
-        var entanglements = root3.entanglements, expirationTimes = root3.expirationTimes, hiddenUpdates = root3.hiddenUpdates;
+      function markRootFinished(root2, finishedLanes, remainingLanes, spawnedLane, updatedLanes, suspendedRetryLanes) {
+        var previouslyPendingLanes = root2.pendingLanes;
+        root2.pendingLanes = remainingLanes;
+        root2.suspendedLanes = 0;
+        root2.pingedLanes = 0;
+        root2.warmLanes = 0;
+        root2.expiredLanes &= remainingLanes;
+        root2.entangledLanes &= remainingLanes;
+        root2.errorRecoveryDisabledLanes &= remainingLanes;
+        root2.shellSuspendCounter = 0;
+        var entanglements = root2.entanglements, expirationTimes = root2.expirationTimes, hiddenUpdates = root2.hiddenUpdates;
         for (remainingLanes = previouslyPendingLanes & ~remainingLanes; 0 < remainingLanes; ) {
           var index$7 = 31 - clz32(remainingLanes), lane = 1 << index$7;
           entanglements[index$7] = 0;
@@ -1521,28 +1521,28 @@
             }
           remainingLanes &= ~lane;
         }
-        0 !== spawnedLane && markSpawnedDeferredLane(root3, spawnedLane, 0);
-        0 !== suspendedRetryLanes && 0 === updatedLanes && 0 !== root3.tag && (root3.suspendedLanes |= suspendedRetryLanes & ~(previouslyPendingLanes & ~finishedLanes));
+        0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, 0);
+        0 !== suspendedRetryLanes && 0 === updatedLanes && 0 !== root2.tag && (root2.suspendedLanes |= suspendedRetryLanes & ~(previouslyPendingLanes & ~finishedLanes));
       }
-      function markSpawnedDeferredLane(root3, spawnedLane, entangledLanes) {
-        root3.pendingLanes |= spawnedLane;
-        root3.suspendedLanes &= ~spawnedLane;
+      function markSpawnedDeferredLane(root2, spawnedLane, entangledLanes) {
+        root2.pendingLanes |= spawnedLane;
+        root2.suspendedLanes &= ~spawnedLane;
         var spawnedLaneIndex = 31 - clz32(spawnedLane);
-        root3.entangledLanes |= spawnedLane;
-        root3.entanglements[spawnedLaneIndex] = root3.entanglements[spawnedLaneIndex] | 1073741824 | entangledLanes & 261930;
+        root2.entangledLanes |= spawnedLane;
+        root2.entanglements[spawnedLaneIndex] = root2.entanglements[spawnedLaneIndex] | 1073741824 | entangledLanes & 261930;
       }
-      function markRootEntangled(root3, entangledLanes) {
-        var rootEntangledLanes = root3.entangledLanes |= entangledLanes;
-        for (root3 = root3.entanglements; rootEntangledLanes; ) {
+      function markRootEntangled(root2, entangledLanes) {
+        var rootEntangledLanes = root2.entangledLanes |= entangledLanes;
+        for (root2 = root2.entanglements; rootEntangledLanes; ) {
           var index$8 = 31 - clz32(rootEntangledLanes), lane = 1 << index$8;
-          lane & entangledLanes | root3[index$8] & entangledLanes && (root3[index$8] |= entangledLanes);
+          lane & entangledLanes | root2[index$8] & entangledLanes && (root2[index$8] |= entangledLanes);
           rootEntangledLanes &= ~lane;
         }
       }
-      function getBumpedLaneForHydration(root3, renderLanes2) {
+      function getBumpedLaneForHydration(root2, renderLanes2) {
         var renderLane = renderLanes2 & -renderLanes2;
         renderLane = 0 !== (renderLane & 42) ? 1 : getBumpedLaneForHydrationByLane(renderLane);
-        return 0 !== (renderLane & (root3.suspendedLanes | renderLanes2)) ? 0 : renderLane;
+        return 0 !== (renderLane & (root2.suspendedLanes | renderLanes2)) ? 0 : renderLane;
       }
       function getBumpedLaneForHydrationByLane(lane) {
         switch (lane) {
@@ -1648,9 +1648,9 @@
         if (5 === tag || 26 === tag || 27 === tag || 6 === tag) return inst.stateNode;
         throw Error(formatProdErrorMessage(33));
       }
-      function getResourcesFromRoot(root3) {
-        var resources = root3[internalRootNodeResourcesKey];
-        resources || (resources = root3[internalRootNodeResourcesKey] = { hoistableStyles: /* @__PURE__ */ new Map(), hoistableScripts: /* @__PURE__ */ new Map() });
+      function getResourcesFromRoot(root2) {
+        var resources = root2[internalRootNodeResourcesKey];
+        resources || (resources = root2[internalRootNodeResourcesKey] = { hoistableStyles: /* @__PURE__ */ new Map(), hoistableScripts: /* @__PURE__ */ new Map() });
         return resources;
       }
       function markNodeAsHoistable(node) {
@@ -2161,12 +2161,12 @@
           passiveBrowserEventsSupported = false;
         }
       var options;
-      var root2 = null;
+      var root = null;
       var startText = null;
       var fallbackText = null;
       function getData() {
         if (fallbackText) return fallbackText;
-        var start, startValue = startText, startLength = startValue.length, end, endValue = "value" in root2 ? root2.value : root2.textContent, endLength = endValue.length;
+        var start, startValue = startText, startLength = startValue.length, end, endValue = "value" in root ? root.value : root.textContent, endLength = endValue.length;
         for (start = 0; start < startLength && startValue[start] === endValue[start]; start++) ;
         var minEnd = startLength - start;
         for (end = 1; end <= minEnd && startValue[startLength - end] === endValue[endLength - end]; end++) ;
@@ -2457,7 +2457,7 @@
       }
       function getFallbackBeforeInputChars(domEventName, nativeEvent) {
         if (isComposing)
-          return "compositionend" === domEventName || !canUseCompositionEvent && isFallbackCompositionEnd(domEventName, nativeEvent) ? (domEventName = getData(), fallbackText = startText = root2 = null, isComposing = false, domEventName) : null;
+          return "compositionend" === domEventName || !canUseCompositionEvent && isFallbackCompositionEnd(domEventName, nativeEvent) ? (domEventName = getData(), fallbackText = startText = root = null, isComposing = false, domEventName) : null;
         switch (domEventName) {
           case "paste":
             return null;
@@ -2584,15 +2584,15 @@
         for (; node && node.firstChild; ) node = node.firstChild;
         return node;
       }
-      function getNodeForCharacterOffset(root3, offset) {
-        var node = getLeafNode(root3);
-        root3 = 0;
+      function getNodeForCharacterOffset(root2, offset) {
+        var node = getLeafNode(root2);
+        root2 = 0;
         for (var nodeEnd; node; ) {
           if (3 === node.nodeType) {
-            nodeEnd = root3 + node.textContent.length;
-            if (root3 <= offset && nodeEnd >= offset)
-              return { node, offset: offset - root3 };
-            root3 = nodeEnd;
+            nodeEnd = root2 + node.textContent.length;
+            if (root2 <= offset && nodeEnd >= offset)
+              return { node, offset: offset - root2 };
+            root2 = nodeEnd;
           }
           a: {
             for (; node; ) {
@@ -3922,14 +3922,14 @@
         enqueueUpdate$1(fiber, updateQueue, update, lane);
         return getRootForUpdatedFiber(fiber);
       }
-      function entangleTransitions(root3, fiber, lane) {
+      function entangleTransitions(root2, fiber, lane) {
         fiber = fiber.updateQueue;
         if (null !== fiber && (fiber = fiber.shared, 0 !== (lane & 4194048))) {
           var queueLanes = fiber.lanes;
-          queueLanes &= root3.pendingLanes;
+          queueLanes &= root2.pendingLanes;
           lane |= queueLanes;
           fiber.lanes = lane;
-          markRootEntangled(root3, lane);
+          markRootEntangled(root2, lane);
         }
       }
       function enqueueCapturedUpdate(workInProgress2, capturedUpdate) {
@@ -4472,8 +4472,8 @@
         }
       }
       function forceStoreRerender(fiber) {
-        var root3 = enqueueConcurrentRenderForLane(fiber, 2);
-        null !== root3 && scheduleUpdateOnFiber(root3, fiber, 2);
+        var root2 = enqueueConcurrentRenderForLane(fiber, 2);
+        null !== root2 && scheduleUpdateOnFiber(root2, fiber, 2);
       }
       function mountStateImpl(initialState) {
         var hook = mountWorkInProgressHook();
@@ -5042,13 +5042,13 @@
         null === pending ? update.next = update : (update.next = pending.next, pending.next = update);
         queue.pending = update;
       }
-      function entangleTransitionUpdate(root3, queue, lane) {
+      function entangleTransitionUpdate(root2, queue, lane) {
         if (0 !== (lane & 4194048)) {
           var queueLanes = queue.lanes;
-          queueLanes &= root3.pendingLanes;
+          queueLanes &= root2.pendingLanes;
           lane |= queueLanes;
           queue.lanes = lane;
-          markRootEntangled(root3, lane);
+          markRootEntangled(root2, lane);
         }
       }
       var ContextOnlyDispatcher = {
@@ -5423,9 +5423,9 @@
       function defaultOnRecoverableError(error) {
         reportGlobalError(error);
       }
-      function logUncaughtError(root3, errorInfo) {
+      function logUncaughtError(root2, errorInfo) {
         try {
-          var onUncaughtError = root3.onUncaughtError;
+          var onUncaughtError = root2.onUncaughtError;
           onUncaughtError(errorInfo.value, { componentStack: errorInfo.stack });
         } catch (e$74) {
           setTimeout(function() {
@@ -5433,9 +5433,9 @@
           });
         }
       }
-      function logCaughtError(root3, boundary, errorInfo) {
+      function logCaughtError(root2, boundary, errorInfo) {
         try {
-          var onCaughtError = root3.onCaughtError;
+          var onCaughtError = root2.onCaughtError;
           onCaughtError(errorInfo.value, {
             componentStack: errorInfo.stack,
             errorBoundary: 1 === boundary.tag ? boundary.stateNode : null
@@ -5446,12 +5446,12 @@
           });
         }
       }
-      function createRootErrorUpdate(root3, errorInfo, lane) {
+      function createRootErrorUpdate(root2, errorInfo, lane) {
         lane = createUpdate(lane);
         lane.tag = 3;
         lane.payload = { element: null };
         lane.callback = function() {
-          logUncaughtError(root3, errorInfo);
+          logUncaughtError(root2, errorInfo);
         };
         return lane;
       }
@@ -5460,7 +5460,7 @@
         lane.tag = 3;
         return lane;
       }
-      function initializeClassErrorUpdate(update, root3, fiber, errorInfo) {
+      function initializeClassErrorUpdate(update, root2, fiber, errorInfo) {
         var getDerivedStateFromError = fiber.type.getDerivedStateFromError;
         if ("function" === typeof getDerivedStateFromError) {
           var error = errorInfo.value;
@@ -5468,12 +5468,12 @@
             return getDerivedStateFromError(error);
           };
           update.callback = function() {
-            logCaughtError(root3, fiber, errorInfo);
+            logCaughtError(root2, fiber, errorInfo);
           };
         }
         var inst = fiber.stateNode;
         null !== inst && "function" === typeof inst.componentDidCatch && (update.callback = function() {
-          logCaughtError(root3, fiber, errorInfo);
+          logCaughtError(root2, fiber, errorInfo);
           "function" !== typeof getDerivedStateFromError && (null === legacyErrorBoundariesThatAlreadyFailed ? legacyErrorBoundariesThatAlreadyFailed = /* @__PURE__ */ new Set([this]) : legacyErrorBoundariesThatAlreadyFailed.add(this));
           var stack = errorInfo.stack;
           this.componentDidCatch(errorInfo.value, {
@@ -5481,7 +5481,7 @@
           });
         });
       }
-      function throwException(root3, returnFiber, sourceFiber, value, rootRenderLanes) {
+      function throwException(root2, returnFiber, sourceFiber, value, rootRenderLanes) {
         sourceFiber.flags |= 32768;
         if (null !== value && "object" === typeof value && "function" === typeof value.then) {
           returnFiber = sourceFiber.alternate;
@@ -5496,30 +5496,30 @@
             switch (sourceFiber.tag) {
               case 31:
               case 13:
-                return null === shellBoundary ? renderDidSuspendDelayIfPossible() : null === sourceFiber.alternate && 0 === workInProgressRootExitStatus && (workInProgressRootExitStatus = 3), sourceFiber.flags &= -257, sourceFiber.flags |= 65536, sourceFiber.lanes = rootRenderLanes, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? sourceFiber.updateQueue = /* @__PURE__ */ new Set([value]) : returnFiber.add(value), attachPingListener(root3, value, rootRenderLanes)), false;
+                return null === shellBoundary ? renderDidSuspendDelayIfPossible() : null === sourceFiber.alternate && 0 === workInProgressRootExitStatus && (workInProgressRootExitStatus = 3), sourceFiber.flags &= -257, sourceFiber.flags |= 65536, sourceFiber.lanes = rootRenderLanes, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? sourceFiber.updateQueue = /* @__PURE__ */ new Set([value]) : returnFiber.add(value), attachPingListener(root2, value, rootRenderLanes)), false;
               case 22:
                 return sourceFiber.flags |= 65536, value === noopSuspenseyCommitThenable ? sourceFiber.flags |= 16384 : (returnFiber = sourceFiber.updateQueue, null === returnFiber ? (returnFiber = {
                   transitions: null,
                   markerInstances: null,
                   retryQueue: /* @__PURE__ */ new Set([value])
-                }, sourceFiber.updateQueue = returnFiber) : (sourceFiber = returnFiber.retryQueue, null === sourceFiber ? returnFiber.retryQueue = /* @__PURE__ */ new Set([value]) : sourceFiber.add(value)), attachPingListener(root3, value, rootRenderLanes)), false;
+                }, sourceFiber.updateQueue = returnFiber) : (sourceFiber = returnFiber.retryQueue, null === sourceFiber ? returnFiber.retryQueue = /* @__PURE__ */ new Set([value]) : sourceFiber.add(value)), attachPingListener(root2, value, rootRenderLanes)), false;
             }
             throw Error(formatProdErrorMessage(435, sourceFiber.tag));
           }
-          attachPingListener(root3, value, rootRenderLanes);
+          attachPingListener(root2, value, rootRenderLanes);
           renderDidSuspendDelayIfPossible();
           return false;
         }
         if (isHydrating)
-          return returnFiber = suspenseHandlerStackCursor.current, null !== returnFiber ? (0 === (returnFiber.flags & 65536) && (returnFiber.flags |= 256), returnFiber.flags |= 65536, returnFiber.lanes = rootRenderLanes, value !== HydrationMismatchException && (root3 = Error(formatProdErrorMessage(422), { cause: value }), queueHydrationError(createCapturedValueAtFiber(root3, sourceFiber)))) : (value !== HydrationMismatchException && (returnFiber = Error(formatProdErrorMessage(423), {
+          return returnFiber = suspenseHandlerStackCursor.current, null !== returnFiber ? (0 === (returnFiber.flags & 65536) && (returnFiber.flags |= 256), returnFiber.flags |= 65536, returnFiber.lanes = rootRenderLanes, value !== HydrationMismatchException && (root2 = Error(formatProdErrorMessage(422), { cause: value }), queueHydrationError(createCapturedValueAtFiber(root2, sourceFiber)))) : (value !== HydrationMismatchException && (returnFiber = Error(formatProdErrorMessage(423), {
             cause: value
           }), queueHydrationError(
             createCapturedValueAtFiber(returnFiber, sourceFiber)
-          )), root3 = root3.current.alternate, root3.flags |= 65536, rootRenderLanes &= -rootRenderLanes, root3.lanes |= rootRenderLanes, value = createCapturedValueAtFiber(value, sourceFiber), rootRenderLanes = createRootErrorUpdate(
-            root3.stateNode,
+          )), root2 = root2.current.alternate, root2.flags |= 65536, rootRenderLanes &= -rootRenderLanes, root2.lanes |= rootRenderLanes, value = createCapturedValueAtFiber(value, sourceFiber), rootRenderLanes = createRootErrorUpdate(
+            root2.stateNode,
             value,
             rootRenderLanes
-          ), enqueueCapturedUpdate(root3, rootRenderLanes), 4 !== workInProgressRootExitStatus && (workInProgressRootExitStatus = 2)), false;
+          ), enqueueCapturedUpdate(root2, rootRenderLanes), 4 !== workInProgressRootExitStatus && (workInProgressRootExitStatus = 2)), false;
         var wrapperError = Error(formatProdErrorMessage(520), { cause: value });
         wrapperError = createCapturedValueAtFiber(wrapperError, sourceFiber);
         null === workInProgressRootConcurrentErrors ? workInProgressRootConcurrentErrors = [wrapperError] : workInProgressRootConcurrentErrors.push(wrapperError);
@@ -5530,12 +5530,12 @@
         do {
           switch (sourceFiber.tag) {
             case 3:
-              return sourceFiber.flags |= 65536, root3 = rootRenderLanes & -rootRenderLanes, sourceFiber.lanes |= root3, root3 = createRootErrorUpdate(sourceFiber.stateNode, value, root3), enqueueCapturedUpdate(sourceFiber, root3), false;
+              return sourceFiber.flags |= 65536, root2 = rootRenderLanes & -rootRenderLanes, sourceFiber.lanes |= root2, root2 = createRootErrorUpdate(sourceFiber.stateNode, value, root2), enqueueCapturedUpdate(sourceFiber, root2), false;
             case 1:
               if (returnFiber = sourceFiber.type, wrapperError = sourceFiber.stateNode, 0 === (sourceFiber.flags & 128) && ("function" === typeof returnFiber.getDerivedStateFromError || null !== wrapperError && "function" === typeof wrapperError.componentDidCatch && (null === legacyErrorBoundariesThatAlreadyFailed || !legacyErrorBoundariesThatAlreadyFailed.has(wrapperError))))
                 return sourceFiber.flags |= 65536, rootRenderLanes &= -rootRenderLanes, sourceFiber.lanes |= rootRenderLanes, rootRenderLanes = createClassErrorUpdate(rootRenderLanes), initializeClassErrorUpdate(
                   rootRenderLanes,
-                  root3,
+                  root2,
                   sourceFiber,
                   value
                 ), enqueueCapturedUpdate(sourceFiber, rootRenderLanes), false;
@@ -7314,19 +7314,19 @@
       var needsFormReset = false;
       var PossiblyWeakSet = "function" === typeof WeakSet ? WeakSet : Set;
       var nextEffect = null;
-      function commitBeforeMutationEffects(root3, firstChild) {
-        root3 = root3.containerInfo;
+      function commitBeforeMutationEffects(root2, firstChild) {
+        root2 = root2.containerInfo;
         eventsEnabled = _enabled;
-        root3 = getActiveElementDeep(root3);
-        if (hasSelectionCapabilities(root3)) {
-          if ("selectionStart" in root3)
+        root2 = getActiveElementDeep(root2);
+        if (hasSelectionCapabilities(root2)) {
+          if ("selectionStart" in root2)
             var JSCompiler_temp = {
-              start: root3.selectionStart,
-              end: root3.selectionEnd
+              start: root2.selectionStart,
+              end: root2.selectionEnd
             };
           else
             a: {
-              JSCompiler_temp = (JSCompiler_temp = root3.ownerDocument) && JSCompiler_temp.defaultView || window;
+              JSCompiler_temp = (JSCompiler_temp = root2.ownerDocument) && JSCompiler_temp.defaultView || window;
               var selection = JSCompiler_temp.getSelection && JSCompiler_temp.getSelection();
               if (selection && 0 !== selection.rangeCount) {
                 JSCompiler_temp = selection.anchorNode;
@@ -7338,7 +7338,7 @@
                   JSCompiler_temp = null;
                   break a;
                 }
-                var length = 0, start = -1, end = -1, indexWithinAnchor = 0, indexWithinFocus = 0, node = root3, parentNode = null;
+                var length = 0, start = -1, end = -1, indexWithinAnchor = 0, indexWithinFocus = 0, node = root2, parentNode = null;
                 b: for (; ; ) {
                   for (var next; ; ) {
                     node !== JSCompiler_temp || 0 !== anchorOffset && 3 !== node.nodeType || (start = length + anchorOffset);
@@ -7349,7 +7349,7 @@
                     node = next;
                   }
                   for (; ; ) {
-                    if (node === root3) break b;
+                    if (node === root2) break b;
                     parentNode === JSCompiler_temp && ++indexWithinAnchor === anchorOffset && (start = length);
                     parentNode === focusNode && ++indexWithinFocus === selection && (end = length);
                     if (null !== (next = node.nextSibling)) break;
@@ -7363,28 +7363,28 @@
             }
           JSCompiler_temp = JSCompiler_temp || { start: 0, end: 0 };
         } else JSCompiler_temp = null;
-        selectionInformation = { focusedElem: root3, selectionRange: JSCompiler_temp };
+        selectionInformation = { focusedElem: root2, selectionRange: JSCompiler_temp };
         _enabled = false;
         for (nextEffect = firstChild; null !== nextEffect; )
-          if (firstChild = nextEffect, root3 = firstChild.child, 0 !== (firstChild.subtreeFlags & 1028) && null !== root3)
-            root3.return = firstChild, nextEffect = root3;
+          if (firstChild = nextEffect, root2 = firstChild.child, 0 !== (firstChild.subtreeFlags & 1028) && null !== root2)
+            root2.return = firstChild, nextEffect = root2;
           else
             for (; null !== nextEffect; ) {
               firstChild = nextEffect;
               focusNode = firstChild.alternate;
-              root3 = firstChild.flags;
+              root2 = firstChild.flags;
               switch (firstChild.tag) {
                 case 0:
-                  if (0 !== (root3 & 4) && (root3 = firstChild.updateQueue, root3 = null !== root3 ? root3.events : null, null !== root3))
-                    for (JSCompiler_temp = 0; JSCompiler_temp < root3.length; JSCompiler_temp++)
-                      anchorOffset = root3[JSCompiler_temp], anchorOffset.ref.impl = anchorOffset.nextImpl;
+                  if (0 !== (root2 & 4) && (root2 = firstChild.updateQueue, root2 = null !== root2 ? root2.events : null, null !== root2))
+                    for (JSCompiler_temp = 0; JSCompiler_temp < root2.length; JSCompiler_temp++)
+                      anchorOffset = root2[JSCompiler_temp], anchorOffset.ref.impl = anchorOffset.nextImpl;
                   break;
                 case 11:
                 case 15:
                   break;
                 case 1:
-                  if (0 !== (root3 & 1024) && null !== focusNode) {
-                    root3 = void 0;
+                  if (0 !== (root2 & 1024) && null !== focusNode) {
+                    root2 = void 0;
                     JSCompiler_temp = firstChild;
                     anchorOffset = focusNode.memoizedProps;
                     focusNode = focusNode.memoizedState;
@@ -7394,11 +7394,11 @@
                         JSCompiler_temp.type,
                         anchorOffset
                       );
-                      root3 = selection.getSnapshotBeforeUpdate(
+                      root2 = selection.getSnapshotBeforeUpdate(
                         resolvedPrevProps,
                         focusNode
                       );
-                      selection.__reactInternalSnapshotBeforeUpdate = root3;
+                      selection.__reactInternalSnapshotBeforeUpdate = root2;
                     } catch (error) {
                       captureCommitPhaseError(
                         JSCompiler_temp,
@@ -7409,18 +7409,18 @@
                   }
                   break;
                 case 3:
-                  if (0 !== (root3 & 1024)) {
-                    if (root3 = firstChild.stateNode.containerInfo, JSCompiler_temp = root3.nodeType, 9 === JSCompiler_temp)
-                      clearContainerSparingly(root3);
+                  if (0 !== (root2 & 1024)) {
+                    if (root2 = firstChild.stateNode.containerInfo, JSCompiler_temp = root2.nodeType, 9 === JSCompiler_temp)
+                      clearContainerSparingly(root2);
                     else if (1 === JSCompiler_temp)
-                      switch (root3.nodeName) {
+                      switch (root2.nodeName) {
                         case "HEAD":
                         case "HTML":
                         case "BODY":
-                          clearContainerSparingly(root3);
+                          clearContainerSparingly(root2);
                           break;
                         default:
-                          root3.textContent = "";
+                          root2.textContent = "";
                       }
                   }
                   break;
@@ -7432,12 +7432,12 @@
                 case 17:
                   break;
                 default:
-                  if (0 !== (root3 & 1024)) throw Error(formatProdErrorMessage(163));
+                  if (0 !== (root2 & 1024)) throw Error(formatProdErrorMessage(163));
               }
-              root3 = firstChild.sibling;
-              if (null !== root3) {
-                root3.return = firstChild.return;
-                nextEffect = root3;
+              root2 = firstChild.sibling;
+              if (null !== root2) {
+                root2.return = firstChild.return;
+                nextEffect = root2;
                 break;
               }
               nextEffect = firstChild.return;
@@ -7748,7 +7748,7 @@
         var deletions = parentFiber.deletions;
         if (null !== deletions)
           for (var i = 0; i < deletions.length; i++) {
-            var childToDelete = deletions[i], root3 = root$jscomp$0, returnFiber = parentFiber, parent = returnFiber;
+            var childToDelete = deletions[i], root2 = root$jscomp$0, returnFiber = parentFiber, parent = returnFiber;
             a: for (; null !== parent; ) {
               switch (parent.tag) {
                 case 27:
@@ -7771,11 +7771,11 @@
               parent = parent.return;
             }
             if (null === hostParent) throw Error(formatProdErrorMessage(160));
-            commitDeletionEffectsOnFiber(root3, returnFiber, childToDelete);
+            commitDeletionEffectsOnFiber(root2, returnFiber, childToDelete);
             hostParent = null;
             hostParentIsContainer = false;
-            root3 = childToDelete.alternate;
-            null !== root3 && (root3.return = null);
+            root2 = childToDelete.alternate;
+            null !== root2 && (root2.return = null);
             childToDelete.return = null;
           }
         if (parentFiber.subtreeFlags & 13886)
@@ -7783,26 +7783,26 @@
             commitMutationEffectsOnFiber(parentFiber, root$jscomp$0), parentFiber = parentFiber.sibling;
       }
       var currentHoistableRoot = null;
-      function commitMutationEffectsOnFiber(finishedWork, root3) {
+      function commitMutationEffectsOnFiber(finishedWork, root2) {
         var current = finishedWork.alternate, flags = finishedWork.flags;
         switch (finishedWork.tag) {
           case 0:
           case 11:
           case 14:
           case 15:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 4 && (commitHookEffectListUnmount(3, finishedWork, finishedWork.return), commitHookEffectListMount(3, finishedWork), commitHookEffectListUnmount(5, finishedWork, finishedWork.return));
             break;
           case 1:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 512 && (offscreenSubtreeWasHidden || null === current || safelyDetachRef(current, current.return));
             flags & 64 && offscreenSubtreeIsHidden && (finishedWork = finishedWork.updateQueue, null !== finishedWork && (flags = finishedWork.callbacks, null !== flags && (current = finishedWork.shared.hiddenCallbacks, finishedWork.shared.hiddenCallbacks = null === current ? flags : current.concat(flags))));
             break;
           case 26:
             var hoistableRoot = currentHoistableRoot;
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 512 && (offscreenSubtreeWasHidden || null === current || safelyDetachRef(current, current.return));
             if (flags & 4) {
@@ -7898,7 +7898,7 @@
             }
             break;
           case 27:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 512 && (offscreenSubtreeWasHidden || null === current || safelyDetachRef(current, current.return));
             null !== current && flags & 4 && commitHostUpdate(
@@ -7908,7 +7908,7 @@
             );
             break;
           case 5:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 512 && (offscreenSubtreeWasHidden || null === current || safelyDetachRef(current, current.return));
             if (finishedWork.flags & 32) {
@@ -7927,7 +7927,7 @@
             flags & 1024 && (needsFormReset = true);
             break;
           case 6:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             if (flags & 4) {
               if (null === finishedWork.stateNode)
@@ -7944,13 +7944,13 @@
           case 3:
             tagCaches = null;
             hoistableRoot = currentHoistableRoot;
-            currentHoistableRoot = getHoistableRoot(root3.containerInfo);
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            currentHoistableRoot = getHoistableRoot(root2.containerInfo);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             currentHoistableRoot = hoistableRoot;
             commitReconciliationEffects(finishedWork);
             if (flags & 4 && null !== current && current.memoizedState.isDehydrated)
               try {
-                retryIfBlockedOn(root3.containerInfo);
+                retryIfBlockedOn(root2.containerInfo);
               } catch (error) {
                 captureCommitPhaseError(finishedWork, finishedWork.return, error);
               }
@@ -7961,21 +7961,21 @@
             currentHoistableRoot = getHoistableRoot(
               finishedWork.stateNode.containerInfo
             );
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             currentHoistableRoot = flags;
             break;
           case 12:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             break;
           case 31:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (finishedWork.updateQueue = null, attachSuspenseRetryListeners(finishedWork, flags)));
             break;
           case 13:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             finishedWork.child.flags & 8192 && null !== finishedWork.memoizedState !== (null !== current && null !== current.memoizedState) && (globalMostRecentFallbackTime = now());
             flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (finishedWork.updateQueue = null, attachSuspenseRetryListeners(finishedWork, flags)));
@@ -7985,15 +7985,15 @@
             var wasHidden = null !== current && null !== current.memoizedState, prevOffscreenSubtreeIsHidden = offscreenSubtreeIsHidden, prevOffscreenSubtreeWasHidden = offscreenSubtreeWasHidden;
             offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden || hoistableRoot;
             offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden || wasHidden;
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             offscreenSubtreeWasHidden = prevOffscreenSubtreeWasHidden;
             offscreenSubtreeIsHidden = prevOffscreenSubtreeIsHidden;
             commitReconciliationEffects(finishedWork);
             if (flags & 8192)
-              a: for (root3 = finishedWork.stateNode, root3._visibility = hoistableRoot ? root3._visibility & -2 : root3._visibility | 1, hoistableRoot && (null === current || wasHidden || offscreenSubtreeIsHidden || offscreenSubtreeWasHidden || recursivelyTraverseDisappearLayoutEffects(finishedWork)), current = null, root3 = finishedWork; ; ) {
-                if (5 === root3.tag || 26 === root3.tag) {
+              a: for (root2 = finishedWork.stateNode, root2._visibility = hoistableRoot ? root2._visibility & -2 : root2._visibility | 1, hoistableRoot && (null === current || wasHidden || offscreenSubtreeIsHidden || offscreenSubtreeWasHidden || recursivelyTraverseDisappearLayoutEffects(finishedWork)), current = null, root2 = finishedWork; ; ) {
+                if (5 === root2.tag || 26 === root2.tag) {
                   if (null === current) {
-                    wasHidden = current = root3;
+                    wasHidden = current = root2;
                     try {
                       if (currentResource = wasHidden.stateNode, hoistableRoot)
                         maybeNodes = currentResource.style, "function" === typeof maybeNodes.setProperty ? maybeNodes.setProperty("display", "none", "important") : maybeNodes.display = "none";
@@ -8006,18 +8006,18 @@
                       captureCommitPhaseError(wasHidden, wasHidden.return, error);
                     }
                   }
-                } else if (6 === root3.tag) {
+                } else if (6 === root2.tag) {
                   if (null === current) {
-                    wasHidden = root3;
+                    wasHidden = root2;
                     try {
                       wasHidden.stateNode.nodeValue = hoistableRoot ? "" : wasHidden.memoizedProps;
                     } catch (error) {
                       captureCommitPhaseError(wasHidden, wasHidden.return, error);
                     }
                   }
-                } else if (18 === root3.tag) {
+                } else if (18 === root2.tag) {
                   if (null === current) {
-                    wasHidden = root3;
+                    wasHidden = root2;
                     try {
                       var instance = wasHidden.stateNode;
                       hoistableRoot ? hideOrUnhideDehydratedBoundary(instance, true) : hideOrUnhideDehydratedBoundary(wasHidden.stateNode, false);
@@ -8025,25 +8025,25 @@
                       captureCommitPhaseError(wasHidden, wasHidden.return, error);
                     }
                   }
-                } else if ((22 !== root3.tag && 23 !== root3.tag || null === root3.memoizedState || root3 === finishedWork) && null !== root3.child) {
-                  root3.child.return = root3;
-                  root3 = root3.child;
+                } else if ((22 !== root2.tag && 23 !== root2.tag || null === root2.memoizedState || root2 === finishedWork) && null !== root2.child) {
+                  root2.child.return = root2;
+                  root2 = root2.child;
                   continue;
                 }
-                if (root3 === finishedWork) break a;
-                for (; null === root3.sibling; ) {
-                  if (null === root3.return || root3.return === finishedWork) break a;
-                  current === root3 && (current = null);
-                  root3 = root3.return;
+                if (root2 === finishedWork) break a;
+                for (; null === root2.sibling; ) {
+                  if (null === root2.return || root2.return === finishedWork) break a;
+                  current === root2 && (current = null);
+                  root2 = root2.return;
                 }
-                current === root3 && (current = null);
-                root3.sibling.return = root3.return;
-                root3 = root3.sibling;
+                current === root2 && (current = null);
+                root2.sibling.return = root2.return;
+                root2 = root2.sibling;
               }
             flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (current = flags.retryQueue, null !== current && (flags.retryQueue = null, attachSuspenseRetryListeners(finishedWork, current))));
             break;
           case 19:
-            recursivelyTraverseMutationEffects(root3, finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork);
             commitReconciliationEffects(finishedWork);
             flags & 4 && (flags = finishedWork.updateQueue, null !== flags && (finishedWork.updateQueue = null, attachSuspenseRetryListeners(finishedWork, flags)));
             break;
@@ -8052,7 +8052,7 @@
           case 21:
             break;
           default:
-            recursivelyTraverseMutationEffects(root3, finishedWork), commitReconciliationEffects(finishedWork);
+            recursivelyTraverseMutationEffects(root2, finishedWork), commitReconciliationEffects(finishedWork);
         }
       }
       function commitReconciliationEffects(finishedWork) {
@@ -8106,10 +8106,10 @@
             parentFiber = parentFiber.sibling;
           }
       }
-      function recursivelyTraverseLayoutEffects(root3, parentFiber) {
+      function recursivelyTraverseLayoutEffects(root2, parentFiber) {
         if (parentFiber.subtreeFlags & 8772)
           for (parentFiber = parentFiber.child; null !== parentFiber; )
-            commitLayoutEffectOnFiber(root3, parentFiber.alternate, parentFiber), parentFiber = parentFiber.sibling;
+            commitLayoutEffectOnFiber(root2, parentFiber.alternate, parentFiber), parentFiber = parentFiber.sibling;
       }
       function recursivelyTraverseDisappearLayoutEffects(parentFiber) {
         for (parentFiber = parentFiber.child; null !== parentFiber; ) {
@@ -8264,11 +8264,11 @@
         finishedWork = finishedWork.memoizedState.cache;
         finishedWork !== current && (finishedWork.refCount++, null != current && releaseCache(current));
       }
-      function recursivelyTraversePassiveMountEffects(root3, parentFiber, committedLanes, committedTransitions) {
+      function recursivelyTraversePassiveMountEffects(root2, parentFiber, committedLanes, committedTransitions) {
         if (parentFiber.subtreeFlags & 10256)
           for (parentFiber = parentFiber.child; null !== parentFiber; )
             commitPassiveMountOnFiber(
-              root3,
+              root2,
               parentFiber,
               committedLanes,
               committedTransitions
@@ -8719,22 +8719,22 @@
         null !== lane && (lane.flags |= 32);
         return workInProgressDeferredLane;
       }
-      function scheduleUpdateOnFiber(root3, fiber, lane) {
-        if (root3 === workInProgressRoot && (2 === workInProgressSuspendedReason || 9 === workInProgressSuspendedReason) || null !== root3.cancelPendingCommit)
-          prepareFreshStack(root3, 0), markRootSuspended(
-            root3,
+      function scheduleUpdateOnFiber(root2, fiber, lane) {
+        if (root2 === workInProgressRoot && (2 === workInProgressSuspendedReason || 9 === workInProgressSuspendedReason) || null !== root2.cancelPendingCommit)
+          prepareFreshStack(root2, 0), markRootSuspended(
+            root2,
             workInProgressRootRenderLanes,
             workInProgressDeferredLane,
             false
           );
-        markRootUpdated$1(root3, lane);
-        if (0 === (executionContext & 2) || root3 !== workInProgressRoot)
-          root3 === workInProgressRoot && (0 === (executionContext & 2) && (workInProgressRootInterleavedUpdatedLanes |= lane), 4 === workInProgressRootExitStatus && markRootSuspended(
-            root3,
+        markRootUpdated$1(root2, lane);
+        if (0 === (executionContext & 2) || root2 !== workInProgressRoot)
+          root2 === workInProgressRoot && (0 === (executionContext & 2) && (workInProgressRootInterleavedUpdatedLanes |= lane), 4 === workInProgressRootExitStatus && markRootSuspended(
+            root2,
             workInProgressRootRenderLanes,
             workInProgressDeferredLane,
             false
-          )), ensureRootIsScheduled(root3);
+          )), ensureRootIsScheduled(root2);
       }
       function performWorkOnRoot(root$jscomp$0, lanes, forceSync) {
         if (0 !== (executionContext & 6)) throw Error(formatProdErrorMessage(327));
@@ -8759,18 +8759,18 @@
               if (0 !== JSCompiler_inline_result) {
                 lanes = JSCompiler_inline_result;
                 a: {
-                  var root3 = root$jscomp$0;
+                  var root2 = root$jscomp$0;
                   exitStatus = workInProgressRootConcurrentErrors;
-                  var wasRootDehydrated = root3.current.memoizedState.isDehydrated;
-                  wasRootDehydrated && (prepareFreshStack(root3, JSCompiler_inline_result).flags |= 256);
+                  var wasRootDehydrated = root2.current.memoizedState.isDehydrated;
+                  wasRootDehydrated && (prepareFreshStack(root2, JSCompiler_inline_result).flags |= 256);
                   JSCompiler_inline_result = renderRootSync(
-                    root3,
+                    root2,
                     JSCompiler_inline_result,
                     false
                   );
                   if (2 !== JSCompiler_inline_result) {
                     if (workInProgressRootDidAttachPingListener && !wasRootDehydrated) {
-                      root3.errorRecoveryDisabledLanes |= renderWasConcurrent;
+                      root2.errorRecoveryDisabledLanes |= renderWasConcurrent;
                       workInProgressRootInterleavedUpdatedLanes |= renderWasConcurrent;
                       exitStatus = 4;
                       break a;
@@ -8872,8 +8872,8 @@
         } while (1);
         ensureRootIsScheduled(root$jscomp$0);
       }
-      function commitRootWhenReady(root3, finishedWork, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, lanes, spawnedLane, updatedLanes, suspendedRetryLanes, didSkipSuspendedSiblings, exitStatus, suspendedCommitReason, completedRenderStartTime, completedRenderEndTime) {
-        root3.timeoutHandle = -1;
+      function commitRootWhenReady(root2, finishedWork, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, lanes, spawnedLane, updatedLanes, suspendedRetryLanes, didSkipSuspendedSiblings, exitStatus, suspendedCommitReason, completedRenderStartTime, completedRenderEndTime) {
+        root2.timeoutHandle = -1;
         suspendedCommitReason = finishedWork.subtreeFlags;
         if (suspendedCommitReason & 8192 || 16785408 === (suspendedCommitReason & 16785408)) {
           suspendedCommitReason = {
@@ -8898,10 +8898,10 @@
           );
           if (null !== timeoutOffset) {
             pendingEffectsLanes = lanes;
-            root3.cancelPendingCommit = timeoutOffset(
+            root2.cancelPendingCommit = timeoutOffset(
               commitRoot.bind(
                 null,
-                root3,
+                root2,
                 finishedWork,
                 lanes,
                 recoverableErrors,
@@ -8917,12 +8917,12 @@
                 completedRenderEndTime
               )
             );
-            markRootSuspended(root3, lanes, spawnedLane, !didSkipSuspendedSiblings);
+            markRootSuspended(root2, lanes, spawnedLane, !didSkipSuspendedSiblings);
             return;
           }
         }
         commitRoot(
-          root3,
+          root2,
           finishedWork,
           lanes,
           recoverableErrors,
@@ -8961,19 +8961,19 @@
         }
         return true;
       }
-      function markRootSuspended(root3, suspendedLanes, spawnedLane, didAttemptEntireTree) {
+      function markRootSuspended(root2, suspendedLanes, spawnedLane, didAttemptEntireTree) {
         suspendedLanes &= ~workInProgressRootPingedLanes;
         suspendedLanes &= ~workInProgressRootInterleavedUpdatedLanes;
-        root3.suspendedLanes |= suspendedLanes;
-        root3.pingedLanes &= ~suspendedLanes;
-        didAttemptEntireTree && (root3.warmLanes |= suspendedLanes);
-        didAttemptEntireTree = root3.expirationTimes;
+        root2.suspendedLanes |= suspendedLanes;
+        root2.pingedLanes &= ~suspendedLanes;
+        didAttemptEntireTree && (root2.warmLanes |= suspendedLanes);
+        didAttemptEntireTree = root2.expirationTimes;
         for (var lanes = suspendedLanes; 0 < lanes; ) {
           var index$6 = 31 - clz32(lanes), lane = 1 << index$6;
           didAttemptEntireTree[index$6] = -1;
           lanes &= ~lane;
         }
-        0 !== spawnedLane && markSpawnedDeferredLane(root3, spawnedLane, suspendedLanes);
+        0 !== spawnedLane && markSpawnedDeferredLane(root2, spawnedLane, suspendedLanes);
       }
       function flushSyncWork$1() {
         return 0 === (executionContext & 6) ? (flushSyncWorkAcrossRoots_impl(0, false), false) : true;
@@ -8989,44 +8989,44 @@
           workInProgress = null;
         }
       }
-      function prepareFreshStack(root3, lanes) {
-        var timeoutHandle = root3.timeoutHandle;
-        -1 !== timeoutHandle && (root3.timeoutHandle = -1, cancelTimeout(timeoutHandle));
-        timeoutHandle = root3.cancelPendingCommit;
-        null !== timeoutHandle && (root3.cancelPendingCommit = null, timeoutHandle());
+      function prepareFreshStack(root2, lanes) {
+        var timeoutHandle = root2.timeoutHandle;
+        -1 !== timeoutHandle && (root2.timeoutHandle = -1, cancelTimeout(timeoutHandle));
+        timeoutHandle = root2.cancelPendingCommit;
+        null !== timeoutHandle && (root2.cancelPendingCommit = null, timeoutHandle());
         pendingEffectsLanes = 0;
         resetWorkInProgressStack();
-        workInProgressRoot = root3;
-        workInProgress = timeoutHandle = createWorkInProgress(root3.current, null);
+        workInProgressRoot = root2;
+        workInProgress = timeoutHandle = createWorkInProgress(root2.current, null);
         workInProgressRootRenderLanes = lanes;
         workInProgressSuspendedReason = 0;
         workInProgressThrownValue = null;
         workInProgressRootDidSkipSuspendedSiblings = false;
-        workInProgressRootIsPrerendering = checkIfRootIsPrerendering(root3, lanes);
+        workInProgressRootIsPrerendering = checkIfRootIsPrerendering(root2, lanes);
         workInProgressRootDidAttachPingListener = false;
         workInProgressSuspendedRetryLanes = workInProgressDeferredLane = workInProgressRootPingedLanes = workInProgressRootInterleavedUpdatedLanes = workInProgressRootSkippedLanes = workInProgressRootExitStatus = 0;
         workInProgressRootRecoverableErrors = workInProgressRootConcurrentErrors = null;
         workInProgressRootDidIncludeRecursiveRenderUpdate = false;
         0 !== (lanes & 8) && (lanes |= lanes & 32);
-        var allEntangledLanes = root3.entangledLanes;
+        var allEntangledLanes = root2.entangledLanes;
         if (0 !== allEntangledLanes)
-          for (root3 = root3.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
+          for (root2 = root2.entanglements, allEntangledLanes &= lanes; 0 < allEntangledLanes; ) {
             var index$4 = 31 - clz32(allEntangledLanes), lane = 1 << index$4;
-            lanes |= root3[index$4];
+            lanes |= root2[index$4];
             allEntangledLanes &= ~lane;
           }
         entangledRenderLanes = lanes;
         finishQueueingConcurrentUpdates();
         return timeoutHandle;
       }
-      function handleThrow(root3, thrownValue) {
+      function handleThrow(root2, thrownValue) {
         currentlyRenderingFiber = null;
         ReactSharedInternals.H = ContextOnlyDispatcher;
         thrownValue === SuspenseException || thrownValue === SuspenseActionException ? (thrownValue = getSuspendedThenable(), workInProgressSuspendedReason = 3) : thrownValue === SuspenseyCommitException ? (thrownValue = getSuspendedThenable(), workInProgressSuspendedReason = 4) : workInProgressSuspendedReason = thrownValue === SelectiveHydrationException ? 8 : null !== thrownValue && "object" === typeof thrownValue && "function" === typeof thrownValue.then ? 6 : 1;
         workInProgressThrownValue = thrownValue;
         null === workInProgress && (workInProgressRootExitStatus = 1, logUncaughtError(
-          root3,
-          createCapturedValueAtFiber(thrownValue, root3.current)
+          root2,
+          createCapturedValueAtFiber(thrownValue, root2.current)
         ));
       }
       function shouldRemainOnPreviousScreen() {
@@ -9053,12 +9053,12 @@
           false
         );
       }
-      function renderRootSync(root3, lanes, shouldYieldForPrerendering) {
+      function renderRootSync(root2, lanes, shouldYieldForPrerendering) {
         var prevExecutionContext = executionContext;
         executionContext |= 2;
         var prevDispatcher = pushDispatcher(), prevAsyncDispatcher = pushAsyncDispatcher();
-        if (workInProgressRoot !== root3 || workInProgressRootRenderLanes !== lanes)
-          workInProgressTransitions = null, prepareFreshStack(root3, lanes);
+        if (workInProgressRoot !== root2 || workInProgressRootRenderLanes !== lanes)
+          workInProgressTransitions = null, prepareFreshStack(root2, lanes);
         lanes = false;
         var exitStatus = workInProgressRootExitStatus;
         a: do
@@ -9078,24 +9078,24 @@
                   var reason = workInProgressSuspendedReason;
                   workInProgressSuspendedReason = 0;
                   workInProgressThrownValue = null;
-                  throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, reason);
+                  throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, reason);
                   if (shouldYieldForPrerendering && workInProgressRootIsPrerendering) {
                     exitStatus = 0;
                     break a;
                   }
                   break;
                 default:
-                  reason = workInProgressSuspendedReason, workInProgressSuspendedReason = 0, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, reason);
+                  reason = workInProgressSuspendedReason, workInProgressSuspendedReason = 0, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, reason);
               }
             }
             workLoopSync();
             exitStatus = workInProgressRootExitStatus;
             break;
           } catch (thrownValue$165) {
-            handleThrow(root3, thrownValue$165);
+            handleThrow(root2, thrownValue$165);
           }
         while (1);
-        lanes && root3.shellSuspendCounter++;
+        lanes && root2.shellSuspendCounter++;
         lastContextDependency = currentlyRenderingFiber$1 = null;
         executionContext = prevExecutionContext;
         ReactSharedInternals.H = prevDispatcher;
@@ -9106,12 +9106,12 @@
       function workLoopSync() {
         for (; null !== workInProgress; ) performUnitOfWork(workInProgress);
       }
-      function renderRootConcurrent(root3, lanes) {
+      function renderRootConcurrent(root2, lanes) {
         var prevExecutionContext = executionContext;
         executionContext |= 2;
         var prevDispatcher = pushDispatcher(), prevAsyncDispatcher = pushAsyncDispatcher();
-        workInProgressRoot !== root3 || workInProgressRootRenderLanes !== lanes ? (workInProgressTransitions = null, workInProgressRootRenderTargetTime = now() + 500, prepareFreshStack(root3, lanes)) : workInProgressRootIsPrerendering = checkIfRootIsPrerendering(
-          root3,
+        workInProgressRoot !== root2 || workInProgressRootRenderLanes !== lanes ? (workInProgressTransitions = null, workInProgressRootRenderTargetTime = now() + 500, prepareFreshStack(root2, lanes)) : workInProgressRootIsPrerendering = checkIfRootIsPrerendering(
+          root2,
           lanes
         );
         a: do
@@ -9123,7 +9123,7 @@
                 case 1:
                   workInProgressSuspendedReason = 0;
                   workInProgressThrownValue = null;
-                  throwAndUnwindWorkLoop(root3, lanes, thrownValue, 1);
+                  throwAndUnwindWorkLoop(root2, lanes, thrownValue, 1);
                   break;
                 case 2:
                 case 9:
@@ -9134,8 +9134,8 @@
                     break;
                   }
                   lanes = function() {
-                    2 !== workInProgressSuspendedReason && 9 !== workInProgressSuspendedReason || workInProgressRoot !== root3 || (workInProgressSuspendedReason = 7);
-                    ensureRootIsScheduled(root3);
+                    2 !== workInProgressSuspendedReason && 9 !== workInProgressSuspendedReason || workInProgressRoot !== root2 || (workInProgressSuspendedReason = 7);
+                    ensureRootIsScheduled(root2);
                   };
                   thrownValue.then(lanes, lanes);
                   break a;
@@ -9146,7 +9146,7 @@
                   workInProgressSuspendedReason = 5;
                   break a;
                 case 7:
-                  isThenableResolved(thrownValue) ? (workInProgressSuspendedReason = 0, workInProgressThrownValue = null, replaySuspendedUnitOfWork(lanes)) : (workInProgressSuspendedReason = 0, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root3, lanes, thrownValue, 7));
+                  isThenableResolved(thrownValue) ? (workInProgressSuspendedReason = 0, workInProgressThrownValue = null, replaySuspendedUnitOfWork(lanes)) : (workInProgressSuspendedReason = 0, workInProgressThrownValue = null, throwAndUnwindWorkLoop(root2, lanes, thrownValue, 7));
                   break;
                 case 5:
                   var resource = null;
@@ -9170,12 +9170,12 @@
                   }
                   workInProgressSuspendedReason = 0;
                   workInProgressThrownValue = null;
-                  throwAndUnwindWorkLoop(root3, lanes, thrownValue, 5);
+                  throwAndUnwindWorkLoop(root2, lanes, thrownValue, 5);
                   break;
                 case 6:
                   workInProgressSuspendedReason = 0;
                   workInProgressThrownValue = null;
-                  throwAndUnwindWorkLoop(root3, lanes, thrownValue, 6);
+                  throwAndUnwindWorkLoop(root2, lanes, thrownValue, 6);
                   break;
                 case 8:
                   resetWorkInProgressStack();
@@ -9188,7 +9188,7 @@
             workLoopConcurrentByScheduler();
             break;
           } catch (thrownValue$167) {
-            handleThrow(root3, thrownValue$167);
+            handleThrow(root2, thrownValue$167);
           }
         while (1);
         lastContextDependency = currentlyRenderingFiber$1 = null;
@@ -9243,7 +9243,7 @@
         unitOfWork.memoizedProps = unitOfWork.pendingProps;
         null === next ? completeUnitOfWork(unitOfWork) : workInProgress = next;
       }
-      function throwAndUnwindWorkLoop(root3, unitOfWork, thrownValue, suspendedReason) {
+      function throwAndUnwindWorkLoop(root2, unitOfWork, thrownValue, suspendedReason) {
         lastContextDependency = currentlyRenderingFiber$1 = null;
         resetHooksOnUnwind(unitOfWork);
         thenableState$1 = null;
@@ -9251,7 +9251,7 @@
         var returnFiber = unitOfWork.return;
         try {
           if (throwException(
-            root3,
+            root2,
             returnFiber,
             unitOfWork,
             thrownValue,
@@ -9259,8 +9259,8 @@
           )) {
             workInProgressRootExitStatus = 1;
             logUncaughtError(
-              root3,
-              createCapturedValueAtFiber(thrownValue, root3.current)
+              root2,
+              createCapturedValueAtFiber(thrownValue, root2.current)
             );
             workInProgress = null;
             return;
@@ -9269,19 +9269,19 @@
           if (null !== returnFiber) throw workInProgress = returnFiber, error;
           workInProgressRootExitStatus = 1;
           logUncaughtError(
-            root3,
-            createCapturedValueAtFiber(thrownValue, root3.current)
+            root2,
+            createCapturedValueAtFiber(thrownValue, root2.current)
           );
           workInProgress = null;
           return;
         }
         if (unitOfWork.flags & 32768) {
-          if (isHydrating || 1 === suspendedReason) root3 = true;
+          if (isHydrating || 1 === suspendedReason) root2 = true;
           else if (workInProgressRootIsPrerendering || 0 !== (workInProgressRootRenderLanes & 536870912))
-            root3 = false;
-          else if (workInProgressRootDidSkipSuspendedSiblings = root3 = true, 2 === suspendedReason || 9 === suspendedReason || 3 === suspendedReason || 6 === suspendedReason)
+            root2 = false;
+          else if (workInProgressRootDidSkipSuspendedSiblings = root2 = true, 2 === suspendedReason || 9 === suspendedReason || 3 === suspendedReason || 6 === suspendedReason)
             suspendedReason = suspenseHandlerStackCursor.current, null !== suspendedReason && 13 === suspendedReason.tag && (suspendedReason.flags |= 16384);
-          unwindUnitOfWork(unitOfWork, root3);
+          unwindUnitOfWork(unitOfWork, root2);
         } else completeUnitOfWork(unitOfWork);
       }
       function completeUnitOfWork(unitOfWork) {
@@ -9332,35 +9332,35 @@
         workInProgressRootExitStatus = 6;
         workInProgress = null;
       }
-      function commitRoot(root3, finishedWork, lanes, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, spawnedLane, updatedLanes, suspendedRetryLanes) {
-        root3.cancelPendingCommit = null;
+      function commitRoot(root2, finishedWork, lanes, recoverableErrors, transitions, didIncludeRenderPhaseUpdate, spawnedLane, updatedLanes, suspendedRetryLanes) {
+        root2.cancelPendingCommit = null;
         do
           flushPendingEffects();
         while (0 !== pendingEffectsStatus);
         if (0 !== (executionContext & 6)) throw Error(formatProdErrorMessage(327));
         if (null !== finishedWork) {
-          if (finishedWork === root3.current) throw Error(formatProdErrorMessage(177));
+          if (finishedWork === root2.current) throw Error(formatProdErrorMessage(177));
           didIncludeRenderPhaseUpdate = finishedWork.lanes | finishedWork.childLanes;
           didIncludeRenderPhaseUpdate |= concurrentlyUpdatedLanes;
           markRootFinished(
-            root3,
+            root2,
             lanes,
             didIncludeRenderPhaseUpdate,
             spawnedLane,
             updatedLanes,
             suspendedRetryLanes
           );
-          root3 === workInProgressRoot && (workInProgress = workInProgressRoot = null, workInProgressRootRenderLanes = 0);
+          root2 === workInProgressRoot && (workInProgress = workInProgressRoot = null, workInProgressRootRenderLanes = 0);
           pendingFinishedWork = finishedWork;
-          pendingEffectsRoot = root3;
+          pendingEffectsRoot = root2;
           pendingEffectsLanes = lanes;
           pendingEffectsRemainingLanes = didIncludeRenderPhaseUpdate;
           pendingPassiveTransitions = transitions;
           pendingRecoverableErrors = recoverableErrors;
-          0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? (root3.callbackNode = null, root3.callbackPriority = 0, scheduleCallback$1(NormalPriority$1, function() {
+          0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? (root2.callbackNode = null, root2.callbackPriority = 0, scheduleCallback$1(NormalPriority$1, function() {
             flushPassiveEffects();
             return null;
-          })) : (root3.callbackNode = null, root3.callbackPriority = 0);
+          })) : (root2.callbackNode = null, root2.callbackPriority = 0);
           recoverableErrors = 0 !== (finishedWork.flags & 13878);
           if (0 !== (finishedWork.subtreeFlags & 13878) || recoverableErrors) {
             recoverableErrors = ReactSharedInternals.T;
@@ -9370,7 +9370,7 @@
             spawnedLane = executionContext;
             executionContext |= 4;
             try {
-              commitBeforeMutationEffects(root3, finishedWork, lanes);
+              commitBeforeMutationEffects(root2, finishedWork, lanes);
             } finally {
               executionContext = spawnedLane, ReactDOMSharedInternals.p = transitions, ReactSharedInternals.T = recoverableErrors;
             }
@@ -9384,7 +9384,7 @@
       function flushMutationEffects() {
         if (1 === pendingEffectsStatus) {
           pendingEffectsStatus = 0;
-          var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, rootMutationHasEffect = 0 !== (finishedWork.flags & 13878);
+          var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, rootMutationHasEffect = 0 !== (finishedWork.flags & 13878);
           if (0 !== (finishedWork.subtreeFlags & 13878) || rootMutationHasEffect) {
             rootMutationHasEffect = ReactSharedInternals.T;
             ReactSharedInternals.T = null;
@@ -9393,8 +9393,8 @@
             var prevExecutionContext = executionContext;
             executionContext |= 4;
             try {
-              commitMutationEffectsOnFiber(finishedWork, root3);
-              var priorSelectionInformation = selectionInformation, curFocusedElem = getActiveElementDeep(root3.containerInfo), priorFocusedElem = priorSelectionInformation.focusedElem, priorSelectionRange = priorSelectionInformation.selectionRange;
+              commitMutationEffectsOnFiber(finishedWork, root2);
+              var priorSelectionInformation = selectionInformation, curFocusedElem = getActiveElementDeep(root2.containerInfo), priorFocusedElem = priorSelectionInformation.focusedElem, priorSelectionRange = priorSelectionInformation.selectionRange;
               if (curFocusedElem !== priorFocusedElem && priorFocusedElem && priorFocusedElem.ownerDocument && containsNode(
                 priorFocusedElem.ownerDocument.documentElement,
                 priorFocusedElem
@@ -9448,14 +9448,14 @@
               executionContext = prevExecutionContext, ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = rootMutationHasEffect;
             }
           }
-          root3.current = finishedWork;
+          root2.current = finishedWork;
           pendingEffectsStatus = 2;
         }
       }
       function flushLayoutEffects() {
         if (2 === pendingEffectsStatus) {
           pendingEffectsStatus = 0;
-          var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
+          var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, rootHasLayoutEffect = 0 !== (finishedWork.flags & 8772);
           if (0 !== (finishedWork.subtreeFlags & 8772) || rootHasLayoutEffect) {
             rootHasLayoutEffect = ReactSharedInternals.T;
             ReactSharedInternals.T = null;
@@ -9464,7 +9464,7 @@
             var prevExecutionContext = executionContext;
             executionContext |= 4;
             try {
-              commitLayoutEffectOnFiber(root3, finishedWork.alternate, finishedWork);
+              commitLayoutEffectOnFiber(root2, finishedWork.alternate, finishedWork);
             } finally {
               executionContext = prevExecutionContext, ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = rootHasLayoutEffect;
             }
@@ -9476,9 +9476,9 @@
         if (4 === pendingEffectsStatus || 3 === pendingEffectsStatus) {
           pendingEffectsStatus = 0;
           requestPaint();
-          var root3 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors;
-          0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root3, root3.pendingLanes));
-          var remainingLanes = root3.pendingLanes;
+          var root2 = pendingEffectsRoot, finishedWork = pendingFinishedWork, lanes = pendingEffectsLanes, recoverableErrors = pendingRecoverableErrors;
+          0 !== (finishedWork.subtreeFlags & 10256) || 0 !== (finishedWork.flags & 10256) ? pendingEffectsStatus = 5 : (pendingEffectsStatus = 0, pendingFinishedWork = pendingEffectsRoot = null, releaseRootPooledCache(root2, root2.pendingLanes));
+          var remainingLanes = root2.pendingLanes;
           0 === remainingLanes && (legacyErrorBoundariesThatAlreadyFailed = null);
           lanesToEventPriority(lanes);
           finishedWork = finishedWork.stateNode;
@@ -9498,7 +9498,7 @@
             ReactDOMSharedInternals.p = 2;
             ReactSharedInternals.T = null;
             try {
-              for (var onRecoverableError = root3.onRecoverableError, i = 0; i < recoverableErrors.length; i++) {
+              for (var onRecoverableError = root2.onRecoverableError, i = 0; i < recoverableErrors.length; i++) {
                 var recoverableError = recoverableErrors[i];
                 onRecoverableError(recoverableError.value, {
                   componentStack: recoverableError.stack
@@ -9509,14 +9509,14 @@
             }
           }
           0 !== (pendingEffectsLanes & 3) && flushPendingEffects();
-          ensureRootIsScheduled(root3);
-          remainingLanes = root3.pendingLanes;
-          0 !== (lanes & 261930) && 0 !== (remainingLanes & 42) ? root3 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root3) : nestedUpdateCount = 0;
+          ensureRootIsScheduled(root2);
+          remainingLanes = root2.pendingLanes;
+          0 !== (lanes & 261930) && 0 !== (remainingLanes & 42) ? root2 === rootWithNestedUpdates ? nestedUpdateCount++ : (nestedUpdateCount = 0, rootWithNestedUpdates = root2) : nestedUpdateCount = 0;
           flushSyncWorkAcrossRoots_impl(0, false);
         }
       }
-      function releaseRootPooledCache(root3, remainingLanes) {
-        0 === (root3.pooledCacheLanes &= remainingLanes) && (remainingLanes = root3.pooledCache, null != remainingLanes && (root3.pooledCache = null, releaseCache(remainingLanes)));
+      function releaseRootPooledCache(root2, remainingLanes) {
+        0 === (root2.pooledCacheLanes &= remainingLanes) && (remainingLanes = root2.pooledCache, null != remainingLanes && (root2.pooledCache = null, releaseCache(remainingLanes)));
       }
       function flushPendingEffects() {
         flushMutationEffects();
@@ -9526,7 +9526,7 @@
       }
       function flushPassiveEffects() {
         if (5 !== pendingEffectsStatus) return false;
-        var root3 = pendingEffectsRoot, remainingLanes = pendingEffectsRemainingLanes;
+        var root2 = pendingEffectsRoot, remainingLanes = pendingEffectsRemainingLanes;
         pendingEffectsRemainingLanes = 0;
         var renderPriority = lanesToEventPriority(pendingEffectsLanes), prevTransition = ReactSharedInternals.T, previousPriority = ReactDOMSharedInternals.p;
         try {
@@ -9557,7 +9557,7 @@
             }
           return true;
         } finally {
-          ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = prevTransition, releaseRootPooledCache(root3, remainingLanes);
+          ReactDOMSharedInternals.p = previousPriority, ReactSharedInternals.T = prevTransition, releaseRootPooledCache(root2, remainingLanes);
         }
       }
       function captureCommitPhaseErrorOnRoot(rootFiber, sourceFiber, error) {
@@ -9596,23 +9596,23 @@
             nearestMountedAncestor = nearestMountedAncestor.return;
           }
       }
-      function attachPingListener(root3, wakeable, lanes) {
-        var pingCache = root3.pingCache;
+      function attachPingListener(root2, wakeable, lanes) {
+        var pingCache = root2.pingCache;
         if (null === pingCache) {
-          pingCache = root3.pingCache = new PossiblyWeakMap();
+          pingCache = root2.pingCache = new PossiblyWeakMap();
           var threadIDs = /* @__PURE__ */ new Set();
           pingCache.set(wakeable, threadIDs);
         } else
           threadIDs = pingCache.get(wakeable), void 0 === threadIDs && (threadIDs = /* @__PURE__ */ new Set(), pingCache.set(wakeable, threadIDs));
-        threadIDs.has(lanes) || (workInProgressRootDidAttachPingListener = true, threadIDs.add(lanes), root3 = pingSuspendedRoot.bind(null, root3, wakeable, lanes), wakeable.then(root3, root3));
+        threadIDs.has(lanes) || (workInProgressRootDidAttachPingListener = true, threadIDs.add(lanes), root2 = pingSuspendedRoot.bind(null, root2, wakeable, lanes), wakeable.then(root2, root2));
       }
-      function pingSuspendedRoot(root3, wakeable, pingedLanes) {
-        var pingCache = root3.pingCache;
+      function pingSuspendedRoot(root2, wakeable, pingedLanes) {
+        var pingCache = root2.pingCache;
         null !== pingCache && pingCache.delete(wakeable);
-        root3.pingedLanes |= root3.suspendedLanes & pingedLanes;
-        root3.warmLanes &= ~pingedLanes;
-        workInProgressRoot === root3 && (workInProgressRootRenderLanes & pingedLanes) === pingedLanes && (4 === workInProgressRootExitStatus || 3 === workInProgressRootExitStatus && (workInProgressRootRenderLanes & 62914560) === workInProgressRootRenderLanes && 300 > now() - globalMostRecentFallbackTime ? 0 === (executionContext & 2) && prepareFreshStack(root3, 0) : workInProgressRootPingedLanes |= pingedLanes, workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes && (workInProgressSuspendedRetryLanes = 0));
-        ensureRootIsScheduled(root3);
+        root2.pingedLanes |= root2.suspendedLanes & pingedLanes;
+        root2.warmLanes &= ~pingedLanes;
+        workInProgressRoot === root2 && (workInProgressRootRenderLanes & pingedLanes) === pingedLanes && (4 === workInProgressRootExitStatus || 3 === workInProgressRootExitStatus && (workInProgressRootRenderLanes & 62914560) === workInProgressRootRenderLanes && 300 > now() - globalMostRecentFallbackTime ? 0 === (executionContext & 2) && prepareFreshStack(root2, 0) : workInProgressRootPingedLanes |= pingedLanes, workInProgressSuspendedRetryLanes === workInProgressRootRenderLanes && (workInProgressSuspendedRetryLanes = 0));
+        ensureRootIsScheduled(root2);
       }
       function retryTimedOutBoundary(boundaryFiber, retryLane) {
         0 === retryLane && (retryLane = claimNextRetryLane());
@@ -9654,8 +9654,8 @@
       var mightHavePendingSyncWork = false;
       var isFlushingWork = false;
       var currentEventTransitionLane = 0;
-      function ensureRootIsScheduled(root3) {
-        root3 !== lastScheduledRoot && null === root3.next && (null === lastScheduledRoot ? firstScheduledRoot = lastScheduledRoot = root3 : lastScheduledRoot = lastScheduledRoot.next = root3);
+      function ensureRootIsScheduled(root2) {
+        root2 !== lastScheduledRoot && null === root2.next && (null === lastScheduledRoot ? firstScheduledRoot = lastScheduledRoot = root2 : lastScheduledRoot = lastScheduledRoot.next = root2);
         mightHavePendingSyncWork = true;
         didScheduleMicrotask || (didScheduleMicrotask = true, scheduleImmediateRootScheduleTask());
       }
@@ -9695,39 +9695,39 @@
         mightHavePendingSyncWork = didScheduleMicrotask = false;
         var syncTransitionLanes = 0;
         0 !== currentEventTransitionLane && shouldAttemptEagerTransition() && (syncTransitionLanes = currentEventTransitionLane);
-        for (var currentTime = now(), prev = null, root3 = firstScheduledRoot; null !== root3; ) {
-          var next = root3.next, nextLanes = scheduleTaskForRootDuringMicrotask(root3, currentTime);
+        for (var currentTime = now(), prev = null, root2 = firstScheduledRoot; null !== root2; ) {
+          var next = root2.next, nextLanes = scheduleTaskForRootDuringMicrotask(root2, currentTime);
           if (0 === nextLanes)
-            root3.next = null, null === prev ? firstScheduledRoot = next : prev.next = next, null === next && (lastScheduledRoot = prev);
-          else if (prev = root3, 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
+            root2.next = null, null === prev ? firstScheduledRoot = next : prev.next = next, null === next && (lastScheduledRoot = prev);
+          else if (prev = root2, 0 !== syncTransitionLanes || 0 !== (nextLanes & 3))
             mightHavePendingSyncWork = true;
-          root3 = next;
+          root2 = next;
         }
         0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus || flushSyncWorkAcrossRoots_impl(syncTransitionLanes, false);
         0 !== currentEventTransitionLane && (currentEventTransitionLane = 0);
       }
-      function scheduleTaskForRootDuringMicrotask(root3, currentTime) {
-        for (var suspendedLanes = root3.suspendedLanes, pingedLanes = root3.pingedLanes, expirationTimes = root3.expirationTimes, lanes = root3.pendingLanes & -62914561; 0 < lanes; ) {
+      function scheduleTaskForRootDuringMicrotask(root2, currentTime) {
+        for (var suspendedLanes = root2.suspendedLanes, pingedLanes = root2.pingedLanes, expirationTimes = root2.expirationTimes, lanes = root2.pendingLanes & -62914561; 0 < lanes; ) {
           var index$5 = 31 - clz32(lanes), lane = 1 << index$5, expirationTime = expirationTimes[index$5];
           if (-1 === expirationTime) {
             if (0 === (lane & suspendedLanes) || 0 !== (lane & pingedLanes))
               expirationTimes[index$5] = computeExpirationTime(lane, currentTime);
-          } else expirationTime <= currentTime && (root3.expiredLanes |= lane);
+          } else expirationTime <= currentTime && (root2.expiredLanes |= lane);
           lanes &= ~lane;
         }
         currentTime = workInProgressRoot;
         suspendedLanes = workInProgressRootRenderLanes;
         suspendedLanes = getNextLanes(
-          root3,
-          root3 === currentTime ? suspendedLanes : 0,
-          null !== root3.cancelPendingCommit || -1 !== root3.timeoutHandle
+          root2,
+          root2 === currentTime ? suspendedLanes : 0,
+          null !== root2.cancelPendingCommit || -1 !== root2.timeoutHandle
         );
-        pingedLanes = root3.callbackNode;
-        if (0 === suspendedLanes || root3 === currentTime && (2 === workInProgressSuspendedReason || 9 === workInProgressSuspendedReason) || null !== root3.cancelPendingCommit)
-          return null !== pingedLanes && null !== pingedLanes && cancelCallback$1(pingedLanes), root3.callbackNode = null, root3.callbackPriority = 0;
-        if (0 === (suspendedLanes & 3) || checkIfRootIsPrerendering(root3, suspendedLanes)) {
+        pingedLanes = root2.callbackNode;
+        if (0 === suspendedLanes || root2 === currentTime && (2 === workInProgressSuspendedReason || 9 === workInProgressSuspendedReason) || null !== root2.cancelPendingCommit)
+          return null !== pingedLanes && null !== pingedLanes && cancelCallback$1(pingedLanes), root2.callbackNode = null, root2.callbackPriority = 0;
+        if (0 === (suspendedLanes & 3) || checkIfRootIsPrerendering(root2, suspendedLanes)) {
           currentTime = suspendedLanes & -suspendedLanes;
-          if (currentTime === root3.callbackPriority) return currentTime;
+          if (currentTime === root2.callbackPriority) return currentTime;
           null !== pingedLanes && cancelCallback$1(pingedLanes);
           switch (lanesToEventPriority(suspendedLanes)) {
             case 2:
@@ -9743,37 +9743,37 @@
             default:
               suspendedLanes = NormalPriority$1;
           }
-          pingedLanes = performWorkOnRootViaSchedulerTask.bind(null, root3);
+          pingedLanes = performWorkOnRootViaSchedulerTask.bind(null, root2);
           suspendedLanes = scheduleCallback$3(suspendedLanes, pingedLanes);
-          root3.callbackPriority = currentTime;
-          root3.callbackNode = suspendedLanes;
+          root2.callbackPriority = currentTime;
+          root2.callbackNode = suspendedLanes;
           return currentTime;
         }
         null !== pingedLanes && null !== pingedLanes && cancelCallback$1(pingedLanes);
-        root3.callbackPriority = 2;
-        root3.callbackNode = null;
+        root2.callbackPriority = 2;
+        root2.callbackNode = null;
         return 2;
       }
-      function performWorkOnRootViaSchedulerTask(root3, didTimeout) {
+      function performWorkOnRootViaSchedulerTask(root2, didTimeout) {
         if (0 !== pendingEffectsStatus && 5 !== pendingEffectsStatus)
-          return root3.callbackNode = null, root3.callbackPriority = 0, null;
-        var originalCallbackNode = root3.callbackNode;
-        if (flushPendingEffects() && root3.callbackNode !== originalCallbackNode)
+          return root2.callbackNode = null, root2.callbackPriority = 0, null;
+        var originalCallbackNode = root2.callbackNode;
+        if (flushPendingEffects() && root2.callbackNode !== originalCallbackNode)
           return null;
         var workInProgressRootRenderLanes$jscomp$0 = workInProgressRootRenderLanes;
         workInProgressRootRenderLanes$jscomp$0 = getNextLanes(
-          root3,
-          root3 === workInProgressRoot ? workInProgressRootRenderLanes$jscomp$0 : 0,
-          null !== root3.cancelPendingCommit || -1 !== root3.timeoutHandle
+          root2,
+          root2 === workInProgressRoot ? workInProgressRootRenderLanes$jscomp$0 : 0,
+          null !== root2.cancelPendingCommit || -1 !== root2.timeoutHandle
         );
         if (0 === workInProgressRootRenderLanes$jscomp$0) return null;
-        performWorkOnRoot(root3, workInProgressRootRenderLanes$jscomp$0, didTimeout);
-        scheduleTaskForRootDuringMicrotask(root3, now());
-        return null != root3.callbackNode && root3.callbackNode === originalCallbackNode ? performWorkOnRootViaSchedulerTask.bind(null, root3) : null;
+        performWorkOnRoot(root2, workInProgressRootRenderLanes$jscomp$0, didTimeout);
+        scheduleTaskForRootDuringMicrotask(root2, now());
+        return null != root2.callbackNode && root2.callbackNode === originalCallbackNode ? performWorkOnRootViaSchedulerTask.bind(null, root2) : null;
       }
-      function performSyncWorkOnRoot(root3, lanes) {
+      function performSyncWorkOnRoot(root2, lanes) {
         if (flushPendingEffects()) return null;
-        performWorkOnRoot(root3, lanes, true);
+        performWorkOnRoot(root2, lanes, true);
       }
       function scheduleImmediateRootScheduleTask() {
         scheduleMicrotask(function() {
@@ -10300,7 +10300,7 @@
               }
             else
               isComposing ? isFallbackCompositionEnd(domEventName, nativeEvent) && (eventType = "onCompositionEnd") : "keydown" === domEventName && 229 === nativeEvent.keyCode && (eventType = "onCompositionStart");
-            eventType && (useFallbackCompositionData && "ko" !== nativeEvent.locale && (isComposing || "onCompositionStart" !== eventType ? "onCompositionEnd" === eventType && isComposing && (fallbackData = getData()) : (root2 = nativeEventTarget, startText = "value" in root2 ? root2.value : root2.textContent, isComposing = true)), handleEventFunc = accumulateTwoPhaseListeners(targetInst, eventType), 0 < handleEventFunc.length && (eventType = new SyntheticCompositionEvent(
+            eventType && (useFallbackCompositionData && "ko" !== nativeEvent.locale && (isComposing || "onCompositionStart" !== eventType ? "onCompositionEnd" === eventType && isComposing && (fallbackData = getData()) : (root = nativeEventTarget, startText = "value" in root ? root.value : root.textContent, isComposing = true)), handleEventFunc = accumulateTwoPhaseListeners(targetInst, eventType), 0 < handleEventFunc.length && (eventType = new SyntheticCompositionEvent(
               eventType,
               domEventName,
               null,
@@ -11779,15 +11779,15 @@
           "stylesheet" === resource.type && 0 === (resource.state.loading & 4) && (instance = resource.instance, resource.state.loading |= 4, insertStylesheet(instance, props.precedence, hoistableRoot));
         return resource.instance;
       }
-      function insertStylesheet(instance, precedence, root3) {
-        for (var nodes = root3.querySelectorAll(
+      function insertStylesheet(instance, precedence, root2) {
+        for (var nodes = root2.querySelectorAll(
           'link[rel="stylesheet"][data-precedence],style[data-precedence]'
         ), last = nodes.length ? nodes[nodes.length - 1] : null, prior = last, i = 0; i < nodes.length; i++) {
           var node = nodes[i];
           if (node.dataset.precedence === precedence) prior = node;
           else if (prior !== last) break;
         }
-        prior ? prior.parentNode.insertBefore(instance, prior.nextSibling) : (precedence = 9 === root3.nodeType ? root3.head : root3, precedence.insertBefore(instance, precedence.firstChild));
+        prior ? prior.parentNode.insertBefore(instance, prior.nextSibling) : (precedence = 9 === root2.nodeType ? root2.head : root2, precedence.insertBefore(instance, precedence.firstChild));
       }
       function adoptPreloadPropsForStylesheet(stylesheetProps, preloadProps) {
         null == stylesheetProps.crossOrigin && (stylesheetProps.crossOrigin = preloadProps.crossOrigin);
@@ -11936,14 +11936,14 @@
         state.stylesheets = null;
         null !== state.unsuspend && (state.count++, precedencesByRoot = /* @__PURE__ */ new Map(), resources.forEach(insertStylesheetIntoRoot, state), precedencesByRoot = null, onUnsuspend.call(state));
       }
-      function insertStylesheetIntoRoot(root3, resource) {
+      function insertStylesheetIntoRoot(root2, resource) {
         if (!(resource.state.loading & 4)) {
-          var precedences = precedencesByRoot.get(root3);
+          var precedences = precedencesByRoot.get(root2);
           if (precedences) var last = precedences.get(null);
           else {
             precedences = /* @__PURE__ */ new Map();
-            precedencesByRoot.set(root3, precedences);
-            for (var nodes = root3.querySelectorAll(
+            precedencesByRoot.set(root2, precedences);
+            for (var nodes = root2.querySelectorAll(
               "link[data-precedence],style[data-precedence]"
             ), i = 0; i < nodes.length; i++) {
               var node = nodes[i];
@@ -11961,7 +11961,7 @@
           last = onUnsuspend.bind(this);
           nodes.addEventListener("load", last);
           nodes.addEventListener("error", last);
-          i ? i.parentNode.insertBefore(nodes, i.nextSibling) : (root3 = 9 === root3.nodeType ? root3.head : root3, root3.insertBefore(nodes, root3.firstChild));
+          i ? i.parentNode.insertBefore(nodes, i.nextSibling) : (root2 = 9 === root2.nodeType ? root2.head : root2, root2.insertBefore(nodes, root2.firstChild));
           resource.state.loading |= 4;
         }
       }
@@ -12050,8 +12050,8 @@
       }
       function attemptContinuousHydration(fiber) {
         if (13 === fiber.tag || 31 === fiber.tag) {
-          var root3 = enqueueConcurrentRenderForLane(fiber, 67108864);
-          null !== root3 && scheduleUpdateOnFiber(root3, fiber, 67108864);
+          var root2 = enqueueConcurrentRenderForLane(fiber, 67108864);
+          null !== root2 && scheduleUpdateOnFiber(root2, fiber, 67108864);
           markRetryLaneIfNotHydrated(fiber, 67108864);
         }
       }
@@ -12059,8 +12059,8 @@
         if (13 === fiber.tag || 31 === fiber.tag) {
           var lane = requestUpdateLane();
           lane = getBumpedLaneForHydrationByLane(lane);
-          var root3 = enqueueConcurrentRenderForLane(fiber, lane);
-          null !== root3 && scheduleUpdateOnFiber(root3, fiber, lane);
+          var root2 = enqueueConcurrentRenderForLane(fiber, lane);
+          null !== root2 && scheduleUpdateOnFiber(root2, fiber, lane);
           markRetryLaneIfNotHydrated(fiber, lane);
         }
       }
@@ -12114,11 +12114,11 @@
                     if (fiber.current.memoizedState.isDehydrated) {
                       var lanes = getHighestPriorityLanes(fiber.pendingLanes);
                       if (0 !== lanes) {
-                        var root3 = fiber;
-                        root3.pendingLanes |= 2;
-                        for (root3.entangledLanes |= 2; lanes; ) {
+                        var root2 = fiber;
+                        root2.pendingLanes |= 2;
+                        for (root2.entangledLanes |= 2; lanes; ) {
                           var lane = 1 << 31 - clz32(lanes);
-                          root3.entanglements[1] |= lane;
+                          root2.entanglements[1] |= lane;
                           lanes &= ~lane;
                         }
                         ensureRootIsScheduled(fiber);
@@ -12128,7 +12128,7 @@
                     break;
                   case 31:
                   case 13:
-                    root3 = enqueueConcurrentRenderForLane(fiber, 2), null !== root3 && scheduleUpdateOnFiber(root3, fiber, 2), flushSyncWork$1(), markRetryLaneIfNotHydrated(fiber, 2);
+                    root2 = enqueueConcurrentRenderForLane(fiber, 2), null !== root2 && scheduleUpdateOnFiber(root2, fiber, 2), flushSyncWork$1(), markRetryLaneIfNotHydrated(fiber, 2);
                 }
               fiber = findInstanceBlockingEvent(nativeEvent);
               null === fiber && dispatchEventForPluginEventSystem(
@@ -12554,17 +12554,17 @@
         this._internalRoot = internalRoot;
       }
       ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render = function(children) {
-        var root3 = this._internalRoot;
-        if (null === root3) throw Error(formatProdErrorMessage(409));
-        var current = root3.current, lane = requestUpdateLane();
-        updateContainerImpl(current, lane, children, root3, null, null);
+        var root2 = this._internalRoot;
+        if (null === root2) throw Error(formatProdErrorMessage(409));
+        var current = root2.current, lane = requestUpdateLane();
+        updateContainerImpl(current, lane, children, root2, null, null);
       };
       ReactDOMHydrationRoot.prototype.unmount = ReactDOMRoot.prototype.unmount = function() {
-        var root3 = this._internalRoot;
-        if (null !== root3) {
+        var root2 = this._internalRoot;
+        if (null !== root2) {
           this._internalRoot = null;
-          var container = root3.containerInfo;
-          updateContainerImpl(root3.current, 2, null, root3, null, null);
+          var container = root2.containerInfo;
+          updateContainerImpl(root2.current, 2, null, root2, null, null);
           flushSyncWork$1();
           container[internalContainerInstanceKey] = null;
         }
@@ -12581,7 +12581,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1840 = React8.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1840 = React4.version;
       if ("19.2.5" !== isomorphicReactPackageVersion$jscomp$inline_1840)
         throw Error(
           formatProdErrorMessage(
@@ -12748,9 +12748,12 @@
     }
   });
 
-  // src/renderer/app/index.tsx
-  var import_react7 = __toESM(require_react());
+  // src/renderer/app/output.tsx
+  var import_react3 = __toESM(require_react());
   var import_client = __toESM(require_client());
+
+  // src/renderer/app/components/OutputView.tsx
+  var import_react2 = __toESM(require_react());
 
   // node_modules/zustand/esm/vanilla.mjs
   var createStoreImpl = (createState) => {
@@ -12919,17 +12922,6 @@
   };
 
   // src/renderer/app/store.ts
-  var THEME_PRESETS = [
-    { name: "Light Classic", bg: "#ffffff", color: "#000000", fontSize: 48 },
-    { name: "Dark Modern", bg: "#1a1a2e", color: "#eaeaea", fontSize: 42 },
-    { name: "Blue Ocean", bg: "#0f4c75", color: "#ffffff", fontSize: 44 },
-    { name: "Sunset Warm", bg: "#2d132c", color: "#ffd700", fontSize: 42 },
-    { name: "Forest Green", bg: "#1b4332", color: "#d8f3dc", fontSize: 44 },
-    { name: "Green Screen", bg: "#00ff00", color: "#101010", fontSize: 44 },
-    { name: "Royal Purple", bg: "#3c096c", color: "#e0aaff", fontSize: 42 },
-    { name: "Minimal Black", bg: "#000000", color: "#ffffff", fontSize: 48 },
-    { name: "Soft Gray", bg: "#2d2d2d", color: "#f0f0f0", fontSize: 42 }
-  ];
   var useStore2 = create((set, get) => ({
     songs: [],
     schedule: [],
@@ -13102,7 +13094,6 @@
   }));
 
   // src/renderer/app/components/OutputView.tsx
-  var import_react2 = __toESM(require_react());
   var import_jsx_runtime = __toESM(require_jsx_runtime());
   var toFileUrl = (input) => {
     if (!input) return null;
@@ -13366,2758 +13357,28 @@
     );
   };
 
-  // src/renderer/app/components/BiblePicker.tsx
-  var import_react3 = __toESM(require_react());
+  // src/renderer/app/output.tsx
   var import_jsx_runtime2 = __toESM(require_jsx_runtime());
-  var OT_BOOKS = [
-    "Genesis",
-    "Exodus",
-    "Leviticus",
-    "Numbers",
-    "Deuteronomy",
-    "Joshua",
-    "Judges",
-    "Ruth",
-    "1 Samuel",
-    "2 Samuel",
-    "1 Kings",
-    "2 Kings",
-    "1 Chronicles",
-    "2 Chronicles",
-    "Ezra",
-    "Nehemiah",
-    "Esther",
-    "Job",
-    "Psalms",
-    "Proverbs",
-    "Ecclesiastes",
-    "Song of Solomon",
-    "Isaiah",
-    "Jeremiah",
-    "Lamentations",
-    "Ezekiel",
-    "Daniel",
-    "Hosea",
-    "Joel",
-    "Amos",
-    "Obadiah",
-    "Jonah",
-    "Micah",
-    "Nahum",
-    "Habakkuk",
-    "Zephaniah",
-    "Haggai",
-    "Zechariah",
-    "Malachi"
-  ];
-  var NT_BOOKS = [
-    "Matthew",
-    "Mark",
-    "Luke",
-    "John",
-    "Acts",
-    "Romans",
-    "1 Corinthians",
-    "2 Corinthians",
-    "Galatians",
-    "Ephesians",
-    "Philippians",
-    "Colossians",
-    "1 Thessalonians",
-    "2 Thessalonians",
-    "1 Timothy",
-    "2 Timothy",
-    "Titus",
-    "Philemon",
-    "Hebrews",
-    "James",
-    "1 Peter",
-    "2 Peter",
-    "1 John",
-    "2 John",
-    "3 John",
-    "Jude",
-    "Revelation"
-  ];
-  var ALL_BOOKS = [...OT_BOOKS, ...NT_BOOKS];
-  var BiblePicker = () => {
-    const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
-    const setLiveSlide = useStore2((state) => state.setLiveSlide);
-    const liveSlide = useStore2((state) => state.liveSlide);
-    const [translations, setTranslations] = (0, import_react3.useState)([]);
-    const [selectedTranslation, setSelectedTranslation] = (0, import_react3.useState)("");
-    const [secondTranslation, setSecondTranslation] = (0, import_react3.useState)("");
-    const [selectedBook, setSelectedBook] = (0, import_react3.useState)("Genesis");
-    const [selectedChapter, setSelectedChapter] = (0, import_react3.useState)(1);
-    const [chapters, setChapters] = (0, import_react3.useState)([]);
-    const [verses, setVerses] = (0, import_react3.useState)([]);
-    const [secondVerses, setSecondVerses] = (0, import_react3.useState)([]);
-    const [searchQuery, setSearchQuery] = (0, import_react3.useState)("");
-    const [searchResults, setSearchResults] = (0, import_react3.useState)([]);
-    const [importProgress, setImportProgress] = (0, import_react3.useState)(null);
-    const [isSearching, setIsSearching] = (0, import_react3.useState)(false);
-    const [dualMode, setDualMode] = (0, import_react3.useState)(false);
-    const [selectedVerse, setSelectedVerse] = (0, import_react3.useState)(null);
-    const [otExpanded, setOtExpanded] = (0, import_react3.useState)(true);
-    const [ntExpanded, setNtExpanded] = (0, import_react3.useState)(false);
-    const [toast, setToast] = (0, import_react3.useState)(null);
-    const [pendingVerseNumber, setPendingVerseNumber] = (0, import_react3.useState)(null);
-    (0, import_react3.useEffect)(() => {
-      const loadBibleData = async () => {
-        try {
-          const translationsList = await window.worship.bibles.listTranslations();
-          if (translationsList && translationsList.length) {
-            setTranslations(translationsList);
-            setSelectedTranslation(translationsList[0]?.code || "");
-            if (translationsList.length > 1) {
-              setSecondTranslation(translationsList[1]?.code || "");
-            }
-          }
-        } catch (error) {
-          console.error("Failed to load translations:", error);
-        }
-      };
-      loadBibleData();
-    }, []);
-    (0, import_react3.useEffect)(() => {
-      if (selectedBook) {
-        loadChapters(selectedBook);
-      }
-    }, [selectedBook]);
-    (0, import_react3.useEffect)(() => {
-      if (selectedBook && selectedChapter) {
-        loadVerses();
-      }
-    }, [selectedChapter, selectedTranslation]);
-    (0, import_react3.useEffect)(() => {
-      if (dualMode && secondTranslation && selectedBook && selectedChapter) {
-        loadSecondVerses();
-      }
-    }, [selectedChapter, secondTranslation, dualMode]);
-    (0, import_react3.useEffect)(() => {
-      if (pendingVerseNumber == null || !verses.length) return;
-      const verse = verses.find((item) => item.verse === pendingVerseNumber);
-      if (verse) {
-        handleVerseSelect(verse);
-        setPendingVerseNumber(null);
-      }
-    }, [pendingVerseNumber, verses]);
-    (0, import_react3.useEffect)(() => {
-      const onKeyDown = (event) => {
-        if (!verses.length) return;
-        if (event.key === "ArrowDown") {
-          event.preventDefault();
-          if (!selectedVerse) return handleVerseSelect(verses[0]);
-          const currentIndex = verses.findIndex((item) => item.verse === selectedVerse.verse);
-          const nextIndex = Math.min(verses.length - 1, currentIndex + 1);
-          handleVerseSelect(verses[nextIndex]);
-        }
-        if (event.key === "ArrowUp") {
-          event.preventDefault();
-          if (!selectedVerse) return handleVerseSelect(verses[0]);
-          const currentIndex = verses.findIndex((item) => item.verse === selectedVerse.verse);
-          const prevIndex = Math.max(0, currentIndex - 1);
-          handleVerseSelect(verses[prevIndex]);
-        }
-        if (event.key === "Enter" && selectedVerse) {
-          event.preventDefault();
-          sendToProjector();
-        }
-      };
-      window.addEventListener("keydown", onKeyDown);
-      return () => window.removeEventListener("keydown", onKeyDown);
-    }, [verses, selectedVerse]);
-    const loadChapters = async (book) => {
-      try {
-        const chaptersList = await window.worship.bibles.getChapters(book);
-        if (chaptersList && chaptersList.length) {
-          setChapters(chaptersList);
-          setSelectedChapter(chaptersList[0]);
-        } else {
-          setChapters([1]);
-          setSelectedChapter(1);
-        }
-      } catch (error) {
-        console.error("Failed to load chapters:", error);
-        setChapters([1]);
-        setSelectedChapter(1);
-      }
-    };
-    const loadVerses = async () => {
-      try {
-        const translation = translations.find((t) => t.code === selectedTranslation);
-        const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id);
-        setVerses(versesList || []);
-      } catch (error) {
-        console.error("Failed to load verses:", error);
-        setVerses([]);
-      }
-    };
-    const loadSecondVerses = async () => {
-      try {
-        const translation = translations.find((t) => t.code === secondTranslation);
-        const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id);
-        setSecondVerses(versesList || []);
-      } catch (error) {
-        console.error("Failed to load second verses:", error);
-        setSecondVerses([]);
-      }
-    };
-    const handleSearch = async () => {
-      if (!searchQuery.trim()) return;
-      const ref = searchQuery.trim().match(/^(.+?)\s+(\d+)(?::(\d+))?$/);
-      if (ref) {
-        const [, rawBook, rawChapter, rawVerse] = ref;
-        const matchedBook = ALL_BOOKS.find((book) => book.toLowerCase() === rawBook.toLowerCase());
-        if (matchedBook) {
-          setSelectedBook(matchedBook);
-          setSelectedChapter(Number(rawChapter));
-          setSearchResults([]);
-          if (rawVerse) setPendingVerseNumber(Number(rawVerse));
-          return;
-        }
-      }
-      setIsSearching(true);
-      try {
-        const translation = translations.find((t) => t.code === selectedTranslation);
-        const results = await window.worship.bibles.search(searchQuery, translation?.id);
-        setSearchResults(results || []);
-      } catch (error) {
-        console.error("Search failed:", error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    };
-    const handleImportOsis = async () => {
-      const filePath = await window.worship?.bibles?.openOsisFile?.();
-      if (!filePath) return;
-      const translationCodeToUse = prompt("Enter Bible translation code (e.g. NIV, KJV, ESV):");
-      if (!translationCodeToUse || !translationCodeToUse.trim()) return;
-      const code = translationCodeToUse.trim().toUpperCase();
-      let cleanup;
-      if (window.worship?.bibles?.onImportProgress) {
-        cleanup = window.worship.bibles.onImportProgress((payload) => {
-          if (payload.translationCode === code) {
-            setImportProgress(payload.progress);
-          }
-        });
-      }
-      setImportProgress(0);
-      try {
-        await window.worship.bibles.importFromOsis(code, "en", filePath);
-        setImportProgress(null);
-        alert("Bible import completed successfully!");
-        const translationsList = await window.worship.bibles.listTranslations();
-        if (translationsList && translationsList.length) {
-          setTranslations(translationsList);
-        }
-      } catch (e) {
-        console.error(e);
-        setImportProgress(null);
-        alert("Bible import failed: " + e.message);
-      } finally {
-        if (cleanup) cleanup();
-      }
-    };
-    const handleVerseSelect = (verse) => {
-      setSelectedVerse(verse);
-      const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}
-
-${verse.text}`;
-      setCurrentSlide(slideText);
-    };
-    const sendToProjector = () => {
-      if (!selectedVerse) return;
-      const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}
-
-${selectedVerse.text}`;
-      setCurrentSlide(slideText);
-      setLiveSlide(slideText);
-      const OUTPUT_IDS4 = [1, 2];
-      OUTPUT_IDS4.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }));
-      setToast({ title: "Verse sent live", detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
-    };
-    const addToSchedule = async () => {
-      if (!selectedVerse) return;
-      try {
-        const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`;
-        await dbService.schedule.addItem("scripture", content);
-        const nextItems = await dbService.schedule.getItems();
-        useStore2.setState({ schedule: nextItems });
-        setToast({ title: "Added to schedule", detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
-      } catch (error) {
-        console.error("Failed to add to schedule:", error);
-      }
-    };
-    const wordCount = selectedVerse ? selectedVerse.text.split(/\s+/).filter(Boolean).length : 0;
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("aside", { className: "panel explorer-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "import-osis-row", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: importProgress !== null ? `Importing (${importProgress}%)` : "\u{1F4E5} Import OSIS Bible" }),
-          importProgress !== null && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 6, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: `${importProgress}%`, height: "100%", backgroundColor: "#3b82f6", transition: "width 0.2s ease-in-out" } }) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: `chevron ${otExpanded ? "open" : ""}`, children: "\u25B6" }),
-          "Old Testament"
-        ] }),
-        otExpanded && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "book-list", children: OT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
-          setSelectedBook(book);
-          setSelectedVerse(null);
-          setSearchResults([]);
-        }, children: book }, book)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: `chevron ${ntExpanded ? "open" : ""}`, children: "\u25B6" }),
-          "New Testament"
-        ] }),
-        ntExpanded && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "book-list", children: NT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
-          setSelectedBook(book);
-          setSelectedVerse(null);
-          setSearchResults([]);
-        }, children: book }, book)) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("section", { className: "panel scripture-content-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "scripture-search-bar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "search-icon", children: "\u{1F50D}" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-            "input",
-            {
-              className: "scripture-search-input",
-              value: searchQuery,
-              onChange: (e) => setSearchQuery(e.target.value),
-              onKeyDown: (e) => e.key === "Enter" && handleSearch(),
-              placeholder: `${selectedBook} 1:1`
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("select", { className: "translation-selector", value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), children: translations.map((t) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { style: { display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", color: "var(--text-muted)", cursor: "pointer" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }),
-            "Dual"
-          ] }),
-          dualMode && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), children: translations.map((t) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { className: "scripture-book-title", children: selectedBook }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "chapter-chip-grid", children: chapters.map((ch) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? "active" : ""}`, onClick: () => {
-          setSelectedChapter(ch);
-          setSelectedVerse(null);
-          setSearchResults([]);
-        }, children: ch }, ch)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "verse-reader", children: [
-          verses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "verse-chapter-label", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: "verse-chapter-pill", children: [
-              "Chapter ",
-              selectedChapter
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })
-          ] }),
-          searchResults.length > 0 ? searchResults.map((result, idx) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: `verse-row ${selectedVerse === result ? "selected" : ""}`, onClick: () => handleVerseSelect(result), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "verse-number", children: result.verse }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { fontSize: "0.72rem", color: "var(--primary)", marginBottom: 4 }, children: [
-                result.book,
-                " ",
-                result.chapter,
-                ":",
-                result.verse
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "verse-text", children: result.text })
-            ] })
-          ] }, idx)) : verses.length > 0 ? verses.map((verse, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: `verse-row ${selectedVerse?.verse === verse.verse ? "selected" : ""}`, onClick: () => handleVerseSelect(verse), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "verse-number", children: verse.verse }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { flex: 1 }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "verse-text", children: verse.text }),
-              dualMode && secondVerses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find((v) => v.verse === verse.verse)?.text })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "verse-row-hotkeys", children: selectedVerse?.verse === verse.verse ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "soft-button", onClick: (event) => {
-              event.stopPropagation();
-              sendToProjector();
-            }, children: "Live" }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "soft-button", onClick: (event) => {
-              event.stopPropagation();
-              handleVerseSelect(verse);
-              if (index + 1 < verses.length) handleVerseSelect(verses[index + 1]);
-            }, children: "Next" }) })
-          ] }, verse.verse)) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: "0.85rem" }, children: "Select a book and chapter to view verses" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: "0.72rem", marginTop: 4 }, children: "Or search for specific text" })
-          ] })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("aside", { className: "panel scripture-inspector", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "inspector-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { className: "inspector-title", children: "Inspector" }),
-          liveSlide && liveSlide.includes(selectedBook) && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "inspector-live-pill", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "dot" }),
-            " LIVE NOW"
-          ] })
-        ] }),
-        selectedVerse ? /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "verse-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "verse-card-label", children: "Currently Selected" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "verse-card-ref", children: [
-              selectedBook,
-              " ",
-              selectedChapter,
-              ":",
-              selectedVerse.verse
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "verse-card-text", children: [
-              '"',
-              selectedVerse.text,
-              '"'
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "inspector-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "inspector-button-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "ghost-button", onClick: () => {
-              }, children: "Edit Theme" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "ghost-button", onClick: () => {
-              }, children: "Share" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "send-projector-btn", onClick: sendToProjector, children: "\u26A1 Send to Projector" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "ghost-button", onClick: addToSchedule, children: "\u{1F4CB} Add to Schedule" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "inspector-meta-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-label", children: "Word Count" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-value", children: wordCount })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-label", children: "Style" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-value", children: "Lyric Bold" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-label", children: "Motion" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-value", children: "Static" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-label", children: "Translation" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "meta-card-value", children: selectedTranslation.toUpperCase() })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "projection-preview", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "preview-text", children: [
-              selectedVerse.text.slice(0, 80),
-              selectedVerse.text.length > 80 ? "..." : ""
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "preview-label", children: "Preview" })
-          ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
-          "Select a verse to see details and send to projector"
-        ] }),
-        toast && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { padding: "8px 14px 14px" }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "ui-inline-notice", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: toast.title }),
-          toast.detail ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: toast.detail }) : null
-        ] }) })
-      ] })
-    ] });
-  };
-
-  // src/renderer/app/components/MediaLibrary.tsx
-  var import_react4 = __toESM(require_react());
-  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
-  var MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
-    const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
-    const setLiveSlide = useStore2((state) => state.setLiveSlide);
-    const setTheme = useStore2((state) => state.setTheme);
-    const theme = useStore2((state) => state.theme);
-    const [mediaAssets, setMediaAssets] = (0, import_react4.useState)([]);
-    const [folders, setFolders] = (0, import_react4.useState)([]);
-    const [selectedAsset, setSelectedAsset] = (0, import_react4.useState)(null);
-    const [isImporting, setIsImporting] = (0, import_react4.useState)(false);
-    const [activeFilter, setActiveFilter] = (0, import_react4.useState)("all");
-    const [currentFolderId, setCurrentFolderId] = (0, import_react4.useState)(null);
-    const [viewMode, setViewMode] = (0, import_react4.useState)("grid");
-    const [sortMode, setSortMode] = (0, import_react4.useState)("recent");
-    const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
-    const [videoLoop, setVideoLoop] = (0, import_react4.useState)(true);
-    const [videoMuted, setVideoMuted] = (0, import_react4.useState)(true);
-    const [videoPlaybackRate, setVideoPlaybackRate] = (0, import_react4.useState)(1);
-    (0, import_react4.useEffect)(() => {
-      loadMediaAssets();
-      loadFolders();
-    }, [activeFilter, currentFolderId]);
-    const loadMediaAssets = async () => {
-      try {
-        const typeFilter = activeFilter === "all" ? void 0 : activeFilter;
-        const results = await dbService.media.getAssets(currentFolderId, typeFilter);
-        const normalized = (results || []).map((asset) => ({
-          ...asset,
-          name: asset.name || asset.path?.split("\\").pop() || asset.path?.split("/").pop() || "Untitled"
-        }));
-        setMediaAssets(normalized);
-      } catch (error) {
-        console.error("Failed to load media assets:", error);
-        setMediaAssets([]);
-      }
-    };
-    const loadFolders = async () => {
-      try {
-        const results = await dbService.media.getFolders();
-        setFolders(results || []);
-      } catch {
-        setFolders([]);
-      }
-    };
-    const handleImport = async () => {
-      setIsImporting(true);
-      try {
-        const type = activeFilter === "video" ? "video" : "image";
-        const extensions = type === "image" ? ["png", "jpg", "jpeg", "gif", "webp", "svg"] : ["mp4", "mov", "mkv", "webm", "avi"];
-        const title = type === "image" ? "Import Images" : "Import Videos";
-        const filePaths = await window.worship.dialog.openFiles({
-          title,
-          filters: [{ name: title, extensions }],
-          multiSelections: true
-        });
-        if (filePaths.length > 0) {
-          for (const filePath of filePaths) {
-            const fileName = filePath.split("\\").pop() || filePath.split("/").pop() || "";
-            await dbService.media.createAsset(
-              filePath,
-              type,
-              fileName,
-              type === "video" ? 0 : null,
-              currentFolderId
-            );
-          }
-          await loadMediaAssets();
-          onNotify?.("Media imported", `${filePaths.length} item(s) added`, "success");
-        }
-      } catch (error) {
-        console.error("Failed to import media:", error);
-        onNotify?.("Import failed", "Could not import selected files", "warn");
-      } finally {
-        setIsImporting(false);
-      }
-    };
-    const handleCreateFolder = async () => {
-      const name = prompt("Folder name:");
-      if (!name) return;
-      try {
-        await dbService.media.createFolder(name, currentFolderId);
-        await loadFolders();
-        onNotify?.("Folder created", name, "success");
-      } catch (error) {
-        console.error("Failed to create folder:", error);
-      }
-    };
-    const handleDelete = async (asset) => {
-      try {
-        await dbService.media.deleteAsset(asset.id);
-        await loadMediaAssets();
-        if (selectedAsset?.id === asset.id) {
-          setSelectedAsset(null);
-        }
-        onNotify?.("Asset deleted", asset.name || "Media asset removed", "warn");
-      } catch (error) {
-        console.error("Failed to delete media:", error);
-      }
-    };
-    const handleSelect = (asset) => {
-      setSelectedAsset(asset);
-      onMediaSelect(asset);
-    };
-    const handleUseAsBackground = () => {
-      if (!selectedAsset) return;
-      setTheme({ ...theme, backgroundImage: selectedAsset.path });
-      onNotify?.("Background updated", selectedAsset.name || "Media background applied", "success");
-    };
-    const handleSendToLive = () => {
-      if (!selectedAsset) return;
-      onSendToLive?.(selectedAsset, { loop: videoLoop, muted: videoMuted, playbackRate: videoPlaybackRate });
-      setTheme({ ...theme, backgroundImage: selectedAsset.path });
-      setLiveSlide("");
-      onNotify?.("Sent live", selectedAsset.name || "Media pushed to outputs", "success");
-    };
-    const handleSendToPreview = () => {
-      if (!selectedAsset) return;
-      onSendToPreview?.(selectedAsset);
-      setTheme({ ...theme, backgroundImage: selectedAsset.path });
-      setCurrentSlide("");
-      onNotify?.("Sent to preview", selectedAsset.name || "Preview updated", "info");
-    };
-    const handleAddToSchedule = async () => {
-      if (!selectedAsset) return;
-      try {
-        await dbService.schedule.addItem(
-          selectedAsset.type === "image" ? "image" : "video",
-          selectedAsset.path
-        );
-        const nextItems = await dbService.schedule.getItems();
-        useStore2.setState({ schedule: nextItems });
-        onNotify?.("Added to schedule", selectedAsset.name || "Media queued", "success");
-      } catch (error) {
-        console.error("Failed to add to schedule:", error);
-      }
-    };
-    const filteredAssets = mediaAssets.filter((a) => !searchQuery || (a.name || "").toLowerCase().includes(searchQuery.toLowerCase())).sort((a, b) => sortMode === "name" ? (a.name || "").localeCompare(b.name || "") : b.id - a.id);
-    const currentFolders = folders.filter((f) => f.parent_id === currentFolderId);
-    const FILTER_ITEMS = [
-      { key: "all", label: "All Media", icon: "\u{1F4C1}" },
-      { key: "image", label: "Images", icon: "\u{1F5BC}" },
-      { key: "video", label: "Videos", icon: "\u{1F3AC}" },
-      { key: "background", label: "Backgrounds", icon: "\u{1F304}" },
-      { key: "loop", label: "Loops", icon: "\u{1F504}" }
-    ];
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "workspace-grid workspace-media", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("aside", { className: "panel media-filters-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-section-label", children: "Media Assets" }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-type-list", children: FILTER_ITEMS.map((item) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
-          "button",
-          {
-            className: `media-type-item ${activeFilter === item.key ? "active" : ""}`,
-            onClick: () => {
-              setActiveFilter(item.key);
-              setCurrentFolderId(null);
-            },
-            children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "icon", children: item.icon }),
-              item.label
-            ]
-          },
-          item.key
-        )) }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-section-label", children: [
-          "Folders",
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { onClick: handleCreateFolder, title: "New Folder", children: "+" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "folder-tree", children: [
-          currentFolderId !== null && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "folder-item", onClick: () => setCurrentFolderId(null), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "folder-icon", children: "\u2B05" }),
-            "Back to Root"
-          ] }),
-          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: `folder-item ${currentFolderId === folder.id ? "active" : ""}`, onClick: () => setCurrentFolderId(folder.id), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "folder-icon", children: "\u{1F4C1}" }),
-            folder.name
-          ] }, folder.id))
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-panel-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "live-button full", onClick: handleImport, disabled: isImporting, children: isImporting ? "\u23F3 Importing..." : "\u{1F4E4} Import Media" }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: handleCreateFolder, children: "\u{1F4C1} New Folder" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-bottom-links", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "media-bottom-link", children: "\u{1F5D1} Trash" }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "media-bottom-link", children: "\u{1F4E6} Archive" })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { className: "panel media-content-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-main-toolbar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-            "input",
-            {
-              className: "search-input",
-              placeholder: "Search assets...",
-              value: searchQuery,
-              onChange: (e) => setSearchQuery(e.target.value)
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "view-toggle-group", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: `view-toggle-btn ${viewMode === "grid" ? "active" : ""}`, onClick: () => setViewMode("grid"), children: "\u229E" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: `view-toggle-btn ${viewMode === "list" ? "active" : ""}`, onClick: () => setViewMode("list"), children: "\u2630" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { className: "sort-select", value: sortMode, onChange: (e) => setSortMode(e.target.value), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "recent", children: "Sort: Recent" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: "name", children: "Sort: Name" })
-          ] })
-        ] }),
-        viewMode === "grid" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-content-grid", children: [
-          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "folder-card", onClick: () => setCurrentFolderId(folder.id), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "folder-icon-lg", children: "\u{1F4C1}" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "folder-name", children: folder.name })
-          ] }, `f-${folder.id}`)),
-          filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
-            "div",
-            {
-              className: `asset-card ${selectedAsset?.id === asset.id ? "selected" : ""}`,
-              onClick: () => handleSelect(asset),
-              onDoubleClick: () => handleSendToPreview(),
-              children: [
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-card-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-                  "img",
-                  {
-                    src: `file://${asset.path}`,
-                    alt: asset.name,
-                    onError: (e) => {
-                      e.currentTarget.style.display = "none";
-                    }
-                  }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "video-icon", children: "\u{1F3AC}" }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-card-name", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "type-icon", children: asset.type === "image" ? "\u{1F5BC}" : "\u25B6" }),
-                  (asset.name || "").length > 20 ? (asset.name || "").slice(0, 18) + "..." : asset.name
-                ] })
-              ]
-            },
-            asset.id
-          )),
-          filteredAssets.length === 0 && currentFolders.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { gridColumn: "1 / -1", textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "2.5rem", marginBottom: 10, opacity: 0.5 }, children: activeFilter === "video" ? "\u{1F3AC}" : "\u{1F5BC}\uFE0F" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "0.85rem", marginBottom: 4 }, children: "No assets yet" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "0.72rem" }, children: 'Click "Import Media" to add files' })
-          ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-content-list", children: filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: `media-list-item ${selectedAsset?.id === asset.id ? "selected" : ""}`, onClick: () => handleSelect(asset), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-list-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { src: `file://${asset.path}`, alt: asset.name, onError: (e) => {
-            e.currentTarget.style.display = "none";
-          } }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }, children: "\u{1F3AC}" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-list-info", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-list-name", children: asset.name }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-list-meta", children: [
-              asset.type,
-              " \u2022 ",
-              asset.path.split("\\").pop()?.split(".").pop()?.toUpperCase()
-            ] })
-          ] })
-        ] }, asset.id)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "status-bar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "status-dot" }),
-          "System Live",
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { style: { opacity: 0.6 }, children: "|" }),
-          filteredAssets.length,
-          " assets"
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("aside", { className: "panel media-inspector", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "inspector-header", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { className: "inspector-title", children: "Inspector" }) }),
-        selectedAsset ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-preview", children: selectedAsset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-            "img",
-            {
-              src: `file://${selectedAsset.path}`,
-              alt: selectedAsset.name,
-              onError: (e) => {
-                e.currentTarget.style.display = "none";
-              }
-            }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
-            "video",
-            {
-              src: `file://${selectedAsset.path}`,
-              autoPlay: true,
-              loop: videoLoop,
-              muted: videoMuted,
-              playsInline: true,
-              style: { width: "100%", height: "100%", objectFit: "cover" }
-            }
-          ) }),
-          selectedAsset.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-meta-grid", style: { marginBottom: 12 }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Loop" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", checked: videoLoop, onChange: (e) => setVideoLoop(e.target.checked) }),
-                " On"
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Muted" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", checked: videoMuted, onChange: (e) => setVideoMuted(e.target.checked) }),
-                " On"
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Speed" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("select", { value: videoPlaybackRate, onChange: (e) => setVideoPlaybackRate(Number(e.target.value)), children: [
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 0.5, children: "0.5x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 0.75, children: "0.75x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1, children: "1.0x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1.25, children: "1.25x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: 1.5, children: "1.5x" })
-              ] })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-identity", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-identity-label", children: "Asset Identity" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "asset-identity-name", children: selectedAsset.name })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-tags", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "chip", children: selectedAsset.type === "image" ? "Image" : "Video" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "chip", children: "Local" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "chip", children: "+ Tag" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "asset-meta-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Type" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: selectedAsset.type === "image" ? "JPEG Image" : "Video File" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Resolution" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: "\u2014" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Created" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: "\u2014" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Size" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: "\u2014" })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "soft-button full", onClick: handleSendToPreview, children: "\u{1F441} Send to Preview" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "send-projector-btn", onClick: handleSendToLive, children: "\u25B6 Send to Live" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: handleUseAsBackground, children: "\u{1F5BC} Set as Background" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: handleAddToSchedule, children: "\u{1F4CB} Add to Schedule" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: () => handleDelete(selectedAsset), children: "\u{1F5D1} Delete Asset" })
-          ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4F8}" }),
-          "Select an asset to see details"
-        ] })
-      ] })
-    ] });
-  };
-
-  // src/renderer/app/components/Notifications.tsx
-  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
-  var Notifications = ({ items, onDismiss }) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "toast-stack", "aria-live": "polite", "aria-label": "Notifications", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: `toast toast-${item.tone || "info"}`, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "toast-content", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("strong", { children: item.title }),
-      item.detail ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("small", { children: item.detail }) : null
-    ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "toast-close", onClick: () => onDismiss(item.id), title: "Dismiss notification", children: "x" })
-  ] }, item.id)) });
-
-  // src/renderer/app/components/ui.tsx
-  var import_jsx_runtime5 = __toESM(require_jsx_runtime());
-  var Panel = ({ children, className = "", ...rest }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("section", { className: `panel ${className}`.trim(), ...rest, children });
-  var SectionHeader = ({ title, meta, action }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "panel-header", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("h3", { children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { style: { display: "flex", alignItems: "center", gap: 8 }, children: [
-      meta ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: meta }) : null,
-      action
-    ] })
-  ] });
-  var Pill = ({ children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: `ui-pill ${className}`.trim(), children });
-  var Chip = ({ children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: `chip ${className}`.trim(), children });
-  var MediaCard = ({ title, subtitle, active, onClick }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("article", { className: `media-card ${active ? "live" : ""}`, onClick, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-thumb", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { children: title.slice(0, 1).toUpperCase() }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-meta", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("strong", { children: title }),
-      subtitle ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("small", { children: subtitle }) : null
-    ] })
-  ] });
-
-  // src/renderer/app/components/ConsoleWorkspace.tsx
-  var import_jsx_runtime6 = __toESM(require_jsx_runtime());
-  var OUTPUT_IDS = [1, 2];
-  var ConsoleWorkspace = ({
-    schedule,
-    theme,
-    currentSlide,
-    liveSlide,
-    paneSizes,
-    outputStates,
-    dragIndex,
-    onDragStart,
-    onDrop,
-    onScheduleItemClick,
-    onAddScheduleItem,
-    onGoToEditor
-  }) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
-      "div",
-      {
-        className: "workspace-grid workspace-console",
-        style: {
-          gridTemplateColumns: `${paneSizes.consoleLeft}px minmax(0, 1fr)`
-        },
-        children: [
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "schedule-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SectionHeader, { title: "Order of Service", meta: `${schedule.length} items` }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "schedule-list", children: schedule.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
-              "div",
-              {
-                draggable: true,
-                onDragStart: () => onDragStart(index),
-                onDragOver: (event) => event.preventDefault(),
-                onDrop: () => {
-                  if (dragIndex != null && dragIndex !== index) onDrop(index);
-                },
-                onClick: () => onScheduleItemClick(item.content),
-                className: `schedule-item ${index === 0 ? "active" : ""}`,
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "schedule-meta", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: index === 0 ? "CURRENT" : index === 1 ? "NEXT" : "UPCOMING" })
-                  ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: item.content }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: item.type })
-                ]
-              },
-              item.id
-            )) }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "soft-button full", onClick: onAddScheduleItem, children: "Add Item" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "console-stage", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-grid", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "monitor", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-header", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: "Preview" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "text-button", onClick: onGoToEditor, children: "Edit" })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
-                  "div",
-                  {
-                    className: "slide-frame",
-                    style: {
-                      backgroundColor: theme.bg,
-                      backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : void 0,
-                      backgroundSize: "cover",
-                      color: theme.color,
-                      fontSize: theme.fontSize
-                    },
-                    children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-overlay" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-content", children: currentSlide })
-                    ]
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "monitor live", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-header", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: "Live Output" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(Pill, { className: "live-pill", children: "ON AIR" })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
-                  "div",
-                  {
-                    className: "slide-frame",
-                    style: {
-                      backgroundColor: theme.bg,
-                      backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : void 0,
-                      backgroundSize: "cover",
-                      color: theme.color,
-                      fontSize: theme.fontSize
-                    },
-                    children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-overlay live" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-content", children: liveSlide })
-                    ]
-                  }
-                )
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "output-preview-panel", style: { minHeight: paneSizes.consoleBottom }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SectionHeader, { title: "Output Preview Matrix" }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "output-preview-grid", children: OUTPUT_IDS.map((id) => {
-                const state = outputStates[id] || {};
-                const label = state.mode === "black" ? "BLACK" : state.mode === "logo" ? "Church Logo" : state.slideTitle || "Idle";
-                return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-tile", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("small", { children: [
-                    "Output ",
-                    id
-                  ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "output-box", children: label }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline", style: { marginTop: 6 }, children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
-                      "button",
-                      {
-                        className: "soft-button",
-                        onClick: () => window?.worship?.outputs?.windowControl?.(id, "show"),
-                        children: "Show"
-                      }
-                    ),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(
-                      "button",
-                      {
-                        className: "soft-button",
-                        onClick: () => window?.worship?.outputs?.windowControl?.(id, "toggle-fullscreen"),
-                        children: "Full View"
-                      }
-                    )
-                  ] })
-                ] }, id);
-              }) })
-            ] })
-          ] })
-        ]
-      }
-    );
-  };
-
-  // src/renderer/app/components/LibraryWorkspace.tsx
-  var import_jsx_runtime7 = __toESM(require_jsx_runtime());
-  var LibraryWorkspace = ({
-    songs,
-    filteredSongs,
-    selectedSongId,
-    mediaAssets,
-    songSearchQuery,
-    librarySort,
-    libraryViewMode,
-    onSearchChange,
-    onSortChange,
-    onViewModeChange,
-    onSelectSong,
-    onAddSong,
-    onImportSongs,
-    onRenameSong,
-    onDeleteSong
-  }) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "workspace-grid workspace-library", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "library-filters", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(SectionHeader, { title: "Content Categories" }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "filter-list", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item active", children: [
-            "Songs ",
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: songs.length })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            "Bibles ",
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "2" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            "Media ",
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "--" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            "Videos ",
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: mediaAssets.filter((item) => item.type === "video").length })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            "Backgrounds ",
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: mediaAssets.filter((item) => item.type === "image").length })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "chip-group", children: ["Worship", "Uplifting", "Sermon", "4K UHD", "Announcement", "Instrumental"].map((tag) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Chip, { children: tag }, tag)) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "library-grid-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-toolbar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "Song Library" }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { children: [
-              filteredSongs.length,
-              " arrangements"
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "toolbar-inline", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-              "input",
-              {
-                value: songSearchQuery,
-                onChange: (event) => onSearchChange(event.target.value),
-                placeholder: "Search songs",
-                className: "input"
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "soft-button", onClick: onImportSongs, children: "Import Songs" }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
-              "select",
-              {
-                className: "input",
-                style: { width: 130 },
-                value: librarySort,
-                onChange: (event) => onSortChange(event.target.value),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("option", { value: "name", children: "Sort: Name" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("option", { value: "sections", children: "Sort: Sections" })
-                ]
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "view-toggle-group", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-                "button",
-                {
-                  className: `view-toggle-btn ${libraryViewMode === "grid" ? "active" : ""}`,
-                  onClick: () => onViewModeChange("grid"),
-                  children: "Grid"
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-                "button",
-                {
-                  className: `view-toggle-btn ${libraryViewMode === "list" ? "active" : ""}`,
-                  onClick: () => onViewModeChange("list"),
-                  children: "List"
-                }
-              )
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("button", { className: "soft-button", onClick: onAddSong, children: "Add Song" })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: libraryViewMode === "grid" ? "bento-grid" : "library-list", children: filteredSongs.map((song) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-song-entry", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-            MediaCard,
-            {
-              title: song.title || "Untitled Song",
-              subtitle: `${song.sections.length} sections`,
-              active: song.id === selectedSongId,
-              onClick: () => onSelectSong(song.id)
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-song-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-              "button",
-              {
-                className: "soft-button",
-                onClick: () => onRenameSong(song),
-                title: "Rename song",
-                children: "Rename"
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
-              "button",
-              {
-                className: "soft-button danger-ghost",
-                onClick: () => onDeleteSong(song),
-                title: "Delete song",
-                children: "Delete"
-              }
-            )
-          ] })
-        ] }, song.id)) })
-      ] })
-    ] });
-  };
-
-  // src/renderer/app/components/EditorWorkspace.tsx
-  var import_jsx_runtime8 = __toESM(require_jsx_runtime());
-  var SECTION_TYPES = [
-    "Intro",
-    "Verse",
-    "Chorus",
-    "Bridge",
-    "Pre-Chorus",
-    "Post-Chorus",
-    "Tag",
-    "Outro",
-    "Interlude",
-    "Instrumental"
-  ];
-  var EditorWorkspace = ({
-    selectedSong,
-    selectedSectionId,
-    currentSlide,
-    theme,
-    editorText,
-    editorType,
-    showChords,
-    transposeSteps,
-    undoStack,
-    redoStack,
-    songTitleDraft,
-    gradientStart,
-    gradientEnd,
-    bgManagerTab,
-    editorDragIndex,
-    paneSizes,
-    onEditorTextChange,
-    onEditorTypeChange,
-    onSongTitleDraftChange,
-    onCommitSongTitle,
-    onPickSection,
-    onAddSection,
-    onDeleteSection,
-    onMoveSongSection,
-    onSetEditorDragIndex,
-    onSetTransposeSteps,
-    onSetShowChords,
-    onSetTheme,
-    onSetBgManagerTab,
-    onSetGradientStart,
-    onSetGradientEnd,
-    onSaveSectionEdits,
-    onGoLive,
-    onSaveTemplate,
-    onUndo,
-    onRedo,
-    stripChordMarkup: stripChordMarkup2,
-    onNotify
-  }) => {
-    const bgStyle = {
-      backgroundColor: theme.bg,
-      backgroundImage: theme.gradient ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` : theme.backgroundImage ? `url(${theme.backgroundImage})` : void 0,
-      backgroundSize: "cover",
-      color: theme.color,
-      filter: (theme.blur ?? 0) > 0 ? `blur(${theme.blur}px)` : void 0
-    };
-    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-      "div",
-      {
-        className: "workspace-grid workspace-editor",
-        style: { gridTemplateColumns: `${paneSizes.editorLeft}px minmax(0, 1fr) ${paneSizes.editorRight}px` },
-        children: [
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("aside", { className: "panel sequence-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "panel-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { children: "Slide Sequence" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "text-button", onClick: onAddSection, children: "Add" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "sequence-list", children: (selectedSong?.sections || []).map((section, index) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-              "button",
-              {
-                draggable: true,
-                onDragStart: () => onSetEditorDragIndex(index),
-                onDragOver: (event) => event.preventDefault(),
-                onDrop: () => {
-                  if (editorDragIndex == null || editorDragIndex === index) return;
-                  onMoveSongSection(editorDragIndex, index);
-                  onSetEditorDragIndex(null);
-                  onNotify("Section order updated", "Slide sequence reordered", "info");
-                },
-                className: `sequence-item ${selectedSectionId === section.id ? "active" : ""}`,
-                onClick: () => onPickSection(section.id),
-                onDoubleClick: () => onPickSection(section.id, true),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("strong", { children: section.type }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("small", { children: stripChordMarkup2(section.text).slice(0, 84) || "Empty section" })
-                  ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "button",
-                    {
-                      className: "seq-delete-btn",
-                      title: "Delete section",
-                      onClick: (e) => {
-                        e.stopPropagation();
-                        onDeleteSection(section.id);
-                      },
-                      children: "\u2715"
-                    }
-                  )
-                ]
-              },
-              section.id
-            )) })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("section", { className: "panel stage-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "panel-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  className: "input",
-                  style: { maxWidth: 360 },
-                  value: songTitleDraft,
-                  onChange: (event) => onSongTitleDraftChange(event.target.value),
-                  onBlur: onCommitSongTitle,
-                  onKeyDown: (event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      onCommitSongTitle();
-                    }
-                  },
-                  placeholder: "Song title"
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "toolbar-inline", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v - 1), children: "Flat" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps(() => 0), children: "Reset" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v + 1), children: "Sharp" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetShowChords((v) => !v), children: showChords ? "Hide Chords" : "Show Chords" })
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "stage-canvas", style: { position: "relative", color: theme.color }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "div",
-                {
-                  style: {
-                    ...bgStyle,
-                    position: "absolute",
-                    inset: 0,
-                    opacity: (theme.opacity ?? 100) / 100,
-                    borderRadius: "inherit"
-                  }
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "slide-overlay live" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "div",
-                {
-                  style: {
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 1,
-                    display: "flex",
-                    alignItems: (theme.verticalAlign || "center") === "top" ? "flex-start" : (theme.verticalAlign || "center") === "bottom" ? "flex-end" : "center",
-                    justifyContent: "center",
-                    padding: "40px 60px"
-                  },
-                  children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "h1",
-                    {
-                      style: {
-                        textAlign: theme.textAlign || "center",
-                        fontFamily: theme.fontFamily || "Manrope",
-                        fontWeight: theme.fontWeight || 700,
-                        width: "90%"
-                      },
-                      children: currentSlide || "Select a section"
-                    }
-                  )
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "live-pill stage", children: "Live View" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "stage-toolbar", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "stage-label", children: [
-                "Tt ",
-                selectedSong?.sections.find((s) => s.id === selectedSectionId)?.type || "VERSE",
-                " ",
-                selectedSectionId ? (selectedSong?.sections.findIndex((s) => s.id === selectedSectionId) ?? 0) + 1 : 1
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "toolbar-divider" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "undo-redo-btn", onClick: onUndo, disabled: undoStack.length === 0, title: "Undo", children: "\u21A9" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "undo-redo-btn", onClick: onRedo, disabled: redoStack.length === 0, title: "Redo", children: "\u21AA" })
-            ] })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("aside", { className: "panel inspector-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { children: "Background & Style" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "inspector-content", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "bg-tab-group", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "media" ? "active" : ""}`, onClick: () => onSetBgManagerTab("media"), children: "Media" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "gradient" ? "active" : ""}`, onClick: () => onSetBgManagerTab("gradient"), children: "Gradient" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "color" ? "active" : ""}`, onClick: () => onSetBgManagerTab("color"), children: "Color" })
-              ] }),
-              bgManagerTab === "media" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Active Media" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "img",
-                  {
-                    src: theme.backgroundImage.startsWith("file://") || theme.backgroundImage.startsWith("http") ? theme.backgroundImage : `file://${theme.backgroundImage}`,
-                    alt: "Background",
-                    onError: (e) => {
-                      e.currentTarget.style.display = "none";
-                    }
-                  }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", fontSize: "0.78rem" }, children: "No media selected" }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Image" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    className: "input",
-                    value: theme.backgroundImage || "",
-                    onChange: (event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: "" }),
-                    placeholder: "file://... or https://..."
-                  }
-                ),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Quick Picker" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "quick-picker-add", onClick: () => {
-                }, children: "+" }) })
-              ] }),
-              bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Gradient Colors" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "gradient-picker-row", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "input",
-                    {
-                      type: "color",
-                      value: gradientStart,
-                      onChange: (e) => {
-                        onSetGradientStart(e.target.value);
-                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: "" });
-                      }
-                    }
-                  ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "gradient-preview", style: { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` } }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "input",
-                    {
-                      type: "color",
-                      value: gradientEnd,
-                      onChange: (e) => {
-                        onSetGradientEnd(e.target.value);
-                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: "" });
-                      }
-                    }
-                  )
-                ] })
-              ] }),
-              bgManagerTab === "color" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Color" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "color",
-                    value: theme.bg,
-                    onChange: (event) => onSetTheme({ ...theme, bg: event.target.value, gradient: "", backgroundImage: "" })
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Opacity" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
-                    theme.opacity ?? 100,
-                    "%"
-                  ] })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "range",
-                    min: 0,
-                    max: 100,
-                    value: theme.opacity ?? 100,
-                    onChange: (e) => onSetTheme({ ...theme, opacity: Number(e.target.value) })
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Blur" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
-                    theme.blur ?? 0,
-                    "px"
-                  ] })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "range",
-                    min: 0,
-                    max: 20,
-                    value: theme.blur ?? 0,
-                    onChange: (e) => onSetTheme({ ...theme, blur: Number(e.target.value) })
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Type" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("select", { className: "input", value: editorType, onChange: (event) => onEditorTypeChange(event.target.value), children: SECTION_TYPES.map((item) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: item, children: item }, item)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Text" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("textarea", { className: "input textarea", value: editorText, onChange: (event) => onEditorTextChange(event.target.value) }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
-                "Font Size (",
-                theme.fontSize,
-                "px)"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "range",
-                  min: 24,
-                  max: 96,
-                  value: theme.fontSize,
-                  onChange: (event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Font Family" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.fontFamily || "Manrope",
-                  onChange: (event) => onSetTheme({ ...theme, fontFamily: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Manrope", children: "Manrope" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Inter", children: "Inter" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Segoe UI", children: "Segoe UI" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
-                "Font Weight (",
-                theme.fontWeight || 700,
-                ")"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "range",
-                  min: 300,
-                  max: 900,
-                  step: 100,
-                  value: theme.fontWeight || 700,
-                  onChange: (event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Alignment" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.textAlign || "center",
-                  onChange: (event) => onSetTheme({ ...theme, textAlign: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "left", children: "Left" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "right", children: "Right" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Vertical Position" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.verticalAlign || "center",
-                  onChange: (event) => onSetTheme({ ...theme, verticalAlign: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "top", children: "Top Half" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "bottom", children: "Bottom Half" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Color" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "color",
-                  value: theme.color,
-                  onChange: (event) => onSetTheme({ ...theme, color: event.target.value })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "button-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button full", onClick: onSaveSectionEdits, children: "Save Section" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "live-button full", onClick: onGoLive, children: "Send Live" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "template-button", onClick: onSaveTemplate, children: "Save as Template" })
-              ] })
-            ] })
-          ] })
-        ]
-      }
-    );
-  };
-
-  // src/renderer/app/components/SettingsWorkspace.tsx
-  var import_jsx_runtime9 = __toESM(require_jsx_runtime());
-  var LAYERS = ["background", "media", "slide_content", "props_overlays", "announcements", "lower_thirds", "live_video", "alerts"];
-  var LAYER_META = {
-    background: { icon: "\u25FC", label: "background" },
-    media: { icon: "\u25B6", label: "media" },
-    slide_content: { icon: "T", label: "slide content" },
-    props_overlays: { icon: "\u25A4", label: "props overlays" },
-    announcements: { icon: "\u2726", label: "announcements" },
-    lower_thirds: { icon: "\u2334", label: "lower thirds" },
-    live_video: { icon: "\u25A3", label: "live video" },
-    alerts: { icon: "!", label: "alerts" }
-  };
-  var OUTPUT_IDS2 = [1, 2];
-  var SettingsWorkspace = ({
-    theme,
-    outputConfigs,
-    looks,
-    ndiEnabled,
-    syncConnected,
-    syncUrl,
-    aspectRatio,
-    overscanPercent,
-    outputResolution,
-    outputHardware,
-    activeOutputId,
-    themePresets,
-    logoImage,
-    onSyncUrlChange,
-    onConnectSync,
-    onDisconnectSync,
-    onSetAspectRatio,
-    onSetOverscanPercent,
-    onSetOutputResolution,
-    onSetActiveOutputId,
-    onUpdateOutputConfig,
-    onUpdateLook,
-    onToggleNdi,
-    onApplyPreset,
-    onResetDisplay,
-    onApplyDisplayChanges,
-    onLogoImageChange,
-    onPickLogoFile,
-    onNotify
-  }) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "workspace-grid workspace-settings", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h1", { className: "settings-title", children: "Display Settings" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "settings-subtitle", children: "Configure output canvas and screen geometry" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onResetDisplay, children: "Reset to Default" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "live-button", onClick: onApplyDisplayChanges, children: "Apply Changes" })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("section", { className: "panel output-routing-cards settings-card-group", children: outputConfigs.map((output) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
-        "div",
-        {
-          className: `output-route-card settings-output-card ${output.active ? "active" : ""}`,
-          onClick: () => {
-            onSetActiveOutputId(output.id);
-            outputConfigs.forEach((item) => onUpdateOutputConfig(item.id, { active: item.id === output.id }));
-          },
-          children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-route-heading", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
-                "Output ",
-                output.id
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
-                output.role,
-                " \xB7 ",
-                output.resolution
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
-              "select",
-              {
-                className: "input settings-select",
-                value: output.role,
-                onChange: (event) => {
-                  const role = event.target.value;
-                  onUpdateOutputConfig(output.id, { role });
-                  onNotify("Output role changed", `Output ${output.id} is now ${role}`, "info");
-                },
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "primary", children: "Primary" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "extended", children: "Extended" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "stage", children: "Stage" })
-                ]
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "toolbar-inline settings-window-actions", children: [
-              ["minimize", "maximize", "restore"].map((action) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                "button",
-                {
-                  className: "soft-button",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    window?.worship?.outputs?.windowControl?.(output.id, action);
-                  },
-                  children: action.charAt(0).toUpperCase() + action.slice(1)
-                },
-                action
-              )),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                "button",
-                {
-                  className: "soft-button",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    window?.worship?.outputs?.windowControl?.(output.id, "toggle-fullscreen");
-                  },
-                  children: "Full View"
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                "button",
-                {
-                  className: "soft-button",
-                  onClick: (e) => {
-                    e.stopPropagation();
-                    window?.worship?.outputs?.windowControl?.(output.id, "close");
-                  },
-                  children: "Close"
-                }
-              )
-            ] })
-          ]
-        },
-        output.id
-      )) }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-logo-panel settings-card-group", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Logo Mode Image" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Shown when LOGO button is pressed" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "logo-picker-row settings-logo-row", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "logo-preview", children: logoImage ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-            "img",
-            {
-              src: logoImage.startsWith("file://") || logoImage.startsWith("http") ? logoImage : `file://${logoImage}`,
-              alt: "Logo",
-              onError: (e) => {
-                e.currentTarget.style.display = "none";
-              }
-            }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "logo-placeholder", children: "No logo set" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-inline-stack", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-              "input",
-              {
-                className: "input",
-                value: logoImage,
-                onChange: (e) => onLogoImageChange(e.target.value),
-                placeholder: "file://\u2026 or https://\u2026"
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onPickLogoFile, children: "Browse\u2026" })
-          ] })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-looks-panel settings-card-group", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Per-Output Looks" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "8-layer compositor" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "settings-looks-grid", children: OUTPUT_IDS2.map((id) => {
-          const look = looks[id] || { background: "#111111", template: "default", layers: ["slide_content"] };
-          return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-route-heading settings-look-heading", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
-                "Output ",
-                id
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: (look.template || "default").replace("_", " ") })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "settings-look-label", children: "Background" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "settings-look-label", children: "Template" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                "input",
-                {
-                  type: "color",
-                  className: "settings-color-input",
-                  value: look.background || "#111111",
-                  onChange: (event) => onUpdateLook(id, { background: event.target.value })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: look.template || "default",
-                  onChange: (event) => onUpdateLook(id, { template: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "default", children: "Default" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "lower_thirds", children: "Lower Thirds" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "full", children: "Full" })
-                  ]
-                }
-              )
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "settings-layer-grid", children: LAYERS.map((layer) => {
-              const enabled = (look.layers || []).includes(layer);
-              const meta = LAYER_META[layer] || { icon: "\u2022", label: layer.replace("_", " ") };
-              return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { className: `settings-layer-chip ${enabled ? "active" : ""}`, title: meta.label, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-                  "input",
-                  {
-                    type: "checkbox",
-                    checked: enabled,
-                    onChange: () => {
-                      const next = enabled ? (look.layers || []).filter((item) => item !== layer) : [...look.layers || [], layer];
-                      onUpdateLook(id, { layers: next });
-                    }
-                  }
-                ),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "settings-layer-icon", children: meta.icon }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: meta.label })
-              ] }, layer);
-            }) })
-          ] }, id);
-        }) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-sync-panel settings-card-group", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Sync" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { className: syncConnected ? "text-success" : "text-muted", children: syncConnected ? "Connected" : "Disconnected" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-sync-inline", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-            "input",
-            {
-              className: "input",
-              value: syncUrl,
-              onChange: (e) => onSyncUrlChange(e.target.value),
-              placeholder: "ws://host:9090"
-            }
-          ),
-          !syncConnected ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onConnectSync, children: "Connect" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onDisconnectSync, children: "Disconnect" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: `settings-sync-status ${syncConnected ? "online" : "offline"}`, children: syncConnected ? "ONLINE" : "OFFLINE" })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel canvas-layout-section settings-card-group", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "canvas-layout-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-layout-title", children: "\u{1F5A5} Canvas Layout" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "ratio-chip-group", children: ["16:9", "4:3", "21:9", "FREE"].map((ratio) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-            "button",
-            {
-              className: `ratio-chip ${aspectRatio === ratio ? "active" : ""}`,
-              onClick: () => onSetAspectRatio(ratio),
-              children: ratio
-            },
-            ratio
-          )) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-visualizer", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
-          "div",
-          {
-            className: "canvas-display-rect",
-            style: { aspectRatio: aspectRatio === "4:3" ? "4/3" : aspectRatio === "21:9" ? "21/9" : "16/9" },
-            children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "canvas-active-pill", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "dot", style: { width: 6, height: 6, borderRadius: "50%", background: "var(--tertiary)" } }),
-                " ACTIVE OUTPUT"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "canvas-display-label", children: [
-                "Output ",
-                activeOutputId
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-display-res", children: outputResolution.replace("x", " \xD7 ") }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tl" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tc" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tr" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle ml" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle mr" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle bl" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle bc" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle br" })
-            ]
-          }
-        ) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel dimensions-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimensions-title", children: "\u{1F4D0} Dimensions" }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Resolution" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-input-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-              "input",
-              {
-                value: outputResolution,
-                onChange: (e) => {
-                  onSetOutputResolution(e.target.value);
-                  onUpdateOutputConfig(activeOutputId, { resolution: e.target.value });
-                }
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "edit-icon", title: "Edit", children: "\u270F\uFE0F" })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Aspect Ratio" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("select", { value: aspectRatio, onChange: (e) => onSetAspectRatio(e.target.value), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "16:9", children: "16:9 Widescreen" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "4:3", children: "4:3 Standard" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "21:9", children: "21:9 Ultrawide" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "FREE", children: "Free" })
-          ] }) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "overscan-slider", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Overscan" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
-                overscanPercent,
-                "%"
-              ] })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("input", { type: "range", min: 0, max: 20, value: overscanPercent, onChange: (e) => onSetOverscanPercent(Number(e.target.value)) })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "overscan-labels", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "0%" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "20%" })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "hardware-card-title", children: "Output Hardware" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-card-content", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "hardware-icon", children: "\u{1F5A5}" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-info", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: outputHardware }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "SDI Out 1 \u2022 60fps \u2022 10-bit" })
-            ] })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "preset-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Theme Presets" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "preset-grid", children: themePresets.slice(0, 6).map((preset) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "preset-chip", onClick: () => onApplyPreset(preset), children: preset.name }, preset.name)) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "ndi-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "NDI Output" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-            "button",
-            {
-              className: `soft-button full ${ndiEnabled ? "active" : ""}`,
-              onClick: onToggleNdi,
-              children: ndiEnabled ? "Disable NDI" : "Enable NDI"
-            }
-          )
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card-row", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "info-card-badge", children: "Pro Feature" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", style: { fontFamily: "Manrope, Inter, sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: 4 }, children: "Multi-Display Sync" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { style: { color: "var(--text-muted)", fontSize: "0.72rem", lineHeight: 1.4 }, children: "Synchronize frame delivery across multiple graphics cards for ultra-high-resolution wall displays." })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u{1F3A8} Color Space" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "Rec.709 (High Dynamic)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-bar" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u23F1 Frame Delay" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "1.2ms (Ultra Low)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-sub", children: "Optimized for IMAG systems" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u{1F504} Refresh Rate" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "60.00 Hz" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-sub", children: "Matched to Broadcast Clock" })
-        ] })
-      ] })
-    ] });
-  };
-
-  // src/renderer/app/components/CommandPalette.tsx
-  var import_react5 = __toESM(require_react());
-  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
-  var CommandPalette = ({ commands, onClose }) => {
-    const [query, setQuery] = import_react5.default.useState("");
-    const [selected, setSelected] = import_react5.default.useState(0);
-    const inputRef = import_react5.default.useRef(null);
-    const listRef = import_react5.default.useRef(null);
-    const filtered = import_react5.default.useMemo(() => {
-      const q = query.toLowerCase().trim();
-      if (!q) return commands;
-      return commands.filter((cmd) => {
-        const hay = [cmd.label, cmd.description, cmd.category, ...cmd.keywords ?? []].join(" ").toLowerCase();
-        return hay.includes(q);
-      });
-    }, [commands, query]);
-    import_react5.default.useEffect(() => {
-      setSelected(0);
-    }, [query]);
-    import_react5.default.useEffect(() => {
-      inputRef.current?.focus();
-    }, []);
-    import_react5.default.useEffect(() => {
-      const el = listRef.current?.querySelector(`[data-idx="${selected}"]`);
-      el?.scrollIntoView({ block: "nearest" });
-    }, [selected]);
-    const execute = (cmd) => {
-      cmd.action();
-      onClose();
-    };
-    const handleKeyDown = (e) => {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelected((s) => Math.min(s + 1, filtered.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelected((s) => Math.max(s - 1, 0));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        if (filtered[selected]) execute(filtered[selected]);
-      } else if (e.key === "Escape") {
-        onClose();
-      }
-    };
-    const grouped = import_react5.default.useMemo(() => {
-      const map = /* @__PURE__ */ new Map();
-      filtered.forEach((cmd, idx) => {
-        const cat = cmd.category ?? "General";
-        if (!map.has(cat)) map.set(cat, []);
-        map.get(cat).push({ cmd, idx });
-      });
-      return map;
-    }, [filtered]);
-    return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "palette-backdrop", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-panel", onClick: (e) => e.stopPropagation(), onKeyDown: handleKeyDown, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-search-row", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-search-icon", children: "\u2318" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
-          "input",
-          {
-            ref: inputRef,
-            className: "palette-input",
-            placeholder: "Type a command or search\u2026",
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            autoComplete: "off",
-            spellCheck: false
-          }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { className: "palette-esc-hint", onClick: onClose, children: "ESC" })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-list", ref: listRef, children: [
-        filtered.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-empty", children: [
-          'No commands match "',
-          query,
-          '"'
-        ] }),
-        Array.from(grouped.entries()).map(([cat, items]) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "palette-category", children: cat }),
-          items.map(({ cmd, idx }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
-            "button",
-            {
-              "data-idx": idx,
-              className: `palette-item ${idx === selected ? "active" : ""}`,
-              onMouseEnter: () => setSelected(idx),
-              onClick: () => execute(cmd),
-              children: [
-                cmd.icon && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-icon", children: cmd.icon }),
-                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-label", children: cmd.label }),
-                cmd.description && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-desc", children: cmd.description })
-              ]
-            },
-            cmd.id
-          ))
-        ] }, cat))
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-footer", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "\u2191\u2193" }),
-          " navigate"
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "\u21B5" }),
-          " run"
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "Esc" }),
-          " close"
-        ] })
-      ] })
-    ] }) });
-  };
-
-  // src/renderer/app/components/Dialog.tsx
-  var import_react6 = __toESM(require_react());
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
-  var DialogContext = import_react6.default.createContext(null);
-  var useDialog = () => {
-    const ctx = import_react6.default.useContext(DialogContext);
-    if (!ctx) throw new Error("useDialog must be used inside <DialogProvider>");
-    return ctx;
-  };
-  var DialogProvider = ({ children }) => {
-    const [config, setConfig] = import_react6.default.useState(null);
-    const [inputValue, setInputValue] = import_react6.default.useState("");
-    const inputRef = import_react6.default.useRef(null);
-    const show = import_react6.default.useCallback(
-      (cfg) => new Promise((resolve) => {
-        setInputValue(cfg.defaultValue ?? "");
-        setConfig({ ...cfg, resolve });
-      }),
-      []
-    );
-    import_react6.default.useEffect(() => {
-      if (config && config.type === "prompt") {
-        setTimeout(() => inputRef.current?.focus(), 60);
-      }
-    }, [config]);
-    const dismiss = (value) => {
-      config?.resolve(value);
-      setConfig(null);
-    };
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") dismiss(config?.type === "confirm" ? false : null);
-      if (e.key === "Enter" && config?.type !== "confirm") {
-        e.preventDefault();
-        dismiss(config?.type === "prompt" ? inputValue : true);
-      }
-    };
-    return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(DialogContext.Provider, { value: { show }, children: [
-      children,
-      config && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-backdrop", role: "dialog", "aria-modal": "true", onKeyDown: handleKeyDown, tabIndex: -1, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dialog-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-title", children: config.title }),
-        config.message && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-message", children: config.message }),
-        config.type === "prompt" && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
-          "input",
-          {
-            ref: inputRef,
-            className: "input",
-            value: inputValue,
-            onChange: (e) => setInputValue(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                dismiss(inputValue);
-              }
-              if (e.key === "Escape") dismiss(null);
-            },
-            autoFocus: true
-          }
-        ),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dialog-actions", children: [
-          config.type !== "alert" && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
-            "button",
-            {
-              className: "soft-button",
-              onClick: () => dismiss(config.type === "confirm" ? false : null),
-              children: config.cancelLabel ?? "Cancel"
-            }
-          ),
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
-            "button",
-            {
-              className: `soft-button ${config.tone === "danger" ? "danger" : "primary"}`,
-              onClick: () => dismiss(config.type === "prompt" ? inputValue : true),
-              children: config.confirmLabel ?? (config.type === "alert" ? "OK" : "Confirm")
-            }
-          )
-        ] })
-      ] }) })
-    ] });
-  };
-
-  // src/renderer/app/index.tsx
-  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
-  var OUTPUT_IDS3 = [1, 2];
-  var NOTE_INDEX = {
-    C: 0,
-    "C#": 1,
-    Db: 1,
-    D: 2,
-    "D#": 3,
-    Eb: 3,
-    E: 4,
-    F: 5,
-    "F#": 6,
-    Gb: 6,
-    G: 7,
-    "G#": 8,
-    Ab: 8,
-    A: 9,
-    "A#": 10,
-    Bb: 10,
-    B: 11
-  };
-  var NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
   var getOutId = () => {
     try {
       const q = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
       const value = q.get("out");
-      return value ? Number(value) : 0;
+      return value ? Number(value) : 1;
     } catch {
-      return 0;
+      return 1;
     }
   };
-  var stripChordMarkup = (text) => text.replace(/\[([^\]]+)\]/g, "").replace(/\s+/g, " ").trim();
-  var transposeChord = (chord, steps) => {
-    const match = chord.match(/^([A-G])([#b]?)(.*)$/);
-    if (!match) return chord;
-    const [, root2, accidental, suffix] = match;
-    const startIndex = NOTE_INDEX[`${root2}${accidental || ""}`];
-    if (startIndex == null) return chord;
-    return `${NOTE_NAMES[(startIndex + steps + 12) % 12]}${suffix || ""}`;
-  };
-  var transposeChordMarkup = (text, steps) => steps ? text.replace(/\[([^\]]+)\]/g, (_match, chord) => `[${transposeChord(chord, steps)}]`) : text;
-  var AppInner = () => {
-    const { show: showDialog } = useDialog();
+  var App = () => {
     const outId = getOutId();
-    const isOutput = outId > 0;
-    const songs = useStore2((state) => state.songs);
-    const schedule = useStore2((state) => state.schedule);
-    const theme = useStore2((state) => state.theme);
-    const currentSlide = useStore2((state) => state.currentSlide);
-    const liveSlide = useStore2((state) => state.liveSlide);
-    const undoStack = useStore2((state) => state.undoStack);
-    const redoStack = useStore2((state) => state.redoStack);
-    const looks = useStore2((state) => state.looks);
-    const addSong = useStore2((state) => state.addSong);
-    const addSongSection = useStore2((state) => state.addSongSection);
-    const moveSongSection = useStore2((state) => state.moveSongSection);
-    const updateSongSection = useStore2((state) => state.updateSongSection);
-    const updateSongTitle = useStore2((state) => state.updateSongTitle);
-    const deleteSong = useStore2((state) => state.deleteSong);
-    const deleteSongSection = useStore2((state) => state.deleteSongSection);
-    const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
-    const setLiveSlide = useStore2((state) => state.setLiveSlide);
-    const pushSlideUndo = useStore2((state) => state.pushSlideUndo);
-    const undo = useStore2((state) => state.undo);
-    const redo = useStore2((state) => state.redo);
-    const addScheduleItem = useStore2((state) => state.addScheduleItem);
-    const moveSchedule = useStore2((state) => state.moveSchedule);
-    const setTheme = useStore2((state) => state.setTheme);
-    const applyPreset = useStore2((state) => state.applyPreset);
-    const saveTemplate = useStore2((state) => state.saveTemplate);
-    const setLook = useStore2((state) => state.setLook);
-    const outputConfigs = useStore2((state) => state.outputConfigs);
-    const updateOutputConfig = useStore2((state) => state.updateOutputConfig);
-    const [workspace, setWorkspace] = import_react7.default.useState("console");
-    const [clockValue, setClockValue] = import_react7.default.useState(/* @__PURE__ */ new Date());
-    const [dragIndex, setDragIndex] = import_react7.default.useState(null);
-    const [selectedSongId, setSelectedSongId] = import_react7.default.useState(songs[0]?.id ?? 0);
-    const [selectedSectionId, setSelectedSectionId] = import_react7.default.useState(null);
-    const [showChords, setShowChords] = import_react7.default.useState(true);
-    const [transposeSteps, setTransposeSteps] = import_react7.default.useState(0);
-    const [songSearchQuery, setSongSearchQuery] = import_react7.default.useState("");
-    const [editorText, setEditorText] = import_react7.default.useState("");
-    const [editorType, setEditorType] = import_react7.default.useState("Verse");
-    const [songTitleDraft, setSongTitleDraft] = import_react7.default.useState("");
-    const [ndiEnabled, setNdiEnabled] = import_react7.default.useState(false);
-    const [outputStates, setOutputStates] = import_react7.default.useState({});
-    const [mediaType, setMediaType] = import_react7.default.useState("image");
-    const [mediaAssets, setMediaAssets] = import_react7.default.useState([]);
-    const [mediaSearchQuery, setMediaSearchQuery] = import_react7.default.useState("");
-    const [mediaSort, setMediaSort] = import_react7.default.useState("recent");
-    const [mediaViewMode, setMediaViewMode] = import_react7.default.useState("grid");
-    const [selectedMediaId, setSelectedMediaId] = import_react7.default.useState(null);
-    const [isImportingMedia, setIsImportingMedia] = import_react7.default.useState(false);
-    const [bgManagerTab, setBgManagerTab] = import_react7.default.useState("media");
-    const [editorDragIndex, setEditorDragIndex] = import_react7.default.useState(null);
-    const [gradientStart, setGradientStart] = import_react7.default.useState("#1a1a2e");
-    const [gradientEnd, setGradientEnd] = import_react7.default.useState("#0f4c75");
-    const [activeOutputId, setActiveOutputId] = import_react7.default.useState(1);
-    const [aspectRatio, setAspectRatio] = import_react7.default.useState("16:9");
-    const [overscanPercent, setOverscanPercent] = import_react7.default.useState(5);
-    const [outputResolution, setOutputResolution] = import_react7.default.useState("1920x1080");
-    const [outputHardware] = import_react7.default.useState("Built-in Display");
-    const [librarySort, setLibrarySort] = import_react7.default.useState("name");
-    const [libraryViewMode, setLibraryViewMode] = import_react7.default.useState("grid");
-    const [toasts, setToasts] = import_react7.default.useState([]);
-    const [paneSizes, setPaneSizes] = import_react7.default.useState(() => {
-      try {
-        const raw = localStorage.getItem("operator-pane-sizes");
-        if (!raw) return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 };
-        const parsed = JSON.parse(raw);
-        return {
-          consoleLeft: Number(parsed.consoleLeft) || 320,
-          consoleBottom: Number(parsed.consoleBottom) || 210,
-          editorLeft: Number(parsed.editorLeft) || 310,
-          editorRight: Number(parsed.editorRight) || 330
-        };
-      } catch {
-        return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 };
-      }
-    });
-    const [syncUrl, setSyncUrl] = import_react7.default.useState("ws://localhost:9090");
-    const [syncConnected, setSyncConnected] = import_react7.default.useState(false);
-    const [syncSocket, setSyncSocket] = import_react7.default.useState(null);
-    const [showPalette, setShowPalette] = import_react7.default.useState(false);
-    const [logoImage, setLogoImage] = import_react7.default.useState(() => {
-      try {
-        return localStorage.getItem("worship-logo-image") || "";
-      } catch {
-        return "";
-      }
-    });
-    const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
-    const selectedSection = selectedSong?.sections.find((s) => s.id === selectedSectionId) || selectedSong?.sections[0];
-    const filteredSongs = songs.filter(
-      (song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())
-    ).sort((a, b) => librarySort === "name" ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      const timer = setInterval(() => setClockValue(/* @__PURE__ */ new Date()), 1e3);
-      return () => clearInterval(timer);
-    }, [isOutput]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      if (!songs.find((s) => s.id === selectedSongId) && songs[0]) setSelectedSongId(songs[0].id);
-    }, [isOutput, selectedSongId, songs]);
-    import_react7.default.useEffect(() => {
-      if (!selectedSection) {
-        setEditorText("");
-        return;
-      }
-      setEditorText(selectedSection.text || "");
-      setEditorType(selectedSection.type || "Verse");
-    }, [selectedSection?.id, selectedSection?.text, selectedSection?.type]);
-    import_react7.default.useEffect(() => {
-      setSongTitleDraft(selectedSong?.title || "");
-    }, [selectedSong?.id, selectedSong?.title]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      if (!window?.worship?.outputs?.onOutputState) return;
-      window.worship.outputs.onOutputState((payload) => {
-        if (!payload?.outputId) return;
-        setOutputStates((prev) => ({ ...prev, [payload.outputId]: payload.state || {} }));
-      });
-    }, [isOutput]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      window?.worship?.ndi?.status?.().then((status) => setNdiEnabled(Boolean(status?.enabled))).catch(() => setNdiEnabled(false));
-    }, [isOutput]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      const loadData = async () => {
-        try {
-          const songsWithSections = await dbService.songs.getAll();
-          if (songsWithSections?.length) {
-            useStore2.setState({ songs: songsWithSections });
-            setSelectedSongId(songsWithSections[0]?.id || 0);
-          }
-          const scheduleItems = await dbService.schedule.getItems();
-          if (scheduleItems?.length) {
-            useStore2.setState({ schedule: scheduleItems });
-          }
-        } catch (error) {
-          console.error("Failed to load operator data:", error);
-        }
-      };
-      loadData();
-    }, [isOutput]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      const isEditableTarget = (target) => {
-        const node = target;
-        if (!node) return false;
-        const tag = node.tagName?.toLowerCase();
-        return tag === "input" || tag === "textarea" || tag === "select" || Boolean(node.closest('[contenteditable="true"]'));
-      };
-      const handleKeyDown = (event) => {
-        if ((event.ctrlKey || event.metaKey) && event.key === "k") {
-          event.preventDefault();
-          setShowPalette((v) => !v);
-          return;
-        }
-        const isEditingSong = Boolean(
-          selectedSection && (editorText !== (selectedSection.text || "") || editorType !== (selectedSection.type || "Verse"))
-        );
-        if (event.key === "Enter" && selectedSectionId !== null && !event.shiftKey && !event.ctrlKey && !event.altKey && !isEditableTarget(event.target) && !isEditingSong) {
-          event.preventDefault();
-          goLive();
-        }
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType]);
-    import_react7.default.useEffect(() => {
-      if (isOutput) return;
-      localStorage.setItem("operator-pane-sizes", JSON.stringify(paneSizes));
-    }, [isOutput, paneSizes]);
-    import_react7.default.useEffect(() => {
-      try {
-        localStorage.setItem("worship-logo-image", logoImage);
-      } catch {
-      }
-    }, [logoImage]);
-    if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(OutputView, { outId, logoImage });
-    const sendLiveState = (slideTitle) => {
-      OUTPUT_IDS3.forEach(
-        (id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: "", mediaType: void 0, theme })
-      );
-    };
-    const notify = (title, detail, tone = "info") => {
-      const id = Date.now() + Math.floor(Math.random() * 1e3);
-      setToasts((prev) => [...prev.slice(-3), { id, title, detail, tone }]);
-      window.setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 4200);
-    };
-    const goLive = () => {
-      setLiveSlide(currentSlide);
-      sendLiveState(currentSlide);
-      notify("Live updated", "Preview pushed to all outputs", "success");
-    };
-    const onBlack = () => {
-      window?.worship?.outputs?.actions?.black?.();
-      notify("Black screen enabled", "Outputs set to black", "warn");
-    };
-    const onLogo = () => {
-      window?.worship?.outputs?.actions?.logo?.();
-      notify("Logo mode", "Outputs switched to logo standby", "info");
-    };
-    const onClear = () => {
-      window?.worship?.outputs?.actions?.clear?.();
-      sendLiveState(liveSlide);
-      notify("Cleared output mode", "Live slide restored", "success");
-    };
-    const pickSection = (sectionId, live = false) => {
-      if (!selectedSong) return;
-      const section = selectedSong.sections.find((item) => item.id === sectionId);
-      if (!section) return;
-      setSelectedSectionId(section.id);
-      const transposed = transposeChordMarkup(section.text, transposeSteps);
-      const rendered = showChords ? transposed : stripChordMarkup(transposed);
-      pushSlideUndo(currentSlide);
-      setCurrentSlide(rendered);
-      if (live) {
-        setLiveSlide(rendered);
-        sendLiveState(rendered);
-      }
-    };
-    const saveSectionEdits = () => {
-      if (!selectedSong || selectedSectionId === null) return;
-      updateSongSection(selectedSong.id, selectedSectionId, { type: editorType, text: editorText });
-      const transposed = transposeChordMarkup(editorText, transposeSteps);
-      pushSlideUndo(currentSlide);
-      setCurrentSlide(showChords ? transposed : stripChordMarkup(transposed));
-    };
-    const toggleNdi = async () => {
-      const status = await window?.worship?.ndi?.enable?.(!ndiEnabled);
-      setNdiEnabled(Boolean(status?.enabled));
-    };
-    const updateLook = (targetOutId, patch) => {
-      const currentLook = looks[targetOutId] || { background: "#111111", template: "default", layers: ["slide_content"] };
-      setLook(targetOutId, { ...currentLook, ...patch });
-    };
-    const commitSongTitle = () => {
-      if (!selectedSong) return;
-      updateSongTitle(selectedSong.id, songTitleDraft);
-    };
-    const importSongs = async () => {
-      try {
-        const filePaths = await window.worship.dialog.openFiles({
-          title: "Import Songs",
-          filters: [{ name: "Song Files", extensions: ["txt", "json"] }],
-          multiSelections: true
-        });
-        if (!filePaths.length) return;
-        const importedSongs = [];
-        for (const filePath of filePaths) {
-          const data = await window.worship.fs.readTextFile(filePath);
-          let title = filePath.split("\\").pop()?.split("/").pop()?.replace(/\.[^.]+$/, "") || "Imported Song";
-          let sectionText = data;
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed && typeof parsed === "object") {
-              title = String(parsed.title || title);
-              sectionText = String(parsed.text || parsed.lyrics || sectionText);
-            }
-          } catch {
-          }
-          const createdSong = await dbService.songs.create(title);
-          await dbService.songs.updateSection(createdSong.id, createdSong.sections[0].id, { type: "Verse", text: sectionText });
-          importedSongs.push({ ...createdSong, sections: [{ ...createdSong.sections[0], text: sectionText }] });
-        }
-        if (importedSongs.length) {
-          useStore2.setState((state) => ({ songs: [...state.songs, ...importedSongs] }));
-          setSelectedSongId(importedSongs[0].id);
-          notify("Songs imported", `${importedSongs.length} song(s) added`, "success");
-        }
-      } catch (error) {
-        console.error("Failed to import songs:", error);
-        notify("Import failed", "Could not import selected songs", "warn");
-      }
-    };
-    const connectSync = () => {
-      if (syncSocket || !syncUrl) return;
-      const socket = new WebSocket(syncUrl);
-      socket.onopen = () => setSyncConnected(true);
-      socket.onclose = () => {
-        setSyncConnected(false);
-        setSyncSocket(null);
-      };
-      socket.onmessage = (event) => {
-        try {
-          const msg = JSON.parse(String(event.data || "{}"));
-          if (msg?.type === "state" && msg.payload?.outId && msg.payload?.state) {
-            window?.worship?.outputs?.setState?.(msg.payload.outId, msg.payload.state);
-          }
-        } catch {
-        }
-      };
-      setSyncSocket(socket);
-    };
-    const disconnectSync = () => {
-      if (!syncSocket) return;
-      syncSocket.close();
-      setSyncSocket(null);
-      setSyncConnected(false);
-    };
-    const sendMediaToPreview = (asset) => {
-      setTheme({ ...theme, backgroundImage: asset.path });
-      setCurrentSlide("");
-      notify("Media to preview", asset.name || "Preview media changed", "info");
-    };
-    const sendMediaToLive = (asset, playback) => {
-      const updatedTheme = { ...theme, backgroundImage: asset.path };
-      setTheme(updatedTheme);
-      setCurrentSlide("");
-      setLiveSlide("");
-      OUTPUT_IDS3.forEach(
-        (id) => window?.worship?.outputs?.setState?.(id, {
-          slideTitle: "",
-          mediaPath: asset.path,
-          mediaType: asset.type,
-          mediaPlayback: playback,
-          theme: updatedTheme
-        })
-      );
-      notify("Media sent live", asset.name || "Live outputs updated", "success");
-    };
-    const pickLogoFile = async () => {
-      try {
-        const files = await window.worship.dialog.openFiles({
-          title: "Select Logo Image",
-          filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "svg", "webp"] }]
-        });
-        if (files[0]) setLogoImage(files[0]);
-      } catch {
-      }
-    };
-    const paletteCommands = [
-      { id: "go-console", label: "Go to Console", icon: "\u{1F39B}", category: "Navigation", action: () => setWorkspace("console") },
-      { id: "go-library", label: "Go to Library", icon: "\u{1F4DA}", category: "Navigation", action: () => setWorkspace("library") },
-      { id: "go-editor", label: "Go to Song Editor", icon: "\u270F\uFE0F", category: "Navigation", action: () => setWorkspace("editor") },
-      { id: "go-scripture", label: "Go to Scripture", icon: "\u{1F4D6}", category: "Navigation", action: () => setWorkspace("scripture") },
-      { id: "go-media", label: "Go to Media", icon: "\u{1F5BC}", category: "Navigation", action: () => setWorkspace("media") },
-      { id: "go-settings", label: "Go to Settings", icon: "\u2699\uFE0F", category: "Navigation", action: () => setWorkspace("settings") },
-      { id: "go-live", label: "Send Live", description: "Push preview to all outputs", icon: "\u{1F534}", category: "Output", keywords: ["live", "push", "send"], action: goLive },
-      { id: "black", label: "Black Screen", description: "Set all outputs to black", icon: "\u2B1B", category: "Output", action: onBlack },
-      { id: "logo", label: "Logo Mode", description: "Show church logo on outputs", icon: "\u{1F3DB}", category: "Output", action: onLogo },
-      { id: "clear", label: "Clear Override", description: "Restore normal output", icon: "\u2728", category: "Output", action: onClear },
-      { id: "add-song", label: "Add New Song", icon: "\u2795", category: "Library", action: async () => {
-        await addSong();
-        setWorkspace("editor");
-      } },
-      { id: "import-songs", label: "Import Songs", icon: "\u{1F4E5}", category: "Library", action: importSongs },
-      { id: "add-section", label: "Add Section to Song", icon: "\u2795", category: "Editor", action: () => selectedSong && addSongSection(selectedSong.id) },
-      { id: "save-section", label: "Save Section Edits", icon: "\u{1F4BE}", category: "Editor", action: saveSectionEdits },
-      { id: "undo", label: "Undo", icon: "\u21A9", category: "Editor", keywords: ["undo", "back"], action: undo },
-      { id: "redo", label: "Redo", icon: "\u21AA", category: "Editor", action: redo },
-      { id: "toggle-ndi", label: ndiEnabled ? "Disable NDI" : "Enable NDI", icon: "\u{1F4E1}", category: "Settings", action: toggleNdi },
-      { id: "sync-connect", label: syncConnected ? "Disconnect Sync" : "Connect Sync", icon: "\u{1F517}", category: "Settings", action: syncConnected ? disconnectSync : connectSync }
-    ];
-    const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("header", { className: "topbar ribbon", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "ribbon-row ribbon-main", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "screen-title", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("small", { children: clockValue.toLocaleTimeString() })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "view-tabs", children: ["console", "library", "editor", "scripture", "media", "settings"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: `tab ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "topbar-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [
-            "\u2318 ",
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { children: "K" })
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })
-        ] })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [
-        (workspace === "console" || workspace === "editor") && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Left Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-              "input",
-              {
-                type: "range",
-                min: 240,
-                max: 480,
-                value: workspace === "console" ? paneSizes.consoleLeft : paneSizes.editorLeft,
-                onChange: (event) => {
-                  const value = Number(event.target.value);
-                  setPaneSizes((prev) => ({
-                    ...prev,
-                    ...workspace === "console" ? { consoleLeft: value } : { editorLeft: value }
-                  }));
-                }
-              }
-            )
-          ] }),
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Output Area" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-              "input",
-              {
-                type: "range",
-                min: 150,
-                max: 340,
-                value: paneSizes.consoleBottom,
-                onChange: (event) => setPaneSizes((prev) => ({ ...prev, consoleBottom: Number(event.target.value) }))
-              }
-            )
-          ] }),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Inspector Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-              "input",
-              {
-                type: "range",
-                min: 260,
-                max: 460,
-                value: paneSizes.editorRight,
-                onChange: (event) => setPaneSizes((prev) => ({ ...prev, editorRight: Number(event.target.value) }))
-              }
-            )
-          ] })
-        ] }),
-        workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })
-        ] }),
-        workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." })
-      ] })
-    ] });
-    return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "app-shell", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("aside", { className: "app-sidebar", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "brand-block", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("h1", { children: "The Ethereal Stage" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { children: "Sanctuary Control" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("nav", { className: "sidebar-nav", children: ["console", "library", "editor", "scripture", "media", "settings"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: `nav-button ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item === "console" ? "Console" : item === "library" ? "Library" : item === "editor" ? "Song Editor" : item === "scripture" ? "Scripture" : item === "media" ? "Media" : "Settings" }, item)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sidebar-footer", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })
-      ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "app-main", children: [
-        renderRibbon(),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("main", { className: "workspace", children: [
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-            ConsoleWorkspace,
-            {
-              schedule,
-              theme,
-              currentSlide,
-              liveSlide,
-              paneSizes,
-              outputStates,
-              dragIndex,
-              onDragStart: setDragIndex,
-              onDrop: (idx) => {
-                moveSchedule(dragIndex, idx);
-                setDragIndex(null);
-                notify("Schedule updated", "Order changed", "info");
-              },
-              onScheduleItemClick: (content) => {
-                setCurrentSlide(content);
-              },
-              onAddScheduleItem: () => {
-                addScheduleItem();
-                notify("Schedule updated", "New service item added", "success");
-              },
-              onGoToEditor: () => setWorkspace("editor")
-            }
-          ),
-          workspace === "library" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-            LibraryWorkspace,
-            {
-              songs,
-              filteredSongs,
-              selectedSongId,
-              mediaAssets,
-              songSearchQuery,
-              librarySort,
-              libraryViewMode,
-              onSearchChange: setSongSearchQuery,
-              onSortChange: setLibrarySort,
-              onViewModeChange: setLibraryViewMode,
-              onSelectSong: (id) => {
-                setSelectedSongId(id);
-                setWorkspace("editor");
-              },
-              onAddSong: () => {
-                addSong();
-                setWorkspace("editor");
-              },
-              onImportSongs: importSongs,
-              onRenameSong: async (song) => {
-                const next = await showDialog({ type: "prompt", title: "Rename Song", defaultValue: song.title, confirmLabel: "Rename" });
-                if (typeof next === "string" && next.trim()) {
-                  updateSongTitle(song.id, next.trim());
-                  if (song.id === selectedSongId) setSongTitleDraft(next.trim());
-                  notify("Song renamed", next.trim(), "success");
-                }
-              },
-              onDeleteSong: async (song) => {
-                const confirmed = await showDialog({
-                  type: "confirm",
-                  tone: "danger",
-                  title: `Delete "${song.title}"?`,
-                  message: "This will permanently delete the song and all its sections.",
-                  confirmLabel: "Delete"
-                });
-                if (confirmed) {
-                  await deleteSong(song.id);
-                  notify("Song deleted", song.title, "warn");
-                }
-              }
-            }
-          ),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-            EditorWorkspace,
-            {
-              selectedSong,
-              selectedSectionId,
-              currentSlide,
-              theme,
-              editorText,
-              editorType,
-              showChords,
-              transposeSteps,
-              undoStack,
-              redoStack,
-              songTitleDraft,
-              gradientStart,
-              gradientEnd,
-              bgManagerTab,
-              editorDragIndex,
-              paneSizes,
-              onEditorTextChange: setEditorText,
-              onEditorTypeChange: setEditorType,
-              onSongTitleDraftChange: setSongTitleDraft,
-              onCommitSongTitle: commitSongTitle,
-              onPickSection: pickSection,
-              onAddSection: () => selectedSong && addSongSection(selectedSong.id),
-              onDeleteSection: async (sectionId) => {
-                const confirmed = await showDialog({
-                  type: "confirm",
-                  tone: "danger",
-                  title: "Delete Section?",
-                  message: "This will permanently remove this slide section.",
-                  confirmLabel: "Delete"
-                });
-                if (confirmed && selectedSong) await deleteSongSection(selectedSong.id, sectionId);
-              },
-              onMoveSongSection: (from, to) => selectedSong && moveSongSection(selectedSong.id, from, to),
-              onSetEditorDragIndex: setEditorDragIndex,
-              onSetTransposeSteps: (fn) => setTransposeSteps(fn),
-              onSetShowChords: (fn) => setShowChords(fn),
-              onSetTheme: setTheme,
-              onSetBgManagerTab: setBgManagerTab,
-              onSetGradientStart: setGradientStart,
-              onSetGradientEnd: setGradientEnd,
-              onSaveSectionEdits: saveSectionEdits,
-              onGoLive: goLive,
-              onSaveTemplate: async () => {
-                const name = await showDialog({ type: "prompt", title: "Save Template", defaultValue: "My Template", confirmLabel: "Save" });
-                if (typeof name === "string" && name.trim()) saveTemplate(name.trim());
-              },
-              onUndo: undo,
-              onRedo: redo,
-              stripChordMarkup,
-              onNotify: notify
-            }
-          ),
-          workspace === "scripture" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(BiblePicker, {}),
-          workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-            MediaLibrary,
-            {
-              mediaType,
-              onMediaSelect: () => void 0,
-              onSendToPreview: sendMediaToPreview,
-              onSendToLive: sendMediaToLive,
-              onNotify: notify
-            }
-          ),
-          workspace === "settings" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
-            SettingsWorkspace,
-            {
-              theme,
-              outputConfigs,
-              looks,
-              ndiEnabled,
-              syncConnected,
-              syncUrl,
-              aspectRatio,
-              overscanPercent,
-              outputResolution,
-              outputHardware,
-              activeOutputId,
-              themePresets: THEME_PRESETS,
-              logoImage,
-              onSyncUrlChange: setSyncUrl,
-              onConnectSync: connectSync,
-              onDisconnectSync: disconnectSync,
-              onSetAspectRatio: setAspectRatio,
-              onSetOverscanPercent: setOverscanPercent,
-              onSetOutputResolution: setOutputResolution,
-              onSetActiveOutputId: setActiveOutputId,
-              onUpdateOutputConfig: updateOutputConfig,
-              onUpdateLook: updateLook,
-              onToggleNdi: toggleNdi,
-              onApplyPreset: applyPreset,
-              onResetDisplay: () => {
-                setAspectRatio("16:9");
-                setOverscanPercent(5);
-                setOutputResolution("1920x1080");
-                notify("Display reset", "Restored default geometry", "info");
-              },
-              onApplyDisplayChanges: () => {
-                window?.worship?.outputs?.actions?.fullscreen?.();
-                notify("Display applied", `${outputResolution} ${aspectRatio}`, "success");
-              },
-              onLogoImageChange: setLogoImage,
-              onPickLogoFile: pickLogoFile,
-              onNotify: notify
-            }
-          )
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })
-      ] }),
-      showPalette && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) })
-    ] });
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(OutputView, { outId });
   };
-  var App = () => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(DialogProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(AppInner, {}) });
-  var mountPoint = document.getElementById("root");
-  var root = mountPoint ? (0, import_client.createRoot)(mountPoint) : null;
-  if (root) root.render(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)(App, {}));
+  var rootEl = document.getElementById("root");
+  if (rootEl) {
+    const root = (0, import_client.createRoot)(rootEl);
+    root.render(
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_react3.default.StrictMode, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}) })
+    );
+  }
 })();
 /*! Bundled license information:
 
@@ -16176,4 +13437,4 @@ react/cjs/react-jsx-runtime.production.js:
    * LICENSE file in the root directory of this source tree.
    *)
 */
-//# sourceMappingURL=bundle.js.map
+//# sourceMappingURL=bundle-output.js.map

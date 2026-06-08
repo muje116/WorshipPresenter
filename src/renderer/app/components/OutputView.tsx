@@ -3,6 +3,7 @@ import { useStore } from '../store'
 
 type Props = {
   outId: number
+  logoImage?: string
 }
 
 type State = {
@@ -10,6 +11,10 @@ type State = {
   mode?: string
   mediaPath?: string
   mediaType?: 'image' | 'video'
+  alertText?: string
+  announcementText?: string
+  propsText?: string
+  liveVideoLabel?: string
   mediaPlayback?: {
     loop?: boolean
     muted?: boolean
@@ -35,7 +40,7 @@ const toFileUrl = (input?: string): string | null => {
   return encodeURI(`file://${absolutePath}`)
 }
 
-export const OutputView: React.FC<Props> = ({ outId }) => {
+export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
   const perOutLook = useStore((state) => state.looks?.[outId]) || {}
   const [state, setState] = React.useState<State>({ slideTitle: 'Idle' })
   const videoRef = React.useRef<HTMLVideoElement | null>(null)
@@ -69,6 +74,10 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
   const textAlign = theme?.textAlign ?? 'center'
   const verticalAlign = theme?.verticalAlign ?? 'center'
   const mediaPlayback = state?.mediaPlayback || {}
+  const propsText = state?.propsText || slide
+  const announcementText = state?.announcementText || slide
+  const alertText = state?.alertText || slide
+  const liveVideoLabel = state?.liveVideoLabel || 'Live Camera'
 
   React.useEffect(() => {
     if (videoRef.current) {
@@ -153,10 +162,35 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
             left: 0,
             width: '100%',
             height: '100%',
-            backgroundColor: mode === 'black' ? '#000' : 'rgba(0,0,0,0.4)',
+            background: mode === 'black'
+              ? 'linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.7))'
+              : 'linear-gradient(180deg, rgba(12,18,32,0.35), rgba(0,0,0,0.55))',
             zIndex: 1
           }}
         />
+      )}
+
+      {/* Layer: announcements */}
+      {has('announcements') && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 18,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 5,
+            padding: '8px 16px',
+            borderRadius: 999,
+            background: 'rgba(12, 18, 32, 0.82)',
+            border: '1px solid rgba(187, 195, 255, 0.25)',
+            color: '#fff',
+            fontSize: 13,
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase'
+          }}
+        >
+          Announcements: {announcementText}
+        </div>
       )}
 
       {/* Layer: slide_content */}
@@ -179,9 +213,17 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
             BLACK
           </div>
         ) : mode === 'logo' ? (
-          <div style={{ fontSize: 72, fontWeight: 700 }}>
-            Church Logo
-          </div>
+          logoImage ? (
+            <img
+              src={toFileUrl(logoImage) || logoImage}
+              alt="Church logo"
+              style={{ maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' }}
+            />
+          ) : (
+            <div style={{ fontSize: 72, fontWeight: 700 }}>
+              Church Logo
+            </div>
+          )
         ) : (
           <div
             style={{
@@ -216,28 +258,48 @@ export const OutputView: React.FC<Props> = ({ outId }) => {
             color: '#fff'
           }}
         >
-          Lower Third: {slide}
+          Lower Third: {propsText}
         </div>
       )}
 
       {/* Layer: props_overlays */}
       {has('props_overlays') && mode !== 'black' && (
-        <div style={{ position: 'absolute', left: 16, top: 48, zIndex: 5, padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 12 }}>
-          Props Overlay
+        <div style={{ position: 'absolute', left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: '42%', padding: '8px 12px', borderRadius: 8, background: 'rgba(19, 27, 46, 0.85)', border: '1px solid rgba(187, 195, 255, 0.18)', color: '#fff', fontSize: 12, lineHeight: 1.35, boxShadow: '0 8px 18px rgba(0,0,0,0.22)' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#aeb8df', marginBottom: 4 }}>Props</div>
+          <div>{propsText}</div>
         </div>
       )}
 
-      {/* Layer: live_video (placeholder for camera/NDI feed) */}
+      {/* Layer: live_video (preview feed) */}
       {has('live_video') && (
-        <div style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 5, width: 220, height: 124, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d7e3ff', fontSize: 12 }}>
-          Live Video Layer
+        <div style={{ position: 'absolute', right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(5,8,15,0.72)', overflow: 'hidden', boxShadow: '0 10px 24px rgba(0,0,0,0.28)' }}>
+          <div style={{ position: 'absolute', inset: 0, background: bgImageUrl && isVideo ? 'rgba(0,0,0,0.18)' : 'linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))' }} />
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 12, color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c8d0f0' }}>
+              <span>Live Feed</span>
+              <span style={{ padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,0.12)' }}>On Air</span>
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.1 }}>{liveVideoLabel}</div>
+            <div style={{ fontSize: 11, color: '#c6cde8' }}>{bgImageUrl ? 'Media feed ready' : 'Camera input placeholder'}</div>
+          </div>
+          {bgImageUrl && isVideo && (
+            <video
+              src={bgImageUrl}
+              autoPlay
+              loop={mediaPlayback.loop !== false}
+              muted={mediaPlayback.muted !== false}
+              playsInline
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 }}
+            />
+          )}
         </div>
       )}
 
       {/* Layer: alerts */}
       {has('alerts') && (
-        <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 6, background: '#ff5252', color: '#fff', padding: '4px 8px', borderRadius: 6, fontSize: 12 }}>
-          Alert Layer
+        <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: '42%', background: 'linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: 12, boxShadow: '0 10px 20px rgba(0,0,0,0.22)', border: '1px solid rgba(255,255,255,0.12)' }}>
+          <div style={{ fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.9, marginBottom: 4 }}>Alert</div>
+          <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.35 }}>{alertText}</div>
         </div>
       )}
 

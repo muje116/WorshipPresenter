@@ -53,7 +53,8 @@ test.describe('WorshipPresenter E2E', () => {
     const outputWindow = windows.find((w) => /Output/i.test(String(w.url()))) || windows[1]
 
     await operator.evaluate(() => {
-      window.worship.outputs.setState(1, {
+      const appWindow = window as any
+      appWindow.worship.outputs.setState(1, {
         slideTitle: 'Color Test',
         theme: { bg: '#123456', color: '#ffffff' }
       })

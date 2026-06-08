@@ -16,7 +16,7 @@ const toFileUrl = (input) => {
     const absolutePath = normalized.startsWith('/') ? normalized : `/${normalized}`;
     return encodeURI(`file://${absolutePath}`);
 };
-const OutputView = ({ outId }) => {
+const OutputView = ({ outId, logoImage }) => {
     const perOutLook = (0, store_1.useStore)((state) => state.looks?.[outId]) || {};
     const [state, setState] = react_1.default.useState({ slideTitle: 'Idle' });
     const videoRef = react_1.default.useRef(null);
@@ -47,6 +47,10 @@ const OutputView = ({ outId }) => {
     const textAlign = theme?.textAlign ?? 'center';
     const verticalAlign = theme?.verticalAlign ?? 'center';
     const mediaPlayback = state?.mediaPlayback || {};
+    const propsText = state?.propsText || slide;
+    const announcementText = state?.announcementText || slide;
+    const alertText = state?.alertText || slide;
+    const liveVideoLabel = state?.liveVideoLabel || 'Live Camera';
     react_1.default.useEffect(() => {
         if (videoRef.current) {
             videoRef.current.playbackRate = mediaPlayback.playbackRate || 1;
@@ -59,7 +63,7 @@ const OutputView = ({ outId }) => {
     const bgImageUrl = toFileUrl(bgImage);
     const layers = perOutLook.layers || ['background', 'media', 'slide_content'];
     const has = (layer) => layers.includes(layer);
-    return ((0, jsx_runtime_1.jsxs)("div", { style: {
+    return ((0, jsx_runtime_1.jsxs)("div", { "data-testid": "output-root", style: {
             height: '100vh',
             width: '100%',
             backgroundColor: bgColor,
@@ -95,9 +99,25 @@ const OutputView = ({ outId }) => {
                     left: 0,
                     width: '100%',
                     height: '100%',
-                    backgroundColor: mode === 'black' ? '#000' : 'rgba(0,0,0,0.4)',
+                    background: mode === 'black'
+                        ? 'linear-gradient(180deg, rgba(0,0,0,0.92), rgba(0,0,0,0.7))'
+                        : 'linear-gradient(180deg, rgba(12,18,32,0.35), rgba(0,0,0,0.55))',
                     zIndex: 1
-                } })), has('slide_content') && !state?.mediaPath && (0, jsx_runtime_1.jsx)("div", { style: {
+                } })), has('announcements') && ((0, jsx_runtime_1.jsxs)("div", { style: {
+                    position: 'absolute',
+                    top: 18,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    zIndex: 5,
+                    padding: '8px 16px',
+                    borderRadius: 999,
+                    background: 'rgba(12, 18, 32, 0.82)',
+                    border: '1px solid rgba(187, 195, 255, 0.25)',
+                    color: '#fff',
+                    fontSize: 13,
+                    letterSpacing: '0.08em',
+                    textTransform: 'uppercase'
+                }, children: ["Announcements: ", announcementText] })), has('slide_content') && !state?.mediaPath && (0, jsx_runtime_1.jsx)("div", { style: {
                     position: 'absolute',
                     inset: 0,
                     zIndex: 2,
@@ -108,7 +128,7 @@ const OutputView = ({ outId }) => {
                     padding: '40px 60px',
                     maxWidth: '100%',
                     textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
-                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" })) : ((0, jsx_runtime_1.jsx)("div", { style: {
+                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? (logoImage ? ((0, jsx_runtime_1.jsx)("img", { src: toFileUrl(logoImage) || logoImage, alt: "Church logo", style: { maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' } })) : ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }))) : ((0, jsx_runtime_1.jsx)("div", { style: {
                         fontSize: fontSize,
                         fontFamily,
                         fontWeight,
@@ -128,7 +148,7 @@ const OutputView = ({ outId }) => {
                     padding: '8px 12px',
                     fontSize: 18,
                     color: '#fff'
-                }, children: ["Lower Third: ", slide] })), has('props_overlays') && mode !== 'black' && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', left: 16, top: 48, zIndex: 5, padding: '6px 10px', borderRadius: 6, background: 'rgba(255,255,255,0.12)', color: '#fff', fontSize: 12 }, children: "Props Overlay" })), has('live_video') && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', right: 16, bottom: 16, zIndex: 5, width: 220, height: 124, borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d7e3ff', fontSize: 12 }, children: "Live Video Layer" })), has('alerts') && ((0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', top: 16, right: 16, zIndex: 6, background: '#ff5252', color: '#fff', padding: '4px 8px', borderRadius: 6, fontSize: 12 }, children: "Alert Layer" })), (0, jsx_runtime_1.jsxs)("div", { style: {
+                }, children: ["Lower Third: ", propsText] })), has('props_overlays') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: { position: 'absolute', left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: '42%', padding: '8px 12px', borderRadius: 8, background: 'rgba(19, 27, 46, 0.85)', border: '1px solid rgba(187, 195, 255, 0.18)', color: '#fff', fontSize: 12, lineHeight: 1.35, boxShadow: '0 8px 18px rgba(0,0,0,0.22)' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#aeb8df', marginBottom: 4 }, children: "Props" }), (0, jsx_runtime_1.jsx)("div", { children: propsText })] })), has('live_video') && ((0, jsx_runtime_1.jsxs)("div", { style: { position: 'absolute', right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(5,8,15,0.72)', overflow: 'hidden', boxShadow: '0 10px 24px rgba(0,0,0,0.28)' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { position: 'absolute', inset: 0, background: bgImageUrl && isVideo ? 'rgba(0,0,0,0.18)' : 'linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))' } }), (0, jsx_runtime_1.jsxs)("div", { style: { position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: 12, color: '#fff' }, children: [(0, jsx_runtime_1.jsxs)("div", { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#c8d0f0' }, children: [(0, jsx_runtime_1.jsx)("span", { children: "Live Feed" }), (0, jsx_runtime_1.jsx)("span", { style: { padding: '3px 7px', borderRadius: 999, background: 'rgba(255,255,255,0.12)' }, children: "On Air" })] }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: 18, fontWeight: 800, lineHeight: 1.1 }, children: liveVideoLabel }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: 11, color: '#c6cde8' }, children: bgImageUrl ? 'Media feed ready' : 'Camera input placeholder' })] }), bgImageUrl && isVideo && ((0, jsx_runtime_1.jsx)("video", { src: bgImageUrl, autoPlay: true, loop: mediaPlayback.loop !== false, muted: mediaPlayback.muted !== false, playsInline: true, style: { position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', opacity: 0.35 } }))] })), has('alerts') && ((0, jsx_runtime_1.jsxs)("div", { style: { position: 'absolute', top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: '42%', background: 'linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))', color: '#fff', padding: '8px 10px', borderRadius: 8, fontSize: 12, boxShadow: '0 10px 20px rgba(0,0,0,0.22)', border: '1px solid rgba(255,255,255,0.12)' }, children: [(0, jsx_runtime_1.jsx)("div", { style: { fontSize: 10, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.9, marginBottom: 4 }, children: "Alert" }), (0, jsx_runtime_1.jsx)("div", { style: { fontSize: 13, fontWeight: 700, lineHeight: 1.35 }, children: alertText })] })), (0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     top: 8,
                     left: 12,

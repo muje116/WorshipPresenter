@@ -4,6 +4,7 @@ exports.MediaLibrary = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = require("react");
 const store_1 = require("../store");
+const db_1 = require("../services/db");
 const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
     const setCurrentSlide = (0, store_1.useStore)((state) => state.setCurrentSlide);
     const setLiveSlide = (0, store_1.useStore)((state) => state.setLiveSlide);
@@ -27,26 +28,8 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
     }, [activeFilter, currentFolderId]);
     const loadMediaAssets = async () => {
         try {
-            let sql = 'SELECT * FROM media_assets';
-            const params = [];
-            const conditions = [];
-            if (activeFilter === 'image') {
-                conditions.push('type = ?');
-                params.push('image');
-            }
-            else if (activeFilter === 'video') {
-                conditions.push('type = ?');
-                params.push('video');
-            }
-            if (currentFolderId !== null) {
-                conditions.push('folder_id = ?');
-                params.push(currentFolderId);
-            }
-            if (conditions.length > 0) {
-                sql += ' WHERE ' + conditions.join(' AND ');
-            }
-            sql += ' ORDER BY id DESC';
-            const results = await window.worship.db.run(sql, params);
+            const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
+            const results = await db_1.dbService.media.getAssets(currentFolderId, typeFilter);
             const normalized = (results || []).map((asset) => ({
                 ...asset,
                 name: asset.name || asset.path?.split('\\').pop() || asset.path?.split('/').pop() || 'Untitled'
@@ -60,7 +43,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
     };
     const loadFolders = async () => {
         try {
-            const results = await window.worship.db.run('SELECT * FROM media_folders ORDER BY name');
+            const results = await db_1.dbService.media.getFolders();
             setFolders(results || []);
         }
         catch {
@@ -83,7 +66,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
             if (filePaths.length > 0) {
                 for (const filePath of filePaths) {
                     const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || '';
-                    await window.worship.db.run('INSERT INTO media_assets (path, type, name, duration, folder_id) VALUES (?, ?, ?, ?, ?)', [filePath, type, fileName, type === 'video' ? 0 : null, currentFolderId]);
+                    await db_1.dbService.media.createAsset(filePath, type, fileName, type === 'video' ? 0 : null, currentFolderId);
                 }
                 await loadMediaAssets();
                 onNotify?.('Media imported', `${filePaths.length} item(s) added`, 'success');
@@ -102,7 +85,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
         if (!name)
             return;
         try {
-            await window.worship.db.run('INSERT INTO media_folders (name, parent_id) VALUES (?, ?)', [name, currentFolderId]);
+            await db_1.dbService.media.createFolder(name, currentFolderId);
             await loadFolders();
             onNotify?.('Folder created', name, 'success');
         }
@@ -112,7 +95,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
     };
     const handleDelete = async (asset) => {
         try {
-            await window.worship.db.run('DELETE FROM media_assets WHERE id = ?', [asset.id]);
+            await db_1.dbService.media.deleteAsset(asset.id);
             await loadMediaAssets();
             if (selectedAsset?.id === asset.id) {
                 setSelectedAsset(null);
@@ -153,7 +136,11 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
         if (!selectedAsset)
             return;
         try {
-            await window.worship.db.run('INSERT INTO schedule_items (schedule_id, item_type, content, order_num) VALUES (?, ?, ?, (SELECT COALESCE(MAX(order_num), 0) + 1 FROM schedule_items))', [1, selectedAsset.type === 'image' ? 'image' : 'video', selectedAsset.path]);
+            await db_1.dbService.schedule.addItem(selectedAsset.type === 'image' ? 'image' : 'video', selectedAsset.path);
+            // Note: in a real application, we might also want to update the store's schedule state
+            // Let's reload the store schedule items to keep UI in sync
+            const nextItems = await db_1.dbService.schedule.getItems();
+            store_1.useStore.setState({ schedule: nextItems });
             onNotify?.('Added to schedule', selectedAsset.name || 'Media queued', 'success');
         }
         catch (error) {

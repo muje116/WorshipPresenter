@@ -14,6 +14,7 @@ async function createWindows() {
     const operatorPreloadPath = path_1.default.join(__dirname, '../preload.js');
     const outputPreloadPath = path_1.default.join(__dirname, '../preload-output.js');
     const rendererEntryPath = path_1.default.join(__dirname, '../../renderer/app/index.html');
+    const rendererOutputEntryPath = path_1.default.join(__dirname, '../../renderer/app/output.html');
     // Main operator window - uses the new React app
     mainWindow = new electron_1.BrowserWindow({
         width: 1400,
@@ -56,7 +57,7 @@ async function createWindows() {
                 nodeIntegration: false,
             }
         });
-        w.loadFile(rendererEntryPath, { query: { out: String(i + 1) } });
+        w.loadFile(rendererOutputEntryPath, { query: { out: String(i + 1) } });
         outputWindows.push(w);
     }
     // Register output windows with IPC

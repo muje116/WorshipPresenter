@@ -96,6 +96,53 @@ function initDB() {
       FOREIGN KEY(parent_id) REFERENCES media_folders(id)
     );
   `);
+    // FTS5 virtual table for fast full-text verse search
+    exports.db.exec(`
+    CREATE VIRTUAL TABLE IF NOT EXISTS verses_fts USING fts5(
+      text,
+      content=verses,
+      content_rowid=id
+    );
+  `);
+    // Triggers to keep FTS table in sync
+    exports.db.exec(`
+    CREATE TRIGGER IF NOT EXISTS verses_ai AFTER INSERT ON verses BEGIN
+      INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+    END;
+    CREATE TRIGGER IF NOT EXISTS verses_ad AFTER DELETE ON verses BEGIN
+      INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
+    END;
+    CREATE TRIGGER IF NOT EXISTS verses_au AFTER UPDATE ON verses BEGIN
+      INSERT INTO verses_fts(verses_fts, rowid, text) VALUES('delete', old.id, old.text);
+      INSERT INTO verses_fts(rowid, text) VALUES (new.id, new.text);
+    END;
+  `);
+    // Populate verses_fts if it is empty and verses exist
+    try {
+        const ftsCount = exports.db.prepare('SELECT COUNT(*) AS c FROM verses_fts').get()?.c || 0;
+        const versesCount = exports.db.prepare('SELECT COUNT(*) AS c FROM verses').get()?.c || 0;
+        if (ftsCount === 0 && versesCount > 0) {
+            exports.db.exec('INSERT INTO verses_fts(rowid, text) SELECT id, text FROM verses');
+        }
+    }
+    catch (e) {
+        console.error('Error populating FTS index:', e);
+    }
+    // Performance indexes
+    exports.db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_verses_book_chapter ON verses(book, chapter);
+    CREATE INDEX IF NOT EXISTS idx_verses_bible_book_chapter ON verses(bible_id, book, chapter);
+    CREATE INDEX IF NOT EXISTS idx_song_sections_song_id ON song_sections(song_id);
+    CREATE INDEX IF NOT EXISTS idx_schedule_items_schedule_id ON schedule_items(schedule_id, order_num);
+    CREATE INDEX IF NOT EXISTS idx_media_assets_folder_type ON media_assets(folder_id, type);
+  `);
+    // Schema version tracking
+    exports.db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER PRIMARY KEY,
+      applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+  `);
     // Schema migrations for existing databases
     ensureColumn('themes', 'backgroundImage', 'TEXT');
     ensureColumn('themes', 'text_color', 'TEXT');
