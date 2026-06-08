@@ -13114,6 +13114,19 @@
           }
         });
       }
+      if (window.worship?.outputs?.onOutputAction) {
+        window.worship.outputs.onOutputAction((payload) => {
+          const action = payload?.action;
+          if (!action) return;
+          if (action === "BLACK") {
+            setState((prev) => ({ ...prev, mode: "black" }));
+          } else if (action === "LOGO") {
+            setState((prev) => ({ ...prev, mode: "logo" }));
+          } else if (action === "CLEAR") {
+            setState((prev) => ({ ...prev, mode: void 0 }));
+          }
+        });
+      }
       if (window.worship?.outputs?.setState) {
         window.worship.outputs.setState(outId, { slideTitle: "Idle" });
       }
@@ -13256,7 +13269,7 @@
                 maxWidth: "100%",
                 textShadow: "2px 2px 8px rgba(0,0,0,0.8)"
               },
-              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
                 "img",
                 {
                   src: toFileUrl(logoImage) || logoImage,

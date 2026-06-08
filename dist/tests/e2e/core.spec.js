@@ -5,18 +5,49 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const test_1 = require("@playwright/test");
 const path_1 = __importDefault(require("path"));
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function getOperatorWindow(electronApp) {
+    for (let i = 0; i < 20; i += 1) {
+        const windows = await electronApp.windows();
+        const operator = windows.find((w) => !String(w.url()).includes('out='));
+        if (operator)
+            return operator;
+        await sleep(500);
+    }
+    throw new Error('Operator window did not open');
+}
+async function getOutputWindow(electronApp) {
+    for (let i = 0; i < 20; i += 1) {
+        const windows = await electronApp.windows();
+        const output = windows.find((w) => String(w.url()).includes('out='));
+        if (output)
+            return output;
+        await sleep(500);
+    }
+    throw new Error('Output window did not open');
+}
+async function getOutputWindowById(electronApp, outId) {
+    for (let i = 0; i < 20; i += 1) {
+        const windows = await electronApp.windows();
+        const output = windows.find((w) => String(w.url()).includes(`out=${outId}`));
+        if (output)
+            return output;
+        await sleep(500);
+    }
+    throw new Error(`Output window ${outId} did not open`);
+}
 test_1.test.describe('WorshipPresenter E2E', () => {
     (0, test_1.test)('launches app and opens windows', async () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
-        const windows = await electronApp.windows();
-        (0, test_1.expect)(windows.length).toBeGreaterThanOrEqual(1);
+        const operator = await getOperatorWindow(electronApp);
+        (0, test_1.expect)(operator).toBeTruthy();
         await electronApp.close();
     });
     (0, test_1.test)('BLACK/LOGO/CLEAR buttons exist in operator', async () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
-        const window = await electronApp.firstWindow();
+        const window = await getOperatorWindow(electronApp);
         await (0, test_1.expect)(window.getByRole('button', { name: 'BLACK' })).toBeVisible();
         await (0, test_1.expect)(window.getByRole('button', { name: 'LOGO' })).toBeVisible();
         await (0, test_1.expect)(window.getByRole('button', { name: 'CLEAR' })).toBeVisible();
@@ -25,12 +56,12 @@ test_1.test.describe('WorshipPresenter E2E', () => {
     (0, test_1.test)('per-output looks controls are present and interactive', async () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
-        const window = await electronApp.firstWindow();
-        await window.getByRole('button', { name: 'Settings' }).click();
-        await (0, test_1.expect)(window.getByText('Per-Output Looks')).toBeVisible();
-        const output1Card = window.getByText('Output 1');
-        await (0, test_1.expect)(output1Card).toBeVisible();
-        const backgroundLayerCheckbox = window.getByLabel('background').first();
+        const window = await getOperatorWindow(electronApp);
+        await window.getByRole('navigation').getByRole('button', { name: 'Settings' }).click();
+        const looksPanel = window.locator('.settings-looks-panel');
+        await (0, test_1.expect)(looksPanel.getByText('Per-Output Looks')).toBeVisible();
+        await (0, test_1.expect)(looksPanel.locator('.settings-look-card').first()).toBeVisible();
+        const backgroundLayerCheckbox = looksPanel.getByLabel('background').first();
         await backgroundLayerCheckbox.check();
         await (0, test_1.expect)(backgroundLayerCheckbox).toBeChecked();
         await electronApp.close();
@@ -38,19 +69,19 @@ test_1.test.describe('WorshipPresenter E2E', () => {
     (0, test_1.test)('BLACK action propagates to at least one output window', async () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
-        const operator = await electronApp.firstWindow();
+        const operator = await getOperatorWindow(electronApp);
         await operator.getByRole('button', { name: 'BLACK' }).click();
-        const windows = await electronApp.windows();
-        const outputWindow = windows.find((w) => /Output/i.test(String(w.url()))) || windows[1];
-        await (0, test_1.expect)(outputWindow.getByText(/BLACK/i)).toBeVisible({ timeout: 10000 });
+        const outputWindow = await getOutputWindowById(electronApp, 1);
+        await (0, test_1.expect)(outputWindow.locator('[data-testid="output-root"]')).toBeVisible({ timeout: 10000 });
+        await (0, test_1.expect)(outputWindow.getByTestId('black-mode')).toBeVisible({ timeout: 10000 });
         await electronApp.close();
     });
     (0, test_1.test)('output background color updates from operator state', async () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
-        const operator = await electronApp.firstWindow();
-        const windows = await electronApp.windows();
-        const outputWindow = windows.find((w) => /Output/i.test(String(w.url()))) || windows[1];
+        const operator = await getOperatorWindow(electronApp);
+        const outputWindow = await getOutputWindowById(electronApp, 1);
+        await (0, test_1.expect)(outputWindow.locator('[data-testid="output-root"]')).toBeVisible({ timeout: 10000 });
         await operator.evaluate(() => {
             const appWindow = window;
             appWindow.worship.outputs.setState(1, {

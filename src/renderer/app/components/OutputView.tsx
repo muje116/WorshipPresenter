@@ -53,6 +53,19 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
         }
       })
     }
+    if ((window as any).worship?.outputs?.onOutputAction) {
+      (window as any).worship.outputs.onOutputAction((payload: any) => {
+        const action = payload?.action
+        if (!action) return
+        if (action === 'BLACK') {
+          setState((prev) => ({ ...prev, mode: 'black' }))
+        } else if (action === 'LOGO') {
+          setState((prev) => ({ ...prev, mode: 'logo' }))
+        } else if (action === 'CLEAR') {
+          setState((prev) => ({ ...prev, mode: undefined }))
+        }
+      })
+    }
     // Initialize
     if ((window as any).worship?.outputs?.setState) {
       (window as any).worship.outputs.setState(outId, { slideTitle: 'Idle' })
@@ -209,7 +222,7 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
         }}
       >
         {mode === 'black' ? (
-          <div style={{ fontSize: 72, fontWeight: 700 }}>
+          <div data-testid="black-mode" style={{ fontSize: 72, fontWeight: 700 }}>
             BLACK
           </div>
         ) : mode === 'logo' ? (

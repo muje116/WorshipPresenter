@@ -28,6 +28,22 @@ const OutputView = ({ outId, logoImage }) => {
                 }
             });
         }
+        if (window.worship?.outputs?.onOutputAction) {
+            window.worship.outputs.onOutputAction((payload) => {
+                const action = payload?.action;
+                if (!action)
+                    return;
+                if (action === 'BLACK') {
+                    setState((prev) => ({ ...prev, mode: 'black' }));
+                }
+                else if (action === 'LOGO') {
+                    setState((prev) => ({ ...prev, mode: 'logo' }));
+                }
+                else if (action === 'CLEAR') {
+                    setState((prev) => ({ ...prev, mode: undefined }));
+                }
+            });
+        }
         // Initialize
         if (window.worship?.outputs?.setState) {
             window.worship.outputs.setState(outId, { slideTitle: 'Idle' });
@@ -128,7 +144,7 @@ const OutputView = ({ outId, logoImage }) => {
                     padding: '40px 60px',
                     maxWidth: '100%',
                     textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
-                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? (logoImage ? ((0, jsx_runtime_1.jsx)("img", { src: toFileUrl(logoImage) || logoImage, alt: "Church logo", style: { maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' } })) : ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }))) : ((0, jsx_runtime_1.jsx)("div", { style: {
+                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? (logoImage ? ((0, jsx_runtime_1.jsx)("img", { src: toFileUrl(logoImage) || logoImage, alt: "Church logo", style: { maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' } })) : ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }))) : ((0, jsx_runtime_1.jsx)("div", { style: {
                         fontSize: fontSize,
                         fontFamily,
                         fontWeight,

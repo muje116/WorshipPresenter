@@ -23,6 +23,16 @@ async function getOutputWindow(electronApp: any) {
   throw new Error('Output window did not open')
 }
 
+async function getOutputWindowById(electronApp: any, outId: number) {
+  for (let i = 0; i < 20; i += 1) {
+    const windows = await electronApp.windows()
+    const output = windows.find((w: any) => String(w.url()).includes(`out=${outId}`))
+    if (output) return output
+    await sleep(500)
+  }
+  throw new Error(`Output window ${outId} did not open`)
+}
+
 test.describe('WorshipPresenter E2E', () => {
   test('launches app and opens windows', async () => {
     const appPath = path.resolve(__dirname, '../../')
@@ -46,11 +56,11 @@ test.describe('WorshipPresenter E2E', () => {
     const appPath = path.resolve(__dirname, '../../')
     const electronApp = await electron.launch({ args: [appPath] })
     const window = await getOperatorWindow(electronApp)
-    await window.getByRole('button', { name: 'Settings' }).click()
-    await expect(window.getByText('Per-Output Looks')).toBeVisible()
-    const output1Card = window.getByText('Output 1')
-    await expect(output1Card).toBeVisible()
-    const backgroundLayerCheckbox = window.getByLabel('background').first()
+    await window.getByRole('navigation').getByRole('button', { name: 'Settings' }).click()
+    const looksPanel = window.locator('.settings-looks-panel')
+    await expect(looksPanel.getByText('Per-Output Looks')).toBeVisible()
+    await expect(looksPanel.locator('.settings-look-card').first()).toBeVisible()
+    const backgroundLayerCheckbox = looksPanel.getByLabel('background').first()
     await backgroundLayerCheckbox.check()
     await expect(backgroundLayerCheckbox).toBeChecked()
     await electronApp.close()
@@ -61,8 +71,9 @@ test.describe('WorshipPresenter E2E', () => {
     const electronApp = await electron.launch({ args: [appPath] })
     const operator = await getOperatorWindow(electronApp)
     await operator.getByRole('button', { name: 'BLACK' }).click()
-    const outputWindow = await getOutputWindow(electronApp)
-    await expect(outputWindow.getByText(/BLACK/i)).toBeVisible({ timeout: 10_000 })
+    const outputWindow = await getOutputWindowById(electronApp, 1)
+    await expect(outputWindow.locator('[data-testid="output-root"]')).toBeVisible({ timeout: 10_000 })
+    await expect(outputWindow.getByTestId('black-mode')).toBeVisible({ timeout: 10_000 })
     await electronApp.close()
   })
 
@@ -70,7 +81,8 @@ test.describe('WorshipPresenter E2E', () => {
     const appPath = path.resolve(__dirname, '../../')
     const electronApp = await electron.launch({ args: [appPath] })
     const operator = await getOperatorWindow(electronApp)
-    const outputWindow = await getOutputWindow(electronApp)
+    const outputWindow = await getOutputWindowById(electronApp, 1)
+    await expect(outputWindow.locator('[data-testid="output-root"]')).toBeVisible({ timeout: 10_000 })
 
     await operator.evaluate(() => {
       const appWindow = window as any

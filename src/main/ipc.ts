@@ -7,6 +7,7 @@ import fs from 'fs'
 
 let outputWindows: BrowserWindow[] = []
 let ipcRegistered = false
+const outputStateCache = new Map<number, any>()
 const ndiState: { enabled: boolean; lastPayload: any } = {
   enabled: false,
   lastPayload: null
@@ -224,6 +225,20 @@ export function setupIPC() {
         }
       }
     }
+
+    if (action === 'BLACK' || action === 'LOGO' || action === 'CLEAR') {
+      outputWindows.forEach((w, idx) => {
+        if (w.isDestroyed()) return
+        const outId = idx + 1
+        const baseState = outputStateCache.get(outId) || { slideTitle: 'Idle' }
+        const state = action === 'BLACK'
+          ? { ...baseState, mode: 'black' }
+          : action === 'LOGO'
+            ? { ...baseState, mode: 'logo', slideTitle: 'Church Logo' }
+            : { ...baseState, mode: undefined }
+        w.webContents.send('output-state', { outputId: outId, state })
+      })
+    }
   })
 
   ipcMain.on('output-window-control', (_ev, payload: { outId: number; action: string; bounds?: { width?: number; height?: number; x?: number; y?: number } }) => {
@@ -254,6 +269,7 @@ export function setupIPC() {
   ipcMain.on('output-set-state', (_ev, payload: { outId: number; state: any }) => {
     const idx = payload.outId - 1
     const target = outputWindows[idx]
+    outputStateCache.set(payload.outId, payload.state)
     const state = overrideAction === 'BLACK'
       ? { ...payload.state, mode: 'black' }
       : overrideAction === 'LOGO'

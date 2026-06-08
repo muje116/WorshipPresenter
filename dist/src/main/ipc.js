@@ -13,6 +13,7 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 let outputWindows = [];
 let ipcRegistered = false;
+const outputStateCache = new Map();
 const ndiState = {
     enabled: false,
     lastPayload: null
@@ -193,6 +194,20 @@ function setupIPC() {
                 }
             }
         }
+        if (action === 'BLACK' || action === 'LOGO' || action === 'CLEAR') {
+            outputWindows.forEach((w, idx) => {
+                if (w.isDestroyed())
+                    return;
+                const outId = idx + 1;
+                const baseState = outputStateCache.get(outId) || { slideTitle: 'Idle' };
+                const state = action === 'BLACK'
+                    ? { ...baseState, mode: 'black' }
+                    : action === 'LOGO'
+                        ? { ...baseState, mode: 'logo', slideTitle: 'Church Logo' }
+                        : { ...baseState, mode: undefined };
+                w.webContents.send('output-state', { outputId: outId, state });
+            });
+        }
     });
     electron_1.ipcMain.on('output-window-control', (_ev, payload) => {
         const target = outputWindows[payload.outId - 1];
@@ -229,6 +244,7 @@ function setupIPC() {
     electron_1.ipcMain.on('output-set-state', (_ev, payload) => {
         const idx = payload.outId - 1;
         const target = outputWindows[idx];
+        outputStateCache.set(payload.outId, payload.state);
         const state = overrideAction === 'BLACK'
             ? { ...payload.state, mode: 'black' }
             : overrideAction === 'LOGO'
