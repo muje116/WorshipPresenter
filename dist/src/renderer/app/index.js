@@ -19,6 +19,7 @@ const SettingsWorkspace_1 = require("./components/SettingsWorkspace");
 const HelpWorkspace_1 = require("./components/HelpWorkspace");
 const CommandPalette_1 = require("./components/CommandPalette");
 const Dialog_1 = require("./components/Dialog");
+const ui_1 = require("./components/ui");
 require("./styles.css");
 const OUTPUT_IDS = [1, 2];
 const NOTE_INDEX = {
@@ -26,6 +27,23 @@ const NOTE_INDEX = {
     'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
 };
 const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+const NAV_ITEMS = [
+    { id: 'console', label: 'Console', icon: 'console' },
+    { id: 'library', label: 'Library', icon: 'library' },
+    { id: 'editor', label: 'Song Editor', icon: 'editor' },
+    { id: 'scripture', label: 'Scripture', icon: 'scripture' },
+    { id: 'media', label: 'Media', icon: 'media' },
+    { id: 'settings', label: 'Settings', icon: 'settings' },
+];
+const PAGE_META = {
+    console: { title: 'Console', subtitle: 'Control your worship experience' },
+    library: { title: 'Song Library', subtitle: 'Manage and organize your worship songs' },
+    editor: { title: 'Song Editor', subtitle: 'Create and edit your worship content' },
+    scripture: { title: 'Bible', subtitle: 'Display scripture with clarity and focus' },
+    media: { title: 'Media Assets', subtitle: 'Manage images, videos, and backgrounds' },
+    settings: { title: 'Settings', subtitle: 'Configure displays, outputs, and preferences' },
+    help: { title: 'Help', subtitle: 'Guides and operational shortcuts' },
+};
 const getOutId = () => {
     try {
         const q = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -100,6 +118,8 @@ const AppInner = () => {
     const [songTitleDraft, setSongTitleDraft] = react_1.default.useState('');
     const [ndiEnabled, setNdiEnabled] = react_1.default.useState(false);
     const [outputStates, setOutputStates] = react_1.default.useState({});
+    const [isOnAir, setIsOnAir] = react_1.default.useState(false);
+    const [presentationPaused, setPresentationPaused] = react_1.default.useState(false);
     const [mediaType, setMediaType] = react_1.default.useState('image');
     const [mediaAssets, setMediaAssets] = react_1.default.useState([]);
     const [mediaSearchQuery, setMediaSearchQuery] = react_1.default.useState('');
@@ -262,7 +282,7 @@ const AppInner = () => {
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType]);
+    }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType, presentationPaused]);
     react_1.default.useEffect(() => {
         if (isOutput)
             return;
@@ -340,22 +360,42 @@ const AppInner = () => {
         window.setTimeout(() => setToasts((prev) => prev.filter((item) => item.id !== id)), 4200);
     };
     const goLive = () => {
+        if (presentationPaused) {
+            notify('Presentation paused', 'Resume the live feed before sending a new slide', 'warn');
+            return;
+        }
         setLiveSlide(currentSlide);
         sendLiveState(currentSlide);
+        setIsOnAir(true);
         notify('Live updated', 'Preview pushed to all outputs', 'success');
     };
     const onBlack = () => {
         window?.worship?.outputs?.actions?.black?.();
+        setIsOnAir(true);
         notify('Black screen enabled', 'Outputs set to black', 'warn');
     };
     const onLogo = () => {
         window?.worship?.outputs?.actions?.logo?.();
+        setIsOnAir(true);
         notify('Logo mode', 'Outputs switched to logo standby', 'info');
     };
     const onClear = () => {
         window?.worship?.outputs?.actions?.clear?.();
         sendLiveState(liveSlide);
         notify('Cleared output mode', 'Live slide restored', 'success');
+    };
+    const togglePresentationPause = () => {
+        setPresentationPaused((paused) => {
+            const next = !paused;
+            notify(next ? 'Presentation paused' : 'Presentation resumed', next ? 'Live output is held on the current slide' : 'New slides can be sent live', next ? 'warn' : 'success');
+            return next;
+        });
+    };
+    const endLive = () => {
+        onClear();
+        setIsOnAir(false);
+        setPresentationPaused(false);
+        notify('Live session ended', 'Outputs returned to standby', 'info');
     };
     const pickSection = (sectionId, live = false) => {
         if (!selectedSong)
@@ -472,6 +512,7 @@ const AppInner = () => {
             slideTitle: '', mediaPath: asset.path, mediaType: asset.type,
             mediaPlayback: playback, theme: updatedTheme,
         }));
+        setIsOnAir(true);
         notify('Media sent live', asset.name || 'Live outputs updated', 'success');
     };
     const pickLogoFile = async () => {
@@ -506,8 +547,8 @@ const AppInner = () => {
         { id: 'toggle-ndi', label: ndiEnabled ? 'Disable NDI' : 'Enable NDI', icon: '📡', category: 'Settings', action: toggleNdi },
         { id: 'sync-connect', label: syncConnected ? 'Disconnect Sync' : 'Connect Sync', icon: '🔗', category: 'Settings', action: syncConnected ? disconnectSync : connectSync },
     ];
-    // ── Ribbon ─────────────────────────────────────────────────────────────────
-    const renderRibbon = () => ((0, jsx_runtime_1.jsxs)("header", { className: "topbar ribbon", children: [(0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-main", children: [(0, jsx_runtime_1.jsxs)("div", { className: "screen-title", children: [(0, jsx_runtime_1.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }), (0, jsx_runtime_1.jsx)("small", { children: clockValue.toLocaleTimeString() })] }), (0, jsx_runtime_1.jsx)("div", { className: "view-tabs", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `tab ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item))) }), (0, jsx_runtime_1.jsxs)("div", { className: "topbar-actions", children: [(0, jsx_runtime_1.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: ["\u2318 ", (0, jsx_runtime_1.jsx)("kbd", { children: "K" })] }), (0, jsx_runtime_1.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [(workspace === 'console' || workspace === 'editor') && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Left Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 240, max: 480, value: workspace === 'console' ? paneSizes.consoleLeft : paneSizes.editorLeft, onChange: (event) => {
+    // ── Command bar ─────────────────────────────────────────────────────────────
+    const renderRibbon = () => ((0, jsx_runtime_1.jsxs)("header", { className: "topbar ribbon", children: [(0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-main", children: [(0, jsx_runtime_1.jsxs)("div", { className: "topbar-context", children: [(0, jsx_runtime_1.jsx)("span", { className: "topbar-eyebrow", children: "WORSHIP PRESENTER / WORKSPACE" }), (0, jsx_runtime_1.jsxs)("div", { className: "screen-title", children: [(0, jsx_runtime_1.jsx)("strong", { children: PAGE_META[workspace].title }), (0, jsx_runtime_1.jsx)("small", { children: PAGE_META[workspace].subtitle })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "topbar-center-status", children: [(0, jsx_runtime_1.jsxs)("span", { className: `topbar-live-state ${isOnAir ? 'on-air' : ''}`, children: [(0, jsx_runtime_1.jsx)("span", { className: "topbar-live-dot" }), isOnAir ? 'ON AIR' : 'STANDBY'] }), (0, jsx_runtime_1.jsxs)("span", { className: "topbar-output-summary", children: [(0, jsx_runtime_1.jsx)("span", { className: "connected-dot" }), activeOutputWindows.length || 2, " outputs connected"] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "topbar-actions", children: [(0, jsx_runtime_1.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [(0, jsx_runtime_1.jsx)("span", { children: "Search" }), (0, jsx_runtime_1.jsx)("kbd", { children: "Ctrl K" })] }), (0, jsx_runtime_1.jsxs)("button", { className: "action-button dark", onClick: onBlack, title: "Black screen", children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "black", size: 14 }), " BLACK"] }), (0, jsx_runtime_1.jsxs)("button", { className: "action-button", onClick: onLogo, title: "Logo mode", children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "logo", size: 14 }), " LOGO"] }), (0, jsx_runtime_1.jsxs)("button", { className: "action-button", onClick: onClear, title: "Clear output override", children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "clear", size: 14 }), " CLEAR"] }), (0, jsx_runtime_1.jsxs)("button", { className: "action-button live", onClick: goLive, title: "Send preview live", children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "send", size: 14 }), " SEND LIVE"] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [(0, jsx_runtime_1.jsxs)("span", { className: "command-bar-label", children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "spark", size: 13 }), " Operator controls"] }), (workspace === 'console' || workspace === 'editor') && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Left Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 240, max: 480, value: workspace === 'console' ? paneSizes.consoleLeft : paneSizes.editorLeft, onChange: (event) => {
                                             const value = Number(event.target.value);
                                             setPaneSizes((prev) => ({
                                                 ...prev,
@@ -515,8 +556,7 @@ const AppInner = () => {
                                             }));
                                         } })] }), workspace === 'console' && ((0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Output Area" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 150, max: 340, value: paneSizes.consoleBottom, onChange: (event) => setPaneSizes((prev) => ({ ...prev, consoleBottom: Number(event.target.value) })) })] })), workspace === 'editor' && ((0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Inspector Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 260, max: 460, value: paneSizes.editorRight, onChange: (event) => setPaneSizes((prev) => ({ ...prev, editorRight: Number(event.target.value) })) })] }))] })), workspace === 'editor' && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }), (0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })] })), workspace === 'media' && ((0, jsx_runtime_1.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." }))] })] }));
     // ── Render ─────────────────────────────────────────────────────────────────
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "app-shell", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "app-sidebar", children: [(0, jsx_runtime_1.jsxs)("div", { className: "brand-block", children: [(0, jsx_runtime_1.jsx)("h1", { children: "The Ethereal Stage" }), (0, jsx_runtime_1.jsx)("p", { children: "Sanctuary Control" })] }), (0, jsx_runtime_1.jsx)("nav", { className: "sidebar-nav", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `nav-button ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item === 'console' ? 'Console' : item === 'library' ? 'Library' : item === 'editor' ? 'Song Editor' :
-                                item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : item === 'settings' ? 'Settings' : 'Help' }, item))) }), (0, jsx_runtime_1.jsx)("div", { className: "sidebar-footer", children: (0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "app-main", children: [renderRibbon(), (0, jsx_runtime_1.jsxs)("main", { className: "workspace", children: [workspace === 'console' && ((0, jsx_runtime_1.jsx)(ConsoleWorkspace_1.ConsoleWorkspace, { schedule: schedule, theme: theme, currentSlide: currentSlide, liveSlide: liveSlide, paneSizes: paneSizes, outputStates: outputStates, dragIndex: dragIndex, onDragStart: setDragIndex, onDrop: (idx) => { moveSchedule(dragIndex, idx); setDragIndex(null); notify('Schedule updated', 'Order changed', 'info'); }, onScheduleItemClick: (content) => { setCurrentSlide(content); }, onAddScheduleItem: () => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success'); }, onGoToEditor: () => setWorkspace('editor') })), workspace === 'library' && ((0, jsx_runtime_1.jsx)(LibraryWorkspace_1.LibraryWorkspace, { songs: songs, filteredSongs: filteredSongs, selectedSongId: selectedSongId, mediaAssets: mediaAssets, songSearchQuery: songSearchQuery, librarySort: librarySort, libraryViewMode: libraryViewMode, onSearchChange: setSongSearchQuery, onSortChange: setLibrarySort, onViewModeChange: setLibraryViewMode, onSelectSong: (id) => { setSelectedSongId(id); setWorkspace('editor'); }, onAddSong: () => { addSong(); setWorkspace('editor'); }, onImportSongs: importSongs, onRenameSong: async (song) => {
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "app-shell", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "app-sidebar", children: [(0, jsx_runtime_1.jsx)("div", { className: "brand-block", children: (0, jsx_runtime_1.jsxs)("div", { className: "brand-lockup", children: [(0, jsx_runtime_1.jsx)("span", { className: "brand-mark", children: (0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "spark", size: 18, strokeWidth: 2.2 }) }), (0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsx)("h1", { children: "Worship Presenter" }), (0, jsx_runtime_1.jsxs)("p", { children: ["Present ", (0, jsx_runtime_1.jsx)("span", { children: "\u2022" }), " Worship ", (0, jsx_runtime_1.jsx)("span", { children: "\u2022" }), " Inspire"] })] })] }) }), (0, jsx_runtime_1.jsx)("div", { className: "sidebar-section-label", children: "WORKSPACE" }), (0, jsx_runtime_1.jsx)("nav", { className: "sidebar-nav", "aria-label": "Primary navigation", children: NAV_ITEMS.map((item) => ((0, jsx_runtime_1.jsxs)("button", { className: `nav-button ${workspace === item.id ? 'active' : ''}`, onClick: () => setWorkspace(item.id), "aria-current": workspace === item.id ? 'page' : undefined, children: [(0, jsx_runtime_1.jsx)("span", { className: "nav-icon", children: (0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: item.icon, size: 17 }) }), (0, jsx_runtime_1.jsx)("span", { children: item.label })] }, item.id))) }), (0, jsx_runtime_1.jsxs)("div", { className: "sidebar-footer", children: [(0, jsx_runtime_1.jsx)("div", { className: "sidebar-section-label", children: "SUPPORT" }), (0, jsx_runtime_1.jsxs)("button", { className: `nav-button ${workspace === 'help' ? 'active' : ''}`, onClick: () => setWorkspace('help'), "aria-current": workspace === 'help' ? 'page' : undefined, children: [(0, jsx_runtime_1.jsx)("span", { className: "nav-icon", children: (0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "help", size: 17 }) }), (0, jsx_runtime_1.jsx)("span", { children: "Help & shortcuts" })] }), (0, jsx_runtime_1.jsxs)("div", { className: "sidebar-operator-card", children: [(0, jsx_runtime_1.jsx)("span", { className: "operator-avatar", children: "WP" }), (0, jsx_runtime_1.jsxs)("span", { className: "operator-copy", children: [(0, jsx_runtime_1.jsx)("strong", { children: "Operator" }), (0, jsx_runtime_1.jsx)("small", { children: isOnAir ? 'Live session' : 'Ready to present' })] }), (0, jsx_runtime_1.jsx)("span", { className: `operator-status ${isOnAir ? 'live' : ''}` })] }), (0, jsx_runtime_1.jsxs)("button", { className: "live-button sidebar-go-live", onClick: goLive, children: [(0, jsx_runtime_1.jsx)(ui_1.AppIcon, { name: "send", size: 15 }), " Go Live"] })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "app-main", children: [renderRibbon(), (0, jsx_runtime_1.jsxs)("main", { className: "workspace", children: [workspace === 'console' && ((0, jsx_runtime_1.jsx)(ConsoleWorkspace_1.ConsoleWorkspace, { schedule: schedule, theme: theme, currentSlide: currentSlide, liveSlide: liveSlide, paneSizes: paneSizes, outputStates: outputStates, dragIndex: dragIndex, onDragStart: setDragIndex, onDrop: (idx) => { moveSchedule(dragIndex, idx); setDragIndex(null); notify('Schedule updated', 'Order changed', 'info'); }, onScheduleItemClick: (content) => { setCurrentSlide(content); }, onAddScheduleItem: () => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success'); }, onGoToEditor: () => setWorkspace('editor'), isOnAir: isOnAir, presentationPaused: presentationPaused, onGoLive: goLive, onClear: onClear, onLogo: onLogo, onBlack: onBlack, onTogglePause: togglePresentationPause, onEndLive: endLive })), workspace === 'library' && ((0, jsx_runtime_1.jsx)(LibraryWorkspace_1.LibraryWorkspace, { songs: songs, filteredSongs: filteredSongs, selectedSongId: selectedSongId, mediaAssets: mediaAssets, songSearchQuery: songSearchQuery, librarySort: librarySort, libraryViewMode: libraryViewMode, onSearchChange: setSongSearchQuery, onSortChange: setLibrarySort, onViewModeChange: setLibraryViewMode, onSelectSong: (id) => { setSelectedSongId(id); setWorkspace('editor'); }, onAddSong: () => { addSong(); setWorkspace('editor'); }, onImportSongs: importSongs, onRenameSong: async (song) => {
                                     const next = await showDialog({ type: 'prompt', title: 'Rename Song', defaultValue: song.title, confirmLabel: 'Rename' });
                                     if (typeof next === 'string' && next.trim()) {
                                         updateSongTitle(song.id, next.trim());
