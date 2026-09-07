@@ -4,6 +4,7 @@ import { AppIcon, Panel, SectionHeader, StatusBadge } from './ui'
 declare const window: any
 
 type ScheduleItem = { id: number; type: string; content: string }
+type OutputConfig = { id: number; role: string; resolution: string; active: boolean }
 type Theme = {
   bg: string
   color: string
@@ -23,6 +24,7 @@ type Props = {
   theme: Theme
   currentSlide: string
   liveSlide: string
+  outputConfigs: OutputConfig[]
   paneSizes: { consoleLeft: number; consoleBottom: number }
   outputStates: Record<number, { slideTitle?: string; mode?: string }>
   dragIndex: number | null
@@ -50,6 +52,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
   theme,
   currentSlide,
   liveSlide,
+  outputConfigs,
   paneSizes,
   outputStates,
   dragIndex,
@@ -81,6 +84,8 @@ export const ConsoleWorkspace: React.FC<Props> = ({
   const queueFallback = !queueItems.length && currentSlide
     ? [{ id: -1, type: 'Current slide', content: currentSlide }]
     : queueItems
+  const output1 = outputConfigs.find((output) => output.id === 1)
+  const output2 = outputConfigs.find((output) => output.id === 2)
 
   return (
     <div
@@ -139,7 +144,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
             <h1>Presentation console</h1>
           </div>
           <div className="stage-heading-meta">
-            <span><AppIcon name="monitor" size={14} /> Output 1 · 1920 × 1080</span>
+            <span><AppIcon name="monitor" size={14} /> Output 1 · {output1?.resolution || '1920x1080'} · {formatType(output1?.role || 'extended')}</span>
             <span><AppIcon name="clock" size={14} /> Ready</span>
           </div>
         </div>
@@ -152,7 +157,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
                 <div><strong>Preview</strong><small>Next on air</small></div>
               </div>
               <div className="monitor-actions">
-                <span className="monitor-output-label">OUTPUT 1 · EXTENDED</span>
+                <span className="monitor-output-label">OUTPUT 1 · {formatType(output1?.role || 'extended')}</span>
                 <button className="text-button" onClick={onGoToEditor}>Edit <AppIcon name="external" size={13} /></button>
               </div>
             </div>
@@ -170,7 +175,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
                 <div><strong>Live Output</strong><small>What the room sees</small></div>
               </div>
               <div className="monitor-actions">
-                <span className="monitor-output-label">OUTPUT 2 · EXTENDED</span>
+                <span className="monitor-output-label">OUTPUT 2 · {formatType(output2?.role || 'extended')}</span>
                 <StatusBadge tone="live">{isOnAir ? 'ON AIR' : 'STANDBY'}</StatusBadge>
               </div>
             </div>
@@ -234,7 +239,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
               return (
                 <div key={id} className="output-tile">
                   <div className="output-tile-heading"><strong>Output {id}</strong><span className="output-tile-status"><span className="connected-dot" /> Connected</span></div>
-                  <div className="output-box"><span>{label}</span><small>1920 × 1080 · Extended</small></div>
+                  <div className="output-box"><span>{label}</span><small>{outputConfigs.find((output) => output.id === id)?.resolution || '1920x1080'} · {formatType(outputConfigs.find((output) => output.id === id)?.role || 'extended')}</small></div>
                   <div className="toolbar-inline output-tile-actions">
                     <button className="soft-button" onClick={() => window?.worship?.outputs?.windowControl?.(id, 'show')}><AppIcon name="eye" size={13} /> Show</button>
                     <button className="soft-button" onClick={() => window?.worship?.outputs?.windowControl?.(id, 'toggle-fullscreen')}><AppIcon name="external" size={13} /> Full View</button>

@@ -570,8 +570,8 @@ const AppInner: React.FC = () => {
             {isOnAir ? 'ON AIR' : 'STANDBY'}
           </span>
           <span className="topbar-output-summary">
-            <span className="connected-dot" />
-            {activeOutputWindows.length || 2} outputs connected
+            <span className={`connected-dot ${activeOutputWindows.length ? '' : 'offline'}`} />
+            {activeOutputWindows.length ? `${activeOutputWindows.length} output${activeOutputWindows.length === 1 ? '' : 's'} connected` : 'No output windows'}
           </span>
         </div>
         <div className="topbar-actions">
@@ -689,6 +689,7 @@ const AppInner: React.FC = () => {
               theme={theme}
               currentSlide={currentSlide}
               liveSlide={liveSlide}
+              outputConfigs={outputConfigs}
               paneSizes={paneSizes}
               outputStates={outputStates}
               dragIndex={dragIndex}
