@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { dbService } from '../services/db'
+import { AppIcon } from './ui'
 
 declare const window: any
 
@@ -370,7 +371,7 @@ export const BiblePicker: React.FC = () => {
       <aside className="panel explorer-panel">
         <div className="import-osis-row">
           <button className="live-button full" onClick={handleImportOsis} disabled={importProgress !== null}>
-            {importProgress !== null ? `Importing (${importProgress}%)` : '📥 Import OSIS Bible'}
+            <AppIcon name="upload" size={14} /> {importProgress !== null ? `Importing (${importProgress}%)` : 'Import OSIS Bible'}
           </button>
           {importProgress !== null && (
             <div style={{ width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 6, overflow: 'hidden' }}>
@@ -381,7 +382,7 @@ export const BiblePicker: React.FC = () => {
 
         <div className="import-osis-row" style={{ marginTop: 6 }}>
           <button className="soft-button full" onClick={handleImportEasyWorship} disabled={importProgress !== null}>
-            Import EasyWorship EWB
+            <AppIcon name="upload" size={14} /> Import EasyWorship EWB
           </button>
         </div>
 
@@ -390,7 +391,7 @@ export const BiblePicker: React.FC = () => {
             className="soft-button full"
             onClick={() => setShowOnlinePanel(!showOnlinePanel)}
           >
-            {showOnlinePanel ? '▲ Hide Online Bibles' : '🌐 Download Bible Online'}
+            <AppIcon name="globe" size={14} /> {showOnlinePanel ? 'Hide Online Bibles' : 'Download Bible Online'}
           </button>
         </div>
 
@@ -480,7 +481,7 @@ export const BiblePicker: React.FC = () => {
       {/* CENTER: Content Panel */}
       <section className="panel scripture-content-panel">
         <div className="scripture-search-bar">
-          <span className="search-icon">🔍</span>
+          <span className="search-icon"><AppIcon name="search" size={16} /></span>
           <input
             className="scripture-search-input"
             value={searchQuery}
@@ -549,13 +550,13 @@ export const BiblePicker: React.FC = () => {
                 </div>
                 <div className="verse-row-hotkeys">
                   {selectedVerse?.verse === verse.verse ? (
-                    <button className="soft-button" onClick={(event) => { event.stopPropagation(); sendToProjector() }}>Live</button>
+                    <button className="soft-button" onClick={(event) => { event.stopPropagation(); sendToProjector() }}><AppIcon name="send" size={13} /> Live</button>
                   ) : (
                     <button className="soft-button" onClick={(event) => {
                       event.stopPropagation()
                       handleVerseSelect(verse)
                       if (index + 1 < verses.length) handleVerseSelect(verses[index + 1])
-                    }}>Next</button>
+                    }}><AppIcon name="chevron" size={13} /> Next</button>
                   )}
                 </div>
               </div>
@@ -594,11 +595,11 @@ export const BiblePicker: React.FC = () => {
               </div>
 
               <button className="send-projector-btn" onClick={sendToProjector}>
-                ⚡ Send to Projector
+                <AppIcon name="send" size={15} /> Send to Projector
               </button>
 
               <button className="ghost-button" onClick={addToSchedule}>
-                📋 Add to Schedule
+                <AppIcon name="queue" size={15} /> Add to Schedule
               </button>
             </div>
 

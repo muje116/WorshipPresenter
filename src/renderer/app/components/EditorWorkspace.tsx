@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { AppIcon } from './ui'
 
 declare const window: any
 
@@ -117,9 +118,9 @@ export const EditorWorkspace: React.FC<Props> = ({
     >
       {/* Slide Sequence panel */}
       <aside className="panel sequence-panel">
-        <div className="panel-header">
-          <h3>Slide Sequence</h3>
-          <button className="text-button" onClick={onAddSection}>Add</button>
+        <div className="panel-header editor-sequence-header">
+          <div><span className="panel-eyebrow">ARRANGEMENT</span><h2>Slide Sequence</h2></div>
+          <button className="text-button" onClick={onAddSection}><AppIcon name="plus" size={13} /> Add</button>
         </div>
         <div className="sequence-list">
           {(selectedSong?.sections || []).map((section, index) => (
@@ -143,16 +144,16 @@ export const EditorWorkspace: React.FC<Props> = ({
                 <strong>{section.type}</strong>
                 <small>{stripChordMarkup(section.text).slice(0, 84) || 'Empty section'}</small>
               </div>
-              <button
-                className="seq-delete-btn"
+               <button
+                 className="seq-delete-btn"
                 title="Delete section"
                 onClick={(e) => {
                   e.stopPropagation()
                   onDeleteSection(section.id)
                 }}
               >
-                ✕
-              </button>
+                 <AppIcon name="trash" size={13} />
+               </button>
             </button>
           ))}
         </div>
@@ -171,11 +172,11 @@ export const EditorWorkspace: React.FC<Props> = ({
             placeholder="Song title"
           />
           <div className="toolbar-inline">
-            <button className="soft-button" onClick={() => onSetTransposeSteps((v) => v - 1)}>Flat</button>
+            <button className="soft-button" onClick={() => onSetTransposeSteps((v) => v - 1)}>♭ Flat</button>
             <button className="soft-button" onClick={() => onSetTransposeSteps(() => 0)}>Reset</button>
-            <button className="soft-button" onClick={() => onSetTransposeSteps((v) => v + 1)}>Sharp</button>
+            <button className="soft-button" onClick={() => onSetTransposeSteps((v) => v + 1)}>♯ Sharp</button>
             <button className="soft-button" onClick={() => onSetShowChords((v) => !v)}>
-              {showChords ? 'Hide Chords' : 'Show Chords'}
+              <AppIcon name="type" size={13} /> {showChords ? 'Hide Chords' : 'Show Chords'}
             </button>
           </div>
         </div>
@@ -248,7 +249,7 @@ export const EditorWorkspace: React.FC<Props> = ({
 
       {/* Inspector panel */}
       <aside className="panel inspector-panel">
-        <div className="panel-header"><h3>Editor</h3></div>
+        <div className="panel-header"><div><span className="panel-eyebrow">INSPECTOR</span><h2>Editor</h2></div><AppIcon name="settings" size={16} /></div>
         <div className="inspector-content">
           <label>Section Type</label>
           <select className="input" value={editorType} onChange={(event) => onEditorTypeChange(event.target.value)}>
@@ -262,9 +263,9 @@ export const EditorWorkspace: React.FC<Props> = ({
             <summary>Background &amp; Style</summary>
             <div className="collapsible-inner">
               <div className="bg-tab-group">
-                <button className={`bg-tab ${bgManagerTab === 'media' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('media')}>Media</button>
-                <button className={`bg-tab ${bgManagerTab === 'gradient' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('gradient')}>Gradient</button>
-                <button className={`bg-tab ${bgManagerTab === 'color' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('color')}>Color</button>
+                <button className={`bg-tab ${bgManagerTab === 'media' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('media')}><AppIcon name="media" size={13} /> Media</button>
+                <button className={`bg-tab ${bgManagerTab === 'gradient' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('gradient')}><AppIcon name="spark" size={13} /> Gradient</button>
+                <button className={`bg-tab ${bgManagerTab === 'color' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('color')}><AppIcon name="palette" size={13} /> Color</button>
               </div>
 
               {bgManagerTab === 'media' && (
@@ -393,9 +394,9 @@ export const EditorWorkspace: React.FC<Props> = ({
           </details>
 
           <div className="button-row">
-            <button className="soft-button full" onClick={onSaveSectionEdits}>Save Section</button>
-            <button className="live-button full" onClick={onGoLive}>Send Live</button>
-            <button className="template-button" onClick={onSaveTemplate}>Save as Template</button>
+            <button className="soft-button full" onClick={onSaveSectionEdits}><AppIcon name="save" size={14} /> Save Section</button>
+            <button className="live-button full" onClick={onGoLive}><AppIcon name="send" size={14} /> Send Live</button>
+            <button className="template-button" onClick={onSaveTemplate}><AppIcon name="palette" size={14} /> Save as Template</button>
           </div>
         </div>
       </aside>

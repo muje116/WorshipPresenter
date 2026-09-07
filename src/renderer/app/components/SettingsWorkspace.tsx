@@ -1,4 +1,5 @@
 import React from 'react'
+import { AppIcon } from './ui'
 
 declare const window: any
 
@@ -106,6 +107,8 @@ export const SettingsWorkspace: React.FC<Props> = ({
   onNotify,
   onRefreshOutputWindows,
 }) => {
+  const [activeSettingsSection, setActiveSettingsSection] = React.useState('display')
+
   const handleCreateOutput = async (displayId?: number, fullScreen = false) => {
     if (window.worship?.outputs?.createWindow) {
       await window.worship.outputs.createWindow(displayId, fullScreen)
@@ -142,30 +145,65 @@ export const SettingsWorkspace: React.FC<Props> = ({
     }
   }
 
+  const settingsNav = [
+    { id: 'display', label: 'Display', icon: 'monitor' as const },
+    { id: 'outputs', label: 'Outputs', icon: 'send' as const },
+    { id: 'branding', label: 'Logo & Branding', icon: 'logo' as const },
+    { id: 'appearance', label: 'Appearance', icon: 'palette' as const },
+    { id: 'hotkeys', label: 'Hotkeys', icon: 'console' as const },
+    { id: 'general', label: 'General', icon: 'settings' as const },
+    { id: 'about', label: 'About', icon: 'info' as const },
+  ]
+
+  const scrollToSettings = (section: string) => {
+    setActiveSettingsSection(section)
+    const target = document.getElementById(`settings-${section}`)
+    target?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  }
+
   return (
     <div className="workspace-grid workspace-settings">
-      <div className="settings-header">
+      <aside className="panel settings-navigation" aria-label="Settings sections">
+        <div className="settings-navigation-header">
+          <span className="panel-eyebrow">CONFIGURATION</span>
+          <h2>Settings</h2>
+          <p>Manage your presentation environment.</p>
+        </div>
+        <nav className="settings-nav-list">
+          {settingsNav.map((item) => (
+            <button key={item.id} className={`settings-nav-item ${activeSettingsSection === item.id ? 'active' : ''}`} onClick={() => scrollToSettings(item.id)}>
+              <AppIcon name={item.icon} size={15} />
+              <span>{item.label}</span>
+              <AppIcon name="chevron" size={13} className="settings-nav-chevron" />
+            </button>
+          ))}
+        </nav>
+        <div className="settings-nav-footer"><span className="connected-dot" /> Settings are saved locally</div>
+      </aside>
+
+      <div className="settings-main-content">
+      <div className="settings-header" id="settings-display">
         <div>
           <h1 className="settings-title">Display Settings</h1>
           <p className="settings-subtitle">Configure output canvas and screen geometry</p>
         </div>
         <div className="settings-header-actions">
           <button className="soft-button" onClick={onResetDisplay}>
-            Reset to Default
+            <AppIcon name="undo" size={14} /> Reset to Default
           </button>
           <button className="live-button" onClick={onApplyDisplayChanges}>
-            Apply Changes
+            <AppIcon name="check" size={14} /> Apply Changes
           </button>
           <button
             className="soft-button"
             onClick={() => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id))}
           >
-            Go Live on All Secondary
+            <AppIcon name="send" size={14} /> Go Live on All Secondary
           </button>
         </div>
       </div>
 
-      <section className="panel output-routing-cards settings-card-group">
+      <section className="panel output-routing-cards settings-card-group" id="settings-outputs">
         {outputConfigs.map((output) => (
           <div
             key={output.id}
@@ -176,7 +214,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
             }}
           >
             <div className="output-route-heading">
-              <strong>Output {output.id}</strong>
+              <strong><AppIcon name="monitor" size={14} /> Output {output.id}</strong>
               <small>{output.role} &middot; {output.resolution}</small>
             </div>
             <select
@@ -229,7 +267,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </section>
 
       {/* Detected Displays Section */}
-      <section className="panel settings-card-group">
+      <section className="panel settings-card-group settings-displays-section">
         <div className="panel-header">
           <h3>Detected Displays</h3>
           <small>{displays.length} display(s) found</small>
@@ -289,7 +327,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </section>
 
       {/* Output Window Management */}
-      <section className="panel settings-card-group">
+      <section className="panel settings-card-group settings-output-windows-section">
         <div className="panel-header">
           <h3>Output Windows</h3>
           <small>{activeOutputWindows.length} active</small>
@@ -369,7 +407,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </section>
 
       {/* Logo Image Configuration */}
-      <section className="panel settings-logo-panel settings-card-group">
+      <section className="panel settings-logo-panel settings-card-group" id="settings-branding">
         <div className="panel-header">
           <h3>Logo Mode Image</h3>
           <small>Shown when LOGO button is pressed</small>
@@ -400,7 +438,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel settings-looks-panel settings-card-group">
+      <section className="panel settings-looks-panel settings-card-group" id="settings-appearance">
         <div className="panel-header"><h3>Per-Output Looks</h3><small>8-layer compositor</small></div>
         <div className="settings-looks-grid">
           {OUTPUT_IDS.map((id) => {
@@ -460,7 +498,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel settings-sync-panel settings-card-group">
+      <section className="panel settings-sync-panel settings-card-group" id="settings-general">
         <div className="panel-header">
           <h3>Sync</h3>
           <small className={syncConnected ? 'text-success' : 'text-muted'}>
@@ -485,7 +523,19 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </section>
 
-      <section className="panel canvas-layout-section settings-card-group">
+      <section className="panel settings-hotkeys-panel settings-card-group" id="settings-hotkeys">
+        <div className="panel-header">
+          <div><span className="panel-eyebrow">OPERATOR SPEED</span><h3>Hotkeys</h3></div>
+          <small>Built-in shortcuts</small>
+        </div>
+        <div className="hotkey-grid">
+          <div className="hotkey-item"><kbd>Enter</kbd><span>Send current preview live</span></div>
+          <div className="hotkey-item"><kbd>Ctrl K</kbd><span>Open command palette</span></div>
+          <div className="hotkey-item"><kbd>Double-click</kbd><span>Load a slide and send it live</span></div>
+        </div>
+      </section>
+
+      <section className="panel canvas-layout-section settings-card-group" id="settings-canvas">
         <div className="canvas-layout-header">
           <div className="canvas-layout-title">Canvas Layout</div>
           <div className="ratio-chip-group">
@@ -581,7 +631,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </aside>
 
       {/* About Section */}
-      <section className="panel about-panel settings-card-group" style={{ gridColumn: '1 / -1' }}>
+      <section className="panel about-panel settings-card-group" id="settings-about" style={{ gridColumn: '1 / -1' }}>
         <div className="panel-header">
           <h3>About WorshipPresenter</h3>
           <small>Application Information</small>
@@ -606,7 +656,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
             </div>
             <div className="about-info-item">
               <span className="about-label">Brand</span>
-              <span className="about-value">The Ethereal Stage</span>
+              <span className="about-value">Worship Presenter</span>
             </div>
             <div className="about-info-item">
               <span className="about-label">Build</span>
@@ -615,6 +665,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
           </div>
         </div>
       </section>
+      </div>
     </div>
   )
 }

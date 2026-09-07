@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { dbService } from '../services/db'
+import { AppIcon, IconName } from './ui'
 
 declare const window: any
 
@@ -190,12 +191,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const currentFolders = folders.filter(f => f.parent_id === currentFolderId)
 
-  const FILTER_ITEMS: { key: MediaFilter; label: string; icon: string }[] = [
-    { key: 'all', label: 'All Media', icon: '📁' },
-    { key: 'image', label: 'Images', icon: '🖼' },
-    { key: 'video', label: 'Videos', icon: '🎬' },
-    { key: 'background', label: 'Backgrounds', icon: '🌄' },
-    { key: 'loop', label: 'Loops', icon: '🔄' },
+  const FILTER_ITEMS: { key: MediaFilter; label: string; icon: IconName }[] = [
+    { key: 'all', label: 'All Media', icon: 'media' },
+    { key: 'image', label: 'Images', icon: 'media' },
+    { key: 'video', label: 'Videos', icon: 'play' },
+    { key: 'background', label: 'Backgrounds', icon: 'palette' },
+    { key: 'loop', label: 'Loops', icon: 'sync' },
   ]
 
   return (
@@ -213,7 +214,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
               className={`media-type-item ${activeFilter === item.key ? 'active' : ''}`}
               onClick={() => { setActiveFilter(item.key); setCurrentFolderId(null) }}
             >
-              <span className="icon">{item.icon}</span>
+              <span className="icon"><AppIcon name={item.icon} size={15} /></span>
               {item.label}
             </button>
           ))}
@@ -227,13 +228,13 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
         <div className="folder-tree">
           {currentFolderId !== null && (
             <button className="folder-item" onClick={() => setCurrentFolderId(null)}>
-              <span className="folder-icon">⬅</span>
+              <span className="folder-icon"><AppIcon name="chevron" size={14} className="back-chevron" /></span>
               Back to Root
             </button>
           )}
           {currentFolders.map(folder => (
             <button key={folder.id} className={`folder-item ${currentFolderId === folder.id ? 'active' : ''}`} onClick={() => setCurrentFolderId(folder.id)}>
-              <span className="folder-icon">📁</span>
+              <span className="folder-icon"><AppIcon name="folder" size={14} /></span>
               {folder.name}
             </button>
           ))}
@@ -241,16 +242,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
         <div className="media-panel-actions">
           <button className="live-button full" onClick={handleImport} disabled={isImporting}>
-            {isImporting ? '⏳ Importing...' : '📤 Import Media'}
+            <AppIcon name="upload" size={14} /> {isImporting ? 'Importing...' : 'Import Media'}
           </button>
           <button className="ghost-button" onClick={handleCreateFolder}>
-            📁 New Folder
+            <AppIcon name="folder" size={14} /> New Folder
           </button>
         </div>
 
         <div className="media-bottom-links">
-          <button className="media-bottom-link">🗑 Trash</button>
-          <button className="media-bottom-link">📦 Archive</button>
+          <button className="media-bottom-link"><AppIcon name="trash" size={14} /> Trash</button>
+          <button className="media-bottom-link"><AppIcon name="folder" size={14} /> Archive</button>
         </div>
       </aside>
 
@@ -278,7 +279,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
             {/* Folder cards */}
             {currentFolders.map(folder => (
               <div key={`f-${folder.id}`} className="folder-card" onClick={() => setCurrentFolderId(folder.id)}>
-                <span className="folder-icon-lg">📁</span>
+              <span className="folder-icon-lg"><AppIcon name="folder" size={25} /></span>
                 <span className="folder-name">{folder.name}</span>
               </div>
             ))}
@@ -299,11 +300,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
                       onError={(e) => { e.currentTarget.style.display = 'none' }}
                     />
                   ) : (
-                    <span className="video-icon">🎬</span>
+                    <span className="video-icon"><AppIcon name="play" size={22} /></span>
                   )}
                 </div>
                 <div className="asset-card-name">
-                  <span className="type-icon">{asset.type === 'image' ? '🖼' : '▶'}</span>
+                  <span className="type-icon"><AppIcon name={asset.type === 'image' ? 'media' : 'play'} size={13} /></span>
                   {(asset.name || '').length > 20 ? (asset.name || '').slice(0, 18) + '...' : asset.name}
                 </div>
               </div>
@@ -311,7 +312,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
             {filteredAssets.length === 0 && currentFolders.length === 0 && (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5 }}>{activeFilter === 'video' ? '🎬' : '🖼️'}</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: 10, opacity: 0.5 }}><AppIcon name={activeFilter === 'video' ? 'play' : 'media'} size={30} /></div>
                 <div style={{ fontSize: '0.85rem', marginBottom: 4 }}>No assets yet</div>
                 <div style={{ fontSize: '0.72rem' }}>Click "Import Media" to add files</div>
               </div>
@@ -325,7 +326,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
                   {asset.type === 'image' ? (
                     <img src={`file://${asset.path}`} alt={asset.name} onError={(e) => { e.currentTarget.style.display = 'none' }} />
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '1rem' }}>🎬</div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '1rem' }}><AppIcon name="play" size={18} /></div>
                   )}
                 </div>
                 <div className="media-list-info">
@@ -428,19 +429,19 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
             <div className="inspector-actions">
               <button className="soft-button full" onClick={handleSendToPreview}>
-                👁 Send to Preview
+                <AppIcon name="eye" size={14} /> Send to Preview
               </button>
               <button className="send-projector-btn" onClick={handleSendToLive}>
-                ▶ Send to Live
+                <AppIcon name="send" size={14} /> Send to Live
               </button>
               <button className="ghost-button" onClick={handleUseAsBackground}>
-                🖼 Set as Background
+                <AppIcon name="palette" size={14} /> Set as Background
               </button>
               <button className="ghost-button" onClick={handleAddToSchedule}>
-                📋 Add to Schedule
+                <AppIcon name="queue" size={14} /> Add to Schedule
               </button>
               <button className="ghost-button" onClick={() => handleDelete(selectedAsset)}>
-                🗑 Delete Asset
+                <AppIcon name="trash" size={14} /> Delete Asset
               </button>
             </div>
           </>
