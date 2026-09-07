@@ -9,7 +9,9 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function getOperatorWindow(electronApp) {
     for (let i = 0; i < 20; i += 1) {
         const windows = await electronApp.windows();
-        const operator = windows.find((w) => !String(w.url()).includes('out='));
+        // The desktop app has a short-lived splash BrowserWindow during startup.
+        // Match the real operator entry point so tests never retain a closing page.
+        const operator = windows.find((w) => String(w.url()).includes('/renderer/app/index.html'));
         if (operator)
             return operator;
         await sleep(500);
@@ -48,9 +50,9 @@ test_1.test.describe('WorshipPresenter E2E', () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
         const window = await getOperatorWindow(electronApp);
-        await (0, test_1.expect)(window.getByRole('button', { name: 'BLACK' })).toBeVisible();
-        await (0, test_1.expect)(window.getByRole('button', { name: 'LOGO' })).toBeVisible();
-        await (0, test_1.expect)(window.getByRole('button', { name: 'CLEAR' })).toBeVisible();
+        await (0, test_1.expect)(window.getByRole('button', { name: 'BLACK', exact: true })).toBeVisible();
+        await (0, test_1.expect)(window.getByRole('button', { name: 'LOGO', exact: true })).toBeVisible();
+        await (0, test_1.expect)(window.getByRole('button', { name: 'CLEAR', exact: true })).toBeVisible();
         await electronApp.close();
     });
     (0, test_1.test)('per-output looks controls are present and interactive', async () => {
@@ -70,7 +72,7 @@ test_1.test.describe('WorshipPresenter E2E', () => {
         const appPath = path_1.default.resolve(__dirname, '../../');
         const electronApp = await test_1._electron.launch({ args: [appPath] });
         const operator = await getOperatorWindow(electronApp);
-        await operator.getByRole('button', { name: 'BLACK' }).click();
+        await operator.getByRole('button', { name: 'BLACK', exact: true }).click();
         const outputWindow = await getOutputWindowById(electronApp, 1);
         await (0, test_1.expect)(outputWindow.locator('[data-testid="output-root"]')).toBeVisible({ timeout: 10000 });
         await (0, test_1.expect)(outputWindow.getByTestId('black-mode')).toBeVisible({ timeout: 10000 });

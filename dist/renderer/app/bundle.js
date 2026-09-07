@@ -14581,6 +14581,7 @@ ${selectedVerse.text}`;
     theme,
     currentSlide,
     liveSlide,
+    outputConfigs,
     paneSizes,
     outputStates,
     dragIndex,
@@ -14609,6 +14610,8 @@ ${selectedVerse.text}`;
     };
     const queueItems = schedule.slice(0, 4);
     const queueFallback = !queueItems.length && currentSlide ? [{ id: -1, type: "Current slide", content: currentSlide }] : queueItems;
+    const output1 = outputConfigs.find((output) => output.id === 1);
+    const output2 = outputConfigs.find((output) => output.id === 2);
     return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
       "div",
       {
@@ -14677,7 +14680,10 @@ ${selectedVerse.text}`;
               /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "stage-heading-meta", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "monitor", size: 14 }),
-                  " Output 1 \xB7 1920 \xD7 1080"
+                  " Output 1 \xB7 ",
+                  output1?.resolution || "1920x1080",
+                  " \xB7 ",
+                  formatType(output1?.role || "extended")
                 ] }),
                 /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { children: [
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "clock", size: 14 }),
@@ -14696,7 +14702,10 @@ ${selectedVerse.text}`;
                     ] })
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-actions", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "monitor-output-label", children: "OUTPUT 1 \xB7 EXTENDED" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "monitor-output-label", children: [
+                      "OUTPUT 1 \xB7 ",
+                      formatType(output1?.role || "extended")
+                    ] }),
                     /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "text-button", onClick: onGoToEditor, children: [
                       "Edit ",
                       /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "external", size: 13 })
@@ -14719,7 +14728,10 @@ ${selectedVerse.text}`;
                     ] })
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-actions", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "monitor-output-label", children: "OUTPUT 2 \xB7 EXTENDED" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "monitor-output-label", children: [
+                      "OUTPUT 2 \xB7 ",
+                      formatType(output2?.role || "extended")
+                    ] }),
                     /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(StatusBadge, { tone: "live", children: isOnAir ? "ON AIR" : "STANDBY" })
                   ] })
                 ] }),
@@ -14815,7 +14827,11 @@ ${selectedVerse.text}`;
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-box", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: label }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: "1920 \xD7 1080 \xB7 Extended" })
+                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("small", { children: [
+                      outputConfigs.find((output) => output.id === id)?.resolution || "1920x1080",
+                      " \xB7 ",
+                      formatType(outputConfigs.find((output) => output.id === id)?.role || "extended")
+                    ] })
                   ] }),
                   /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline output-tile-actions", children: [
                     /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "show"), children: [
@@ -16935,9 +16951,8 @@ ${selectedVerse.text}`;
             isOnAir ? "ON AIR" : "STANDBY"
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: "topbar-output-summary", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "connected-dot" }),
-            activeOutputWindows.length || 2,
-            " outputs connected"
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: `connected-dot ${activeOutputWindows.length ? "" : "offline"}` }),
+            activeOutputWindows.length ? `${activeOutputWindows.length} output${activeOutputWindows.length === 1 ? "" : "s"} connected` : "No output windows"
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "topbar-actions", children: [
@@ -17072,6 +17087,7 @@ ${selectedVerse.text}`;
               theme,
               currentSlide,
               liveSlide,
+              outputConfigs,
               paneSizes,
               outputStates,
               dragIndex,
