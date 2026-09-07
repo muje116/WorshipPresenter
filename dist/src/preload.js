@@ -39,12 +39,19 @@ const api = {
             clear: () => electron_1.ipcRenderer.send('output-action', { action: 'CLEAR' }),
             fullscreen: () => electron_1.ipcRenderer.send('output-action', { action: 'FULLSCREEN' })
         },
-        windowControl: (outId, action, bounds) => electron_1.ipcRenderer.send('output-window-control', { outId, action, bounds })
+        windowControl: (outId, action, bounds) => electron_1.ipcRenderer.send('output-window-control', { outId, action, bounds }),
+        createWindow: (displayId, fullScreen) => electron_1.ipcRenderer.invoke('outputs.createWindow', { displayId, fullScreen }),
+        createForDisplays: (displayIds, fullScreen) => electron_1.ipcRenderer.invoke('outputs.createForDisplays', { displayIds, fullScreen }),
+        destroyWindow: (outId) => electron_1.ipcRenderer.invoke('outputs.destroyWindow', outId),
+        list: () => electron_1.ipcRenderer.invoke('outputs.list'),
+        assignToDisplay: (outId, displayId) => electron_1.ipcRenderer.invoke('outputs.assignToDisplay', { outId, displayId }),
     },
     bibles: {
         listTranslations: () => electron_1.ipcRenderer.invoke('bibles.listTranslations'),
         openOsisFile: () => electron_1.ipcRenderer.invoke('bibles.openOsisFile'),
         importFromOsis: (translationCode, language, filePath) => electron_1.ipcRenderer.invoke('bibles.importFromOsis', { translationCode, language, filePath }),
+        openEasyWorshipFile: () => electron_1.ipcRenderer.invoke('bibles.openEasyWorshipFile'),
+        importFromEasyWorship: (translationCode, language, filePath) => electron_1.ipcRenderer.invoke('bibles.importFromEasyWorship', { translationCode, language, filePath }),
         getBooks: () => electron_1.ipcRenderer.invoke('bibles.getBooks'),
         getChapters: (book) => electron_1.ipcRenderer.invoke('bibles.getChapters', { book }),
         getVerses: (book, chapter, translationId) => electron_1.ipcRenderer.invoke('bibles.getVerses', { book, chapter, translationId }),
@@ -53,11 +60,31 @@ const api = {
             const listener = (_e, payload) => cb(payload);
             electron_1.ipcRenderer.on('bible-import-progress', listener);
             return () => { electron_1.ipcRenderer.removeListener('bible-import-progress', listener); };
-        }
+        },
+        getOnlineSources: () => electron_1.ipcRenderer.invoke('bibles.getOnlineSources'),
+        downloadFromUrl: (args) => electron_1.ipcRenderer.invoke('bibles.downloadFromUrl', args),
+        onDownloadProgress: (cb) => {
+            const listener = (_e, payload) => cb(payload);
+            electron_1.ipcRenderer.on('bible-download-progress', listener);
+            return () => { electron_1.ipcRenderer.removeListener('bible-download-progress', listener); };
+        },
     },
     ndi: {
         enable: (enabled) => electron_1.ipcRenderer.invoke('ndi.enable', enabled),
         status: () => electron_1.ipcRenderer.invoke('ndi.status')
+    },
+    displays: {
+        getAll: () => electron_1.ipcRenderer.invoke('displays.getAll'),
+        getPrimary: () => electron_1.ipcRenderer.invoke('displays.getPrimary'),
+        onChanged: (cb) => {
+            const listener = (_e, displays) => cb(displays);
+            electron_1.ipcRenderer.on('displays-changed', listener);
+            return () => { electron_1.ipcRenderer.removeListener('displays-changed', listener); };
+        },
+    },
+    app: {
+        getVersion: () => electron_1.ipcRenderer.invoke('app.getVersion'),
+        getInfo: () => electron_1.ipcRenderer.invoke('app.getInfo'),
     },
     dialog: {
         openFiles: (options) => electron_1.ipcRenderer.invoke('dialog.openFiles', options || {})

@@ -12925,7 +12925,7 @@
   var useStore2 = create((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center", verticalAlign: "center" },
+    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center", verticalAlign: "center", textBoxWidth: 90, textBoxHeight: 70 },
     currentSlide: "Welcome",
     liveSlide: "Welcome",
     undoStack: [],
@@ -13065,6 +13065,8 @@
         return next;
       })()
     })),
+    displays: [],
+    setDisplays: (displays) => set({ displays }),
     addScheduleItem: async () => {
       try {
         const newItem = await dbService.schedule.addItem("Song", "New Item");
@@ -13084,7 +13086,7 @@
       });
     },
     setTheme: (t) => set({ theme: t }),
-    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "", textAlign: preset.textAlign ?? "center", verticalAlign: preset.verticalAlign ?? "center" } }),
+    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "", textAlign: preset.textAlign ?? "center", verticalAlign: preset.verticalAlign ?? "center", textBoxWidth: preset.textBoxWidth ?? 90, textBoxHeight: preset.textBoxHeight ?? 70 } }),
     saveTemplate: (name) => {
       const theme = get().theme;
       dbService.themes.create(name, theme).catch((err) => {
@@ -13143,6 +13145,8 @@
     const fontWeight = theme?.fontWeight ?? 700;
     const textAlign = theme?.textAlign ?? "center";
     const verticalAlign = theme?.verticalAlign ?? "center";
+    const textBoxWidth = theme?.textBoxWidth ?? 90;
+    const textBoxHeight = theme?.textBoxHeight ?? 70;
     const mediaPlayback = state?.mediaPlayback || {};
     const propsText = state?.propsText || slide;
     const announcementText = state?.announcementText || slide;
@@ -13216,7 +13220,7 @@
               }
             }
           ),
-          (has("announcements") || has("props_overlays")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13254,7 +13258,7 @@
               ]
             }
           ),
-          has("slide_content") && !state?.mediaPath && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13286,7 +13290,12 @@
                     lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
                     textAlign,
-                    maxWidth: "90%"
+                    width: `${textBoxWidth}%`,
+                    minHeight: `${textBoxHeight}%`,
+                    display: "flex",
+                    alignItems: verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center",
+                    justifyContent: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center",
+                    overflowWrap: "anywhere"
                   },
                   children: slide
                 }

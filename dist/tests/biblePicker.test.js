@@ -14,7 +14,9 @@ describe('BiblePicker', () => {
                     getChapters: jest.fn(async () => [1]),
                     getVerses: jest.fn(async () => []),
                     openOsisFile: jest.fn(async () => 'C:/tmp/niv.osis'),
-                    importFromOsis: jest.fn(async () => 7)
+                    importFromOsis: jest.fn(async () => 7),
+                    getOnlineSources: jest.fn(async () => []),
+                    onDownloadProgress: jest.fn(() => jest.fn())
                 }
             }
         });

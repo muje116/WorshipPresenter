@@ -1,19 +1,63 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, screen } from 'electron'
 import path from 'path'
 import { startSyncServer } from '../main/sync'
 import { initDB } from './db'
 import { registerOutputWindows, setupIPC } from './ipc'
+import { createOutputWindow, getOutputWindowsArray, getDisplayInfo, createOrShowOutputOnDisplay } from './windowManager'
 
 let mainWindow: BrowserWindow | null = null
-const outputWindows: BrowserWindow[] = []
+let splashWindow: BrowserWindow | null = null
+
+const operatorPreloadPath = path.join(__dirname, '../preload.js')
+const rendererEntryPath = path.join(__dirname, '../../renderer/app/index.html')
+
+export function getMainWindow(): BrowserWindow | null {
+  return mainWindow
+}
+
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 420,
+    height: 280,
+    frame: false,
+    resizable: false,
+    alwaysOnTop: true,
+    backgroundColor: '#0b1326',
+    show: true,
+  })
+
+  const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <style>
+          html, body { margin: 0; height: 100%; background: #0b1326; color: #dae2fd; font-family: "Segoe UI", Arial, sans-serif; }
+          body { display: grid; place-items: center; }
+          .loader { width: 320px; text-align: center; }
+          .brand { font-size: 24px; font-weight: 800; margin-bottom: 6px; }
+          .sub { color: #c6c5d4; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 24px; }
+          .bar { height: 7px; border-radius: 999px; background: #171f33; overflow: hidden; border: 1px solid #454652; }
+          .fill { height: 100%; width: 45%; border-radius: inherit; background: linear-gradient(90deg, #bbc3ff, #5e75ff); animation: load 1.2s ease-in-out infinite; }
+          .status { margin-top: 14px; color: #a8b0cc; font-size: 13px; }
+          @keyframes load { 0% { transform: translateX(-120%); } 100% { transform: translateX(240%); } }
+        </style>
+      </head>
+      <body>
+        <div class="loader">
+          <div class="brand">WorshipPresenter</div>
+          <div class="sub">Preparing sanctuary control</div>
+          <div class="bar"><div class="fill"></div></div>
+          <div class="status">Loading songs, media, Bibles, and displays...</div>
+        </div>
+      </body>
+    </html>`
+
+  splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`)
+}
 
 async function createWindows() {
-  const operatorPreloadPath = path.join(__dirname, '../preload.js')
-  const outputPreloadPath = path.join(__dirname, '../preload-output.js')
-  const rendererEntryPath = path.join(__dirname, '../../renderer/app/index.html')
-  const rendererOutputEntryPath = path.join(__dirname, '../../renderer/app/output.html')
-
-  // Main operator window - uses the new React app
+  createSplashWindow()
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -28,49 +72,57 @@ async function createWindows() {
     show: false,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
   })
-  
-  // Load the new React app
+
   mainWindow.loadFile(rendererEntryPath)
-  
-  // Show window when ready to prevent flash
+
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
+    splashWindow?.close()
+    splashWindow = null
   })
 
-  // Two output windows (for demonstration)
-  for (let i = 0; i < 2; i++) {
-    const w = new BrowserWindow({
-      width: 960,
-      height: 540,
-      x: 100 + i * 20,
-      y: 100,
-      minWidth: 320,
-      minHeight: 180,
-      frame: true,
-      resizable: true,
-      minimizable: true,
-      maximizable: true,
-      closable: true,
-      backgroundColor: '#000000',
-      webPreferences: {
-        preload: outputPreloadPath,
-        contextIsolation: true,
-        nodeIntegration: false,
-      }
-    })
-    w.loadFile(rendererOutputEntryPath, { query: { out: String(i + 1) } })
-    outputWindows.push(w)
+  // Create output windows on non-primary displays by default
+  const displays = screen.getAllDisplays()
+  const nonPrimary = displays.filter(d => d.id !== screen.getPrimaryDisplay().id)
+  const createdIds: number[] = []
+
+  if (nonPrimary.length > 0) {
+    for (const display of nonPrimary) {
+      const outId = createOutputWindow(display.id, { fullScreen: true })
+      createdIds.push(outId)
+    }
+  } else {
+    // No secondary displays found - create two output windows on primary
+    const outId = createOutputWindow(null)
+    createdIds.push(outId)
+    const outId2 = createOutputWindow(null)
+    createdIds.push(outId2)
   }
-  
+
   // Register output windows with IPC
-  registerOutputWindows(outputWindows)
+  registerOutputWindows(getOutputWindowsArray())
 }
 
 app.whenReady().then(async () => {
   await initDB()
   createWindows()
   setupIPC()
-  // Start the WebSocket-based sync service for multi-machine coordination
+
+  // Listen for display changes
+  screen.on('display-added', (_event, display) => {
+    if (display.id !== screen.getPrimaryDisplay().id) {
+      createOrShowOutputOnDisplay(display.id, true)
+      registerOutputWindows(getOutputWindowsArray())
+    }
+    mainWindow?.webContents.send('displays-changed', getDisplayInfo())
+  })
+  screen.on('display-removed', () => {
+    mainWindow?.webContents.send('displays-changed', getDisplayInfo())
+  })
+  screen.on('display-metrics-changed', () => {
+    mainWindow?.webContents.send('displays-changed', getDisplayInfo())
+  })
+
   startSyncServer(9090)
 })
 

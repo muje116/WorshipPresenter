@@ -62,6 +62,8 @@ const OutputView = ({ outId, logoImage }) => {
     const fontWeight = theme?.fontWeight ?? 700;
     const textAlign = theme?.textAlign ?? 'center';
     const verticalAlign = theme?.verticalAlign ?? 'center';
+    const textBoxWidth = theme?.textBoxWidth ?? 90;
+    const textBoxHeight = theme?.textBoxHeight ?? 70;
     const mediaPlayback = state?.mediaPlayback || {};
     const propsText = state?.propsText || slide;
     const announcementText = state?.announcementText || slide;
@@ -109,7 +111,7 @@ const OutputView = ({ outId, logoImage }) => {
                     zIndex: 0
                 }, onError: (e) => {
                     e.currentTarget.style.display = 'none';
-                } })), (has('announcements') || has('props_overlays')) && (bgImageUrl || mode === 'black') && ((0, jsx_runtime_1.jsx)("div", { style: {
+                } })), (has('announcements') || has('props_overlays') || has('slide_content')) && (bgImageUrl || mode === 'black') && ((0, jsx_runtime_1.jsx)("div", { style: {
                     position: 'absolute',
                     top: 0,
                     left: 0,
@@ -133,7 +135,7 @@ const OutputView = ({ outId, logoImage }) => {
                     fontSize: 13,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase'
-                }, children: ["Announcements: ", announcementText] })), has('slide_content') && !state?.mediaPath && (0, jsx_runtime_1.jsx)("div", { style: {
+                }, children: ["Announcements: ", announcementText] })), has('slide_content') && (0, jsx_runtime_1.jsx)("div", { style: {
                     position: 'absolute',
                     inset: 0,
                     zIndex: 2,
@@ -151,7 +153,12 @@ const OutputView = ({ outId, logoImage }) => {
                         lineHeight: 1.4,
                         whiteSpace: 'pre-wrap',
                         textAlign,
-                        maxWidth: '90%'
+                        width: `${textBoxWidth}%`,
+                        minHeight: `${textBoxHeight}%`,
+                        display: 'flex',
+                        alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
+                        justifyContent: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center',
+                        overflowWrap: 'anywhere'
                     }, children: slide })) }), has('lower_thirds') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     left: 32,

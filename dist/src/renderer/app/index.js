@@ -16,6 +16,7 @@ const ConsoleWorkspace_1 = require("./components/ConsoleWorkspace");
 const LibraryWorkspace_1 = require("./components/LibraryWorkspace");
 const EditorWorkspace_1 = require("./components/EditorWorkspace");
 const SettingsWorkspace_1 = require("./components/SettingsWorkspace");
+const HelpWorkspace_1 = require("./components/HelpWorkspace");
 const CommandPalette_1 = require("./components/CommandPalette");
 const Dialog_1 = require("./components/Dialog");
 require("./styles.css");
@@ -83,6 +84,8 @@ const AppInner = () => {
     const setLook = (0, store_1.useStore)((state) => state.setLook);
     const outputConfigs = (0, store_1.useStore)((state) => state.outputConfigs);
     const updateOutputConfig = (0, store_1.useStore)((state) => state.updateOutputConfig);
+    const displays = (0, store_1.useStore)((state) => state.displays);
+    const setDisplays = (0, store_1.useStore)((state) => state.setDisplays);
     // UI state
     const [workspace, setWorkspace] = react_1.default.useState('console');
     const [clockValue, setClockValue] = react_1.default.useState(new Date());
@@ -144,6 +147,14 @@ const AppInner = () => {
         catch {
             return '';
         }
+    });
+    const [appVersion, setAppVersion] = react_1.default.useState('');
+    const [appLoading, setAppLoading] = react_1.default.useState(true);
+    const [activeOutputWindows, setActiveOutputWindows] = react_1.default.useState(() => {
+        if (typeof window !== 'undefined' && window.worship?.outputs?.list) {
+            window.worship.outputs.list().then((list) => setActiveOutputWindows(list || [])).catch(() => { });
+        }
+        return [];
     });
     // Derived
     const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
@@ -213,6 +224,9 @@ const AppInner = () => {
             catch (error) {
                 console.error('Failed to load operator data:', error);
             }
+            finally {
+                window.setTimeout(() => setAppLoading(false), 250);
+            }
         };
         loadData();
     }, [isOutput]);
@@ -260,11 +274,65 @@ const AppInner = () => {
         }
         catch { }
     }, [logoImage]);
+    // Load displays on startup
+    react_1.default.useEffect(() => {
+        if (isOutput)
+            return;
+        const loadDisplays = async () => {
+            try {
+                if (window.worship?.displays?.getAll) {
+                    const d = await window.worship.displays.getAll();
+                    if (d?.length)
+                        setDisplays(d);
+                }
+                if (window.worship?.app?.getVersion) {
+                    const v = await window.worship.app.getVersion();
+                    setAppVersion(v || '');
+                }
+                if (window.worship?.outputs?.list) {
+                    const list = await window.worship.outputs.list();
+                    setActiveOutputWindows(list || []);
+                }
+            }
+            catch (e) {
+                console.error('Failed to load system info:', e);
+            }
+        };
+        loadDisplays();
+    }, [isOutput]);
+    // Listen for display changes
+    react_1.default.useEffect(() => {
+        if (isOutput || !window.worship?.displays?.onChanged)
+            return;
+        const cleanup = window.worship.displays.onChanged((d) => {
+            if (d?.length)
+                setDisplays(d);
+        });
+        return cleanup;
+    }, [isOutput]);
+    // Refresh output list when displays change
+    react_1.default.useEffect(() => {
+        if (isOutput)
+            return;
+        const refresh = async () => {
+            try {
+                if (window.worship?.outputs?.list) {
+                    const list = await window.worship.outputs.list();
+                    setActiveOutputWindows(list || []);
+                }
+            }
+            catch { }
+        };
+        refresh();
+    }, [displays, isOutput]);
     if (isOutput)
         return (0, jsx_runtime_1.jsx)(OutputView_1.OutputView, { outId: outId, logoImage: logoImage });
     // ── Helpers ────────────────────────────────────────────────────────────────
     const sendLiveState = (slideTitle) => {
-        OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: '', mediaType: undefined, theme }));
+        const targetOutputIds = activeOutputWindows.length
+            ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean)
+            : OUTPUT_IDS;
+        targetOutputIds.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: '', mediaType: undefined, theme }));
     };
     const notify = (title, detail, tone = 'info') => {
         const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -397,7 +465,10 @@ const AppInner = () => {
         setTheme(updatedTheme);
         setCurrentSlide('');
         setLiveSlide('');
-        OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, {
+        const targetOutputIds = activeOutputWindows.length
+            ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean)
+            : OUTPUT_IDS;
+        targetOutputIds.forEach((id) => window?.worship?.outputs?.setState?.(id, {
             slideTitle: '', mediaPath: asset.path, mediaType: asset.type,
             mediaPlayback: playback, theme: updatedTheme,
         }));
@@ -436,7 +507,7 @@ const AppInner = () => {
         { id: 'sync-connect', label: syncConnected ? 'Disconnect Sync' : 'Connect Sync', icon: '🔗', category: 'Settings', action: syncConnected ? disconnectSync : connectSync },
     ];
     // ── Ribbon ─────────────────────────────────────────────────────────────────
-    const renderRibbon = () => ((0, jsx_runtime_1.jsxs)("header", { className: "topbar ribbon", children: [(0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-main", children: [(0, jsx_runtime_1.jsxs)("div", { className: "screen-title", children: [(0, jsx_runtime_1.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }), (0, jsx_runtime_1.jsx)("small", { children: clockValue.toLocaleTimeString() })] }), (0, jsx_runtime_1.jsx)("div", { className: "view-tabs", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `tab ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item))) }), (0, jsx_runtime_1.jsxs)("div", { className: "topbar-actions", children: [(0, jsx_runtime_1.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: ["\u2318 ", (0, jsx_runtime_1.jsx)("kbd", { children: "K" })] }), (0, jsx_runtime_1.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [(workspace === 'console' || workspace === 'editor') && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Left Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 240, max: 480, value: workspace === 'console' ? paneSizes.consoleLeft : paneSizes.editorLeft, onChange: (event) => {
+    const renderRibbon = () => ((0, jsx_runtime_1.jsxs)("header", { className: "topbar ribbon", children: [(0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-main", children: [(0, jsx_runtime_1.jsxs)("div", { className: "screen-title", children: [(0, jsx_runtime_1.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }), (0, jsx_runtime_1.jsx)("small", { children: clockValue.toLocaleTimeString() })] }), (0, jsx_runtime_1.jsx)("div", { className: "view-tabs", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `tab ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item))) }), (0, jsx_runtime_1.jsxs)("div", { className: "topbar-actions", children: [(0, jsx_runtime_1.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: ["\u2318 ", (0, jsx_runtime_1.jsx)("kbd", { children: "K" })] }), (0, jsx_runtime_1.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }), (0, jsx_runtime_1.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })] })] }), (0, jsx_runtime_1.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [(workspace === 'console' || workspace === 'editor') && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Left Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 240, max: 480, value: workspace === 'console' ? paneSizes.consoleLeft : paneSizes.editorLeft, onChange: (event) => {
                                             const value = Number(event.target.value);
                                             setPaneSizes((prev) => ({
                                                 ...prev,
@@ -444,8 +515,8 @@ const AppInner = () => {
                                             }));
                                         } })] }), workspace === 'console' && ((0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Output Area" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 150, max: 340, value: paneSizes.consoleBottom, onChange: (event) => setPaneSizes((prev) => ({ ...prev, consoleBottom: Number(event.target.value) })) })] })), workspace === 'editor' && ((0, jsx_runtime_1.jsxs)("label", { className: "ribbon-control", children: [(0, jsx_runtime_1.jsx)("span", { children: "Inspector Pane" }), (0, jsx_runtime_1.jsx)("input", { type: "range", min: 260, max: 460, value: paneSizes.editorRight, onChange: (event) => setPaneSizes((prev) => ({ ...prev, editorRight: Number(event.target.value) })) })] }))] })), workspace === 'editor' && ((0, jsx_runtime_1.jsxs)(jsx_runtime_1.Fragment, { children: [(0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }), (0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })] })), workspace === 'media' && ((0, jsx_runtime_1.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." }))] })] }));
     // ── Render ─────────────────────────────────────────────────────────────────
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "app-shell", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "app-sidebar", children: [(0, jsx_runtime_1.jsxs)("div", { className: "brand-block", children: [(0, jsx_runtime_1.jsx)("h1", { children: "The Ethereal Stage" }), (0, jsx_runtime_1.jsx)("p", { children: "Sanctuary Control" })] }), (0, jsx_runtime_1.jsx)("nav", { className: "sidebar-nav", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `nav-button ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item === 'console' ? 'Console' : item === 'library' ? 'Library' : item === 'editor' ? 'Song Editor' :
-                                item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : 'Settings' }, item))) }), (0, jsx_runtime_1.jsx)("div", { className: "sidebar-footer", children: (0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "app-main", children: [renderRibbon(), (0, jsx_runtime_1.jsxs)("main", { className: "workspace", children: [workspace === 'console' && ((0, jsx_runtime_1.jsx)(ConsoleWorkspace_1.ConsoleWorkspace, { schedule: schedule, theme: theme, currentSlide: currentSlide, liveSlide: liveSlide, paneSizes: paneSizes, outputStates: outputStates, dragIndex: dragIndex, onDragStart: setDragIndex, onDrop: (idx) => { moveSchedule(dragIndex, idx); setDragIndex(null); notify('Schedule updated', 'Order changed', 'info'); }, onScheduleItemClick: (content) => { setCurrentSlide(content); }, onAddScheduleItem: () => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success'); }, onGoToEditor: () => setWorkspace('editor') })), workspace === 'library' && ((0, jsx_runtime_1.jsx)(LibraryWorkspace_1.LibraryWorkspace, { songs: songs, filteredSongs: filteredSongs, selectedSongId: selectedSongId, mediaAssets: mediaAssets, songSearchQuery: songSearchQuery, librarySort: librarySort, libraryViewMode: libraryViewMode, onSearchChange: setSongSearchQuery, onSortChange: setLibrarySort, onViewModeChange: setLibraryViewMode, onSelectSong: (id) => { setSelectedSongId(id); setWorkspace('editor'); }, onAddSong: () => { addSong(); setWorkspace('editor'); }, onImportSongs: importSongs, onRenameSong: async (song) => {
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "app-shell", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "app-sidebar", children: [(0, jsx_runtime_1.jsxs)("div", { className: "brand-block", children: [(0, jsx_runtime_1.jsx)("h1", { children: "The Ethereal Stage" }), (0, jsx_runtime_1.jsx)("p", { children: "Sanctuary Control" })] }), (0, jsx_runtime_1.jsx)("nav", { className: "sidebar-nav", children: ['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'].map((item) => ((0, jsx_runtime_1.jsx)("button", { className: `nav-button ${workspace === item ? 'active' : ''}`, onClick: () => setWorkspace(item), children: item === 'console' ? 'Console' : item === 'library' ? 'Library' : item === 'editor' ? 'Song Editor' :
+                                item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : item === 'settings' ? 'Settings' : 'Help' }, item))) }), (0, jsx_runtime_1.jsx)("div", { className: "sidebar-footer", children: (0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })] }), (0, jsx_runtime_1.jsxs)("div", { className: "app-main", children: [renderRibbon(), (0, jsx_runtime_1.jsxs)("main", { className: "workspace", children: [workspace === 'console' && ((0, jsx_runtime_1.jsx)(ConsoleWorkspace_1.ConsoleWorkspace, { schedule: schedule, theme: theme, currentSlide: currentSlide, liveSlide: liveSlide, paneSizes: paneSizes, outputStates: outputStates, dragIndex: dragIndex, onDragStart: setDragIndex, onDrop: (idx) => { moveSchedule(dragIndex, idx); setDragIndex(null); notify('Schedule updated', 'Order changed', 'info'); }, onScheduleItemClick: (content) => { setCurrentSlide(content); }, onAddScheduleItem: () => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success'); }, onGoToEditor: () => setWorkspace('editor') })), workspace === 'library' && ((0, jsx_runtime_1.jsx)(LibraryWorkspace_1.LibraryWorkspace, { songs: songs, filteredSongs: filteredSongs, selectedSongId: selectedSongId, mediaAssets: mediaAssets, songSearchQuery: songSearchQuery, librarySort: librarySort, libraryViewMode: libraryViewMode, onSearchChange: setSongSearchQuery, onSortChange: setLibrarySort, onViewModeChange: setLibraryViewMode, onSelectSong: (id) => { setSelectedSongId(id); setWorkspace('editor'); }, onAddSong: () => { addSong(); setWorkspace('editor'); }, onImportSongs: importSongs, onRenameSong: async (song) => {
                                     const next = await showDialog({ type: 'prompt', title: 'Rename Song', defaultValue: song.title, confirmLabel: 'Rename' });
                                     if (typeof next === 'string' && next.trim()) {
                                         updateSongTitle(song.id, next.trim());
@@ -477,7 +548,7 @@ const AppInner = () => {
                                     const name = await showDialog({ type: 'prompt', title: 'Save Template', defaultValue: 'My Template', confirmLabel: 'Save' });
                                     if (typeof name === 'string' && name.trim())
                                         saveTemplate(name.trim());
-                                }, onUndo: undo, onRedo: redo, stripChordMarkup: stripChordMarkup, onNotify: notify })), workspace === 'scripture' && (0, jsx_runtime_1.jsx)(BiblePicker_1.BiblePicker, {}), workspace === 'media' && ((0, jsx_runtime_1.jsx)(MediaLibrary_1.MediaLibrary, { mediaType: mediaType, onMediaSelect: () => undefined, onSendToPreview: sendMediaToPreview, onSendToLive: sendMediaToLive, onNotify: notify })), workspace === 'settings' && ((0, jsx_runtime_1.jsx)(SettingsWorkspace_1.SettingsWorkspace, { theme: theme, outputConfigs: outputConfigs, looks: looks, ndiEnabled: ndiEnabled, syncConnected: syncConnected, syncUrl: syncUrl, aspectRatio: aspectRatio, overscanPercent: overscanPercent, outputResolution: outputResolution, outputHardware: outputHardware, activeOutputId: activeOutputId, themePresets: store_1.THEME_PRESETS, logoImage: logoImage, onSyncUrlChange: setSyncUrl, onConnectSync: connectSync, onDisconnectSync: disconnectSync, onSetAspectRatio: setAspectRatio, onSetOverscanPercent: setOverscanPercent, onSetOutputResolution: setOutputResolution, onSetActiveOutputId: setActiveOutputId, onUpdateOutputConfig: updateOutputConfig, onUpdateLook: updateLook, onToggleNdi: toggleNdi, onApplyPreset: applyPreset, onResetDisplay: () => {
+                                }, onUndo: undo, onRedo: redo, stripChordMarkup: stripChordMarkup, onNotify: notify })), workspace === 'scripture' && (0, jsx_runtime_1.jsx)(BiblePicker_1.BiblePicker, {}), workspace === 'media' && ((0, jsx_runtime_1.jsx)(MediaLibrary_1.MediaLibrary, { mediaType: mediaType, onMediaSelect: () => undefined, onSendToPreview: sendMediaToPreview, onSendToLive: sendMediaToLive, onNotify: notify })), workspace === 'settings' && ((0, jsx_runtime_1.jsx)(SettingsWorkspace_1.SettingsWorkspace, { theme: theme, outputConfigs: outputConfigs, looks: looks, ndiEnabled: ndiEnabled, syncConnected: syncConnected, syncUrl: syncUrl, aspectRatio: aspectRatio, overscanPercent: overscanPercent, outputResolution: outputResolution, outputHardware: outputHardware, activeOutputId: activeOutputId, themePresets: store_1.THEME_PRESETS, logoImage: logoImage, displays: displays, appVersion: appVersion, activeOutputWindows: activeOutputWindows, onSyncUrlChange: setSyncUrl, onConnectSync: connectSync, onDisconnectSync: disconnectSync, onSetAspectRatio: setAspectRatio, onSetOverscanPercent: setOverscanPercent, onSetOutputResolution: setOutputResolution, onSetActiveOutputId: setActiveOutputId, onUpdateOutputConfig: updateOutputConfig, onUpdateLook: updateLook, onToggleNdi: toggleNdi, onApplyPreset: applyPreset, onResetDisplay: () => {
                                     setAspectRatio('16:9');
                                     setOverscanPercent(5);
                                     setOutputResolution('1920x1080');
@@ -485,7 +556,12 @@ const AppInner = () => {
                                 }, onApplyDisplayChanges: () => {
                                     window?.worship?.outputs?.actions?.fullscreen?.();
                                     notify('Display applied', `${outputResolution} ${aspectRatio}`, 'success');
-                                }, onLogoImageChange: setLogoImage, onPickLogoFile: pickLogoFile, onNotify: notify }))] }), (0, jsx_runtime_1.jsx)(Notifications_1.Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })] }), showPalette && ((0, jsx_runtime_1.jsx)(CommandPalette_1.CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) }))] }));
+                                }, onLogoImageChange: setLogoImage, onPickLogoFile: pickLogoFile, onNotify: notify, onRefreshOutputWindows: async () => {
+                                    if (window.worship?.outputs?.list) {
+                                        const list = await window.worship.outputs.list();
+                                        setActiveOutputWindows(list || []);
+                                    }
+                                } })), workspace === 'help' && ((0, jsx_runtime_1.jsx)(HelpWorkspace_1.HelpWorkspace, { appVersion: appVersion, displayCount: displays.length, outputCount: activeOutputWindows.length }))] }), (0, jsx_runtime_1.jsx)(Notifications_1.Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })] }), appLoading && ((0, jsx_runtime_1.jsx)("div", { className: "app-loader-overlay", children: (0, jsx_runtime_1.jsxs)("div", { className: "app-loader-card", children: [(0, jsx_runtime_1.jsx)("strong", { children: "Loading WorshipPresenter" }), (0, jsx_runtime_1.jsx)("span", { children: "Preparing songs, media, Bibles, and displays..." }), (0, jsx_runtime_1.jsx)("div", { className: "app-loader-bar", children: (0, jsx_runtime_1.jsx)("div", {}) })] }) })), showPalette && ((0, jsx_runtime_1.jsx)(CommandPalette_1.CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) }))] }));
 };
 // ─── Root with providers ──────────────────────────────────────────────────────
 const App = () => ((0, jsx_runtime_1.jsx)(Dialog_1.DialogProvider, { children: (0, jsx_runtime_1.jsx)(AppInner, {}) }));

@@ -18,7 +18,7 @@ exports.THEME_PRESETS = [
 exports.useStore = (0, zustand_1.create)((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center', verticalAlign: 'center' },
+    theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center', verticalAlign: 'center', textBoxWidth: 90, textBoxHeight: 70 },
     currentSlide: 'Welcome',
     liveSlide: 'Welcome',
     undoStack: [],
@@ -174,6 +174,8 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
             return next;
         })()
     })),
+    displays: [],
+    setDisplays: (displays) => set({ displays }),
     addScheduleItem: async () => {
         try {
             const newItem = await db_1.dbService.schedule.addItem('Song', 'New Item');
@@ -194,7 +196,7 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
         });
     },
     setTheme: (t) => set({ theme: t }),
-    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center' } }),
+    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center', textBoxWidth: preset.textBoxWidth ?? 90, textBoxHeight: preset.textBoxHeight ?? 70 } }),
     saveTemplate: (name) => {
         const theme = get().theme;
         db_1.dbService.themes.create(name, theme).catch(err => {

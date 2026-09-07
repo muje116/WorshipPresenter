@@ -26,6 +26,12 @@ type Theme = {
   verticalAlign?: 'top' | 'center' | 'bottom'
 }
 type ThemePreset = Theme & { name?: string }
+type DisplayInfo = {
+  id: number; label: string; isPrimary: boolean; internal: boolean
+  size: { width: number; height: number }
+  bounds: { x: number; y: number; width: number; height: number }
+  scaleFactor: number; displayFrequency: number
+}
 
 type Props = {
   theme: Theme
@@ -41,6 +47,9 @@ type Props = {
   activeOutputId: number
   themePresets: ThemePreset[]
   logoImage: string
+  displays: DisplayInfo[]
+  appVersion: string
+  activeOutputWindows: any[]
   onSyncUrlChange: (url: string) => void
   onConnectSync: () => void
   onDisconnectSync: () => void
@@ -57,6 +66,7 @@ type Props = {
   onLogoImageChange: (path: string) => void
   onPickLogoFile: () => void
   onNotify: (title: string, detail?: string, tone?: 'info' | 'success' | 'warn') => void
+  onRefreshOutputWindows: () => void
 }
 
 const OUTPUT_IDS = [1, 2]
@@ -75,6 +85,9 @@ export const SettingsWorkspace: React.FC<Props> = ({
   activeOutputId,
   themePresets,
   logoImage,
+  displays,
+  appVersion,
+  activeOutputWindows,
   onSyncUrlChange,
   onConnectSync,
   onDisconnectSync,
@@ -91,7 +104,44 @@ export const SettingsWorkspace: React.FC<Props> = ({
   onLogoImageChange,
   onPickLogoFile,
   onNotify,
+  onRefreshOutputWindows,
 }) => {
+  const handleCreateOutput = async (displayId?: number, fullScreen = false) => {
+    if (window.worship?.outputs?.createWindow) {
+      await window.worship.outputs.createWindow(displayId, fullScreen)
+      onRefreshOutputWindows()
+      onNotify('Output created', `New output window created`, 'success')
+    }
+  }
+
+  const handleCreateForDisplays = async (displayIds: number[]) => {
+    if (!displayIds.length) {
+      onNotify('No secondary display', 'Connect a projector or monitor first', 'warn')
+      return
+    }
+    if (window.worship?.outputs?.createForDisplays) {
+      await window.worship.outputs.createForDisplays(displayIds, true)
+      onRefreshOutputWindows()
+      onNotify('Live outputs ready', `${displayIds.length} display(s) opened fullscreen`, 'success')
+    }
+  }
+
+  const handleDestroyOutput = async (outId: number) => {
+    if (window.worship?.outputs?.destroyWindow) {
+      await window.worship.outputs.destroyWindow(outId)
+      onRefreshOutputWindows()
+      onNotify('Output removed', `Output window ${outId} closed`, 'info')
+    }
+  }
+
+  const handleAssignOutput = async (outId: number, displayId: number) => {
+    if (window.worship?.outputs?.assignToDisplay) {
+      await window.worship.outputs.assignToDisplay(outId, displayId)
+      onRefreshOutputWindows()
+      onNotify('Output assigned', `Output ${outId} moved to display`, 'success')
+    }
+  }
+
   return (
     <div className="workspace-grid workspace-settings">
       <div className="settings-header">
@@ -105,6 +155,12 @@ export const SettingsWorkspace: React.FC<Props> = ({
           </button>
           <button className="live-button" onClick={onApplyDisplayChanges}>
             Apply Changes
+          </button>
+          <button
+            className="soft-button"
+            onClick={() => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id))}
+          >
+            Go Live on All Secondary
           </button>
         </div>
       </div>
@@ -121,7 +177,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
           >
             <div className="output-route-heading">
               <strong>Output {output.id}</strong>
-              <small>{output.role} · {output.resolution}</small>
+              <small>{output.role} &middot; {output.resolution}</small>
             </div>
             <select
               className="input settings-select"
@@ -172,6 +228,146 @@ export const SettingsWorkspace: React.FC<Props> = ({
         ))}
       </section>
 
+      {/* Detected Displays Section */}
+      <section className="panel settings-card-group">
+        <div className="panel-header">
+          <h3>Detected Displays</h3>
+          <small>{displays.length} display(s) found</small>
+        </div>
+        {displays.length === 0 ? (
+          <div style={{ padding: '12px 0', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+            No displays detected. Make sure your monitors are connected.
+          </div>
+        ) : (
+          <div className="displays-grid">
+            {displays.map((display) => (
+              <div key={display.id} className={`display-card ${display.isPrimary ? 'primary' : ''}`}>
+                <div className="display-card-header">
+                  <strong>{display.label}</strong>
+                  {display.isPrimary && <span className="display-badge">Primary</span>}
+                  {display.internal && <span className="display-badge">Built-in</span>}
+                </div>
+                <div className="display-card-info">
+                  <span>{display.size.width}&times;{display.size.height}</span>
+                  <span>{display.displayFrequency}Hz</span>
+                  <span>Scale: {display.scaleFactor}x</span>
+                </div>
+                <div className="display-card-assign">
+                  <small>Assigned outputs:</small>
+                  <div className="display-output-list">
+                    {activeOutputWindows.filter((ow: any) => ow.displayId === display.id).length === 0 ? (
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>None</span>
+                    ) : (
+                      activeOutputWindows
+                        .filter((ow: any) => ow.displayId === display.id)
+                        .map((ow: any) => (
+                          <span key={ow.id} className="output-assign-chip">
+                            Output {ow.id}
+                          </span>
+                        ))
+                    )}
+                  </div>
+                </div>
+                <div className="display-card-actions">
+                  <button
+                    className="soft-button"
+                    onClick={() => handleCreateOutput(display.id, true)}
+                  >
+                    Go Live Here
+                  </button>
+                  <button
+                    className="soft-button"
+                    onClick={() => handleCreateOutput(display.id, false)}
+                  >
+                    Window Here
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Output Window Management */}
+      <section className="panel settings-card-group">
+        <div className="panel-header">
+          <h3>Output Windows</h3>
+          <small>{activeOutputWindows.length} active</small>
+        </div>
+        <div className="output-window-list">
+          {activeOutputWindows.map((ow: any) => (
+            <div key={ow.id} className="output-window-row">
+              <div className="output-window-info">
+                <strong>Output {ow.id}</strong>
+                <span className="output-window-display">
+                  {displays.find((d: DisplayInfo) => d.id === ow.displayId)?.label || `Display ${ow.displayId}`}
+                </span>
+              </div>
+              <select
+                className="input"
+                value={ow.displayId}
+                onChange={(e) => handleAssignOutput(ow.id, Number(e.target.value))}
+                style={{ minWidth: 180 }}
+              >
+                {displays.map((d: DisplayInfo) => (
+                  <option key={d.id} value={d.id}>
+                    {d.label} ({d.size.width}&times;{d.size.height})
+                  </option>
+                ))}
+              </select>
+              <div className="toolbar-inline">
+                <button
+                  className="soft-button"
+                  onClick={() => {
+                    window?.worship?.outputs?.windowControl?.(ow.id, 'show')
+                    onRefreshOutputWindows()
+                  }}
+                >
+                  Show
+                </button>
+                <button
+                  className="soft-button"
+                  onClick={() => window?.worship?.outputs?.windowControl?.(ow.id, 'toggle-fullscreen')}
+                >
+                  Fullscreen
+                </button>
+                <select
+                  className="input output-resize-select"
+                  defaultValue=""
+                  onChange={(e) => {
+                    const [width, height] = e.target.value.split('x').map(Number)
+                    if (width && height) {
+                      window?.worship?.outputs?.windowControl?.(ow.id, 'resize', { width, height })
+                      onRefreshOutputWindows()
+                    }
+                    e.currentTarget.value = ''
+                  }}
+                >
+                  <option value="">Resize</option>
+                  <option value="1280x720">1280x720</option>
+                  <option value="1600x900">1600x900</option>
+                  <option value="1920x1080">1920x1080</option>
+                </select>
+                <button className="soft-button danger" onClick={() => handleDestroyOutput(ow.id)}>
+                  Close
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="output-window-actions">
+          <button className="soft-button" onClick={() => handleCreateOutput(undefined)}>
+            + Add Output Window
+          </button>
+          <button
+            className="soft-button"
+            onClick={() => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id))}
+          >
+            Open All Secondary Fullscreen
+          </button>
+        </div>
+      </section>
+
       {/* Logo Image Configuration */}
       <section className="panel settings-logo-panel settings-card-group">
         <div className="panel-header">
@@ -195,10 +391,10 @@ export const SettingsWorkspace: React.FC<Props> = ({
               className="input"
               value={logoImage}
               onChange={(e) => onLogoImageChange(e.target.value)}
-              placeholder="file://… or https://…"
+              placeholder="file://&hellip; or https://&hellip;"
             />
             <button className="soft-button" onClick={onPickLogoFile}>
-              Browse…
+              Browse&hellip;
             </button>
           </div>
         </div>
@@ -239,7 +435,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
                 <div className="settings-layer-grid">
                   {LAYERS.map((layer) => {
                     const enabled = (look.layers || []).includes(layer)
-                    const meta = LAYER_META[layer] || { icon: '•', label: layer.replace('_', ' ') }
+                    const meta = LAYER_META[layer] || { icon: '&bull;', label: layer.replace('_', ' ') }
                     return (
                       <label key={layer} className={`settings-layer-chip ${enabled ? 'active' : ''}`} title={meta.label}>
                         <input
@@ -291,7 +487,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
 
       <section className="panel canvas-layout-section settings-card-group">
         <div className="canvas-layout-header">
-          <div className="canvas-layout-title">🖥 Canvas Layout</div>
+          <div className="canvas-layout-title">Canvas Layout</div>
           <div className="ratio-chip-group">
             {(['16:9', '4:3', '21:9', 'FREE'] as const).map((ratio) => (
               <button
@@ -313,7 +509,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
               <span className="dot" style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--tertiary)' }} /> ACTIVE OUTPUT
             </span>
             <span className="canvas-display-label">Output {activeOutputId}</span>
-            <span className="canvas-display-res">{outputResolution.replace('x', ' × ')}</span>
+            <span className="canvas-display-res">{outputResolution.replace('x', ' \u00d7 ')}</span>
             <span className="canvas-handle tl" /><span className="canvas-handle tc" /><span className="canvas-handle tr" />
             <span className="canvas-handle ml" /><span className="canvas-handle mr" />
             <span className="canvas-handle bl" /><span className="canvas-handle bc" /><span className="canvas-handle br" />
@@ -322,7 +518,7 @@ export const SettingsWorkspace: React.FC<Props> = ({
       </section>
 
       <aside className="panel dimensions-panel">
-        <div className="dimensions-title">📐 Dimensions</div>
+        <div className="dimensions-title">Dimensions</div>
         <div className="dimension-field">
           <label>Resolution</label>
           <div className="dimension-input-row">
@@ -333,7 +529,6 @@ export const SettingsWorkspace: React.FC<Props> = ({
                 onUpdateOutputConfig(activeOutputId, { resolution: e.target.value })
               }}
             />
-            <button className="edit-icon" title="Edit">✏️</button>
           </div>
         </div>
         <div className="dimension-field">
@@ -357,10 +552,10 @@ export const SettingsWorkspace: React.FC<Props> = ({
         <div className="hardware-card">
           <div className="hardware-card-title">Output Hardware</div>
           <div className="hardware-card-content">
-            <div className="hardware-icon">🖥</div>
+            <div className="hardware-icon">&#x1F5A5;</div>
             <div className="hardware-info">
               <strong>{outputHardware}</strong>
-              <small>SDI Out 1 • 60fps • 10-bit</small>
+              <small>SDI Out 1 &bull; 60fps &bull; 10-bit</small>
             </div>
           </div>
         </div>
@@ -385,28 +580,41 @@ export const SettingsWorkspace: React.FC<Props> = ({
         </div>
       </aside>
 
-      <div className="info-card-row">
-        <div className="info-card">
-          <span className="info-card-badge">Pro Feature</span>
-          <div className="info-value" style={{ fontFamily: 'Manrope, Inter, sans-serif', fontWeight: 700, fontSize: '1rem', marginBottom: 4 }}>Multi-Display Sync</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.4 }}>Synchronize frame delivery across multiple graphics cards for ultra-high-resolution wall displays.</div>
+      {/* About Section */}
+      <section className="panel about-panel settings-card-group" style={{ gridColumn: '1 / -1' }}>
+        <div className="panel-header">
+          <h3>About WorshipPresenter</h3>
+          <small>Application Information</small>
         </div>
-        <div className="info-card">
-          <div className="info-label">🎨 Color Space</div>
-          <div className="info-value">Rec.709 (High Dynamic)</div>
-          <div className="info-bar" />
+        <div className="about-content">
+          <div className="about-info-grid">
+            <div className="about-info-item">
+              <span className="about-label">Application</span>
+              <span className="about-value">WorshipPresenter</span>
+            </div>
+            <div className="about-info-item">
+              <span className="about-label">Version</span>
+              <span className="about-value">{appVersion || '1.0.0'}</span>
+            </div>
+            <div className="about-info-item">
+              <span className="about-label">Platform</span>
+              <span className="about-value">{navigator.platform || 'Unknown'}</span>
+            </div>
+            <div className="about-info-item">
+              <span className="about-label">Display Configuration</span>
+              <span className="about-value">{displays.length} display(s) &middot; {activeOutputWindows.length} output(s)</span>
+            </div>
+            <div className="about-info-item">
+              <span className="about-label">Brand</span>
+              <span className="about-value">The Ethereal Stage</span>
+            </div>
+            <div className="about-info-item">
+              <span className="about-label">Build</span>
+              <span className="about-value">Electron installer via npm run dist:win</span>
+            </div>
+          </div>
         </div>
-        <div className="info-card">
-          <div className="info-label">⏱ Frame Delay</div>
-          <div className="info-value">1.2ms (Ultra Low)</div>
-          <div className="info-sub">Optimized for IMAG systems</div>
-        </div>
-        <div className="info-card">
-          <div className="info-label">🔄 Refresh Rate</div>
-          <div className="info-value">60.00 Hz</div>
-          <div className="info-sub">Matched to Broadcast Clock</div>
-        </div>
-      </div>
+      </section>
     </div>
   )
 }

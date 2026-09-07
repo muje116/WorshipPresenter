@@ -10,6 +10,11 @@ type OutputAPI = {
     fullscreen: () => void
   }
   windowControl: (outId: number, action: string, bounds?: { width?: number; height?: number; x?: number; y?: number }) => void
+  createWindow: (displayId?: number, fullScreen?: boolean) => Promise<{ id: number }>
+  createForDisplays: (displayIds: number[], fullScreen?: boolean) => Promise<{ ids: number[] }>
+  destroyWindow: (outId: number) => Promise<{ success: boolean }>
+  list: () => Promise<any[]>
+  assignToDisplay: (outId: number, displayId: number) => Promise<{ success: boolean }>
 }
 
 type API = {
@@ -48,16 +53,30 @@ type API = {
   bibles: {
     listTranslations: () => Promise<any>
     openOsisFile: () => Promise<string | null>
-    importFromOsis: (translationCode: string, language: string, filePath: string) => Promise<number>
+    importFromOsis: (translationCode: string, language: string, filePath: string) => Promise<any>
+    openEasyWorshipFile: () => Promise<string | null>
+    importFromEasyWorship: (translationCode: string, language: string, filePath: string) => Promise<any>
     getBooks: () => Promise<string[]>
     getChapters: (book: string) => Promise<number[]>
     getVerses: (book: string, chapter: number, translationId?: number) => Promise<any[]>
     search: (query: string, translationId?: number) => Promise<any[]>
     onImportProgress: (cb: (payload: { translationCode: string; progress: number }) => void) => () => void
+    getOnlineSources: () => Promise<Array<{ code: string; name: string; language: string; url: string; format: string }>>
+    downloadFromUrl: (args: { code: string; name: string; language: string; url: string; format: string }) => Promise<any>
+    onDownloadProgress: (cb: (payload: { translationCode: string; progress: number }) => void) => () => void
   }
   ndi: {
     enable: (enabled: boolean) => Promise<{ enabled: boolean }>
     status: () => Promise<{ enabled: boolean; lastPayload: any }>
+  }
+  displays: {
+    getAll: () => Promise<any[]>
+    getPrimary: () => Promise<any>
+    onChanged: (cb: (displays: any[]) => void) => () => void
+  }
+  app: {
+    getVersion: () => Promise<string>
+    getInfo: () => Promise<any>
   }
   dialog: {
     openFiles: (options?: {
@@ -110,12 +129,19 @@ const api: API = {
       fullscreen: () => ipcRenderer.send('output-action', { action: 'FULLSCREEN' })
     },
     windowControl: (outId: number, action: string, bounds?: { width?: number; height?: number; x?: number; y?: number }) =>
-      ipcRenderer.send('output-window-control', { outId, action, bounds })
+      ipcRenderer.send('output-window-control', { outId, action, bounds }),
+    createWindow: (displayId?: number, fullScreen?: boolean) => ipcRenderer.invoke('outputs.createWindow', { displayId, fullScreen }),
+    createForDisplays: (displayIds: number[], fullScreen?: boolean) => ipcRenderer.invoke('outputs.createForDisplays', { displayIds, fullScreen }),
+    destroyWindow: (outId: number) => ipcRenderer.invoke('outputs.destroyWindow', outId),
+    list: () => ipcRenderer.invoke('outputs.list'),
+    assignToDisplay: (outId: number, displayId: number) => ipcRenderer.invoke('outputs.assignToDisplay', { outId, displayId }),
   },
   bibles: {
     listTranslations: () => ipcRenderer.invoke('bibles.listTranslations'),
     openOsisFile: () => ipcRenderer.invoke('bibles.openOsisFile'),
     importFromOsis: (translationCode: string, language: string, filePath: string) => ipcRenderer.invoke('bibles.importFromOsis', { translationCode, language, filePath }),
+    openEasyWorshipFile: () => ipcRenderer.invoke('bibles.openEasyWorshipFile'),
+    importFromEasyWorship: (translationCode: string, language: string, filePath: string) => ipcRenderer.invoke('bibles.importFromEasyWorship', { translationCode, language, filePath }),
     getBooks: () => ipcRenderer.invoke('bibles.getBooks'),
     getChapters: (book: string) => ipcRenderer.invoke('bibles.getChapters', { book }),
     getVerses: (book: string, chapter: number, translationId?: number) => ipcRenderer.invoke('bibles.getVerses', { book, chapter, translationId }),
@@ -124,11 +150,31 @@ const api: API = {
       const listener = (_e: any, payload: any) => cb(payload)
       ipcRenderer.on('bible-import-progress', listener)
       return () => { ipcRenderer.removeListener('bible-import-progress', listener) }
-    }
+    },
+    getOnlineSources: () => ipcRenderer.invoke('bibles.getOnlineSources'),
+    downloadFromUrl: (args) => ipcRenderer.invoke('bibles.downloadFromUrl', args),
+    onDownloadProgress: (cb) => {
+      const listener = (_e: any, payload: any) => cb(payload)
+      ipcRenderer.on('bible-download-progress', listener)
+      return () => { ipcRenderer.removeListener('bible-download-progress', listener) }
+    },
   },
   ndi: {
     enable: (enabled: boolean) => ipcRenderer.invoke('ndi.enable', enabled),
     status: () => ipcRenderer.invoke('ndi.status')
+  },
+  displays: {
+    getAll: () => ipcRenderer.invoke('displays.getAll'),
+    getPrimary: () => ipcRenderer.invoke('displays.getPrimary'),
+    onChanged: (cb) => {
+      const listener = (_e: any, displays: any[]) => cb(displays)
+      ipcRenderer.on('displays-changed', listener)
+      return () => { ipcRenderer.removeListener('displays-changed', listener) }
+    },
+  },
+  app: {
+    getVersion: () => ipcRenderer.invoke('app.getVersion'),
+    getInfo: () => ipcRenderer.invoke('app.getInfo'),
   },
   dialog: {
     openFiles: (options?: {

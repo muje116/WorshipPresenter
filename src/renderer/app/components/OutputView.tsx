@@ -29,6 +29,8 @@ type State = {
     fontWeight?: number
     textAlign?: 'left' | 'center' | 'right'
     verticalAlign?: 'top' | 'center' | 'bottom'
+    textBoxWidth?: number
+    textBoxHeight?: number
   }
 }
 
@@ -86,6 +88,8 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
   const fontWeight = theme?.fontWeight ?? 700
   const textAlign = theme?.textAlign ?? 'center'
   const verticalAlign = theme?.verticalAlign ?? 'center'
+  const textBoxWidth = theme?.textBoxWidth ?? 90
+  const textBoxHeight = theme?.textBoxHeight ?? 70
   const mediaPlayback = state?.mediaPlayback || {}
   const propsText = state?.propsText || slide
   const announcementText = state?.announcementText || slide
@@ -167,7 +171,7 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
       )}
 
       {/* Layer: announcements / overlays readability */}
-      {(has('announcements') || has('props_overlays')) && (bgImageUrl || mode === 'black') && (
+      {(has('announcements') || has('props_overlays') || has('slide_content')) && (bgImageUrl || mode === 'black') && (
         <div
           style={{
             position: 'absolute',
@@ -207,7 +211,7 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
       )}
 
       {/* Layer: slide_content */}
-      {has('slide_content') && !state?.mediaPath && <div
+      {has('slide_content') && <div
         style={{
           position: 'absolute',
           inset: 0,
@@ -246,7 +250,12 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
               lineHeight: 1.4,
               whiteSpace: 'pre-wrap',
               textAlign,
-              maxWidth: '90%'
+              width: `${textBoxWidth}%`,
+              minHeight: `${textBoxHeight}%`,
+              display: 'flex',
+              alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
+              justifyContent: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center',
+              overflowWrap: 'anywhere'
             }}
           >
             {slide}

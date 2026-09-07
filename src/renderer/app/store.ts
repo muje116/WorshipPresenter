@@ -17,9 +17,25 @@ export type Theme = {
   fontWeight?: number
   textAlign?: 'left' | 'center' | 'right'
   verticalAlign?: 'top' | 'center' | 'bottom'
+  textBoxWidth?: number
+  textBoxHeight?: number
 }
 export type OutputRole = 'primary' | 'extended' | 'stage'
 export type OutputConfig = { id: number; role: OutputRole; resolution: string; active: boolean }
+
+export type DisplayInfo = {
+  id: number
+  label: string
+  bounds: { x: number; y: number; width: number; height: number }
+  size: { width: number; height: number }
+  workArea: { x: number; y: number; width: number; height: number }
+  isPrimary: boolean
+  scaleFactor: number
+  internal: boolean
+  rotation: number
+  touchSupport: string
+  displayFrequency: number
+}
 
 // Theme presets
 export const THEME_PRESETS: Theme[] = [
@@ -63,12 +79,14 @@ type Store = {
   setLook: (outId: number, look: { background?: string; template?: string; layers?: string[] }) => void
   outputConfigs: OutputConfig[]
   updateOutputConfig: (id: number, patch: Partial<OutputConfig>) => void
+  displays: DisplayInfo[]
+  setDisplays: (displays: DisplayInfo[]) => void
 }
 
 export const useStore = create<Store>((set, get) => ({
   songs: [],
   schedule: [],
-  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center', verticalAlign: 'center' },
+  theme: { bg: '#1a1a1a', color: '#ffffff', backgroundImage: '', fontSize: 42, opacity: 100, blur: 0, gradient: '', fontFamily: 'Manrope', fontWeight: 700, textAlign: 'center', verticalAlign: 'center', textBoxWidth: 90, textBoxHeight: 70 },
   currentSlide: 'Welcome',
   liveSlide: 'Welcome',
   undoStack: [],
@@ -218,6 +236,8 @@ export const useStore = create<Store>((set, get) => ({
       return next
     })()
   })),
+  displays: [],
+  setDisplays: (displays) => set({ displays }),
   addScheduleItem: async () => {
     try {
       const newItem = await dbService.schedule.addItem('Song', 'New Item')
@@ -238,7 +258,7 @@ export const useStore = create<Store>((set, get) => ({
     })
   },
   setTheme: (t) => set({ theme: t }),
-  applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center' } }),
+  applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? '', textAlign: preset.textAlign ?? 'center', verticalAlign: preset.verticalAlign ?? 'center', textBoxWidth: preset.textBoxWidth ?? 90, textBoxHeight: preset.textBoxHeight ?? 70 } }),
   saveTemplate: (name: string) => {
     const theme = get().theme
     dbService.themes.create(name, theme).catch(err => {

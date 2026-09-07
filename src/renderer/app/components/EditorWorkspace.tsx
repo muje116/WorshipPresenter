@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 
 declare const window: any
 
@@ -14,6 +14,7 @@ type Theme = {
   opacity?: number; blur?: number; gradient?: string; fontFamily?: string
   fontWeight?: number; textAlign?: 'left' | 'center' | 'right'
   verticalAlign?: 'top' | 'center' | 'bottom'
+  textBoxWidth?: number; textBoxHeight?: number
 }
 
 type Props = {
@@ -210,7 +211,21 @@ export const EditorWorkspace: React.FC<Props> = ({
                 textAlign: theme.textAlign || 'center',
                 fontFamily: theme.fontFamily || 'Manrope',
                 fontWeight: theme.fontWeight || 700,
-                width: '90%',
+                width: `${theme.textBoxWidth ?? 90}%`,
+                minHeight: `${theme.textBoxHeight ?? 70}%`,
+                display: 'flex',
+                alignItems:
+                  (theme.verticalAlign || 'center') === 'top'
+                    ? 'flex-start'
+                    : (theme.verticalAlign || 'center') === 'bottom'
+                    ? 'flex-end'
+                    : 'center',
+                justifyContent:
+                  (theme.textAlign || 'center') === 'left'
+                    ? 'flex-start'
+                    : (theme.textAlign || 'center') === 'right'
+                    ? 'flex-end'
+                    : 'center',
               }}
             >
               {currentSlide || 'Select a section'}
@@ -233,93 +248,8 @@ export const EditorWorkspace: React.FC<Props> = ({
 
       {/* Inspector panel */}
       <aside className="panel inspector-panel">
-        <div className="panel-header"><h3>Background &amp; Style</h3></div>
+        <div className="panel-header"><h3>Editor</h3></div>
         <div className="inspector-content">
-          <div className="bg-tab-group">
-            <button className={`bg-tab ${bgManagerTab === 'media' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('media')}>Media</button>
-            <button className={`bg-tab ${bgManagerTab === 'gradient' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('gradient')}>Gradient</button>
-            <button className={`bg-tab ${bgManagerTab === 'color' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('color')}>Color</button>
-          </div>
-
-          {bgManagerTab === 'media' && (
-            <>
-              <label>Active Media</label>
-              <div className="active-media-preview">
-                {theme.backgroundImage ? (
-                  <img
-                    src={theme.backgroundImage.startsWith('file://') || theme.backgroundImage.startsWith('http')
-                      ? theme.backgroundImage
-                      : `file://${theme.backgroundImage}`}
-                    alt="Background"
-                    onError={(e) => { e.currentTarget.style.display = 'none' }}
-                  />
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                    No media selected
-                  </div>
-                )}
-              </div>
-              <label>Background Image</label>
-              <input
-                className="input"
-                value={theme.backgroundImage || ''}
-                onChange={(event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: '' })}
-                placeholder="file://... or https://..."
-              />
-              <label>Quick Picker</label>
-              <div className="quick-picker-grid">
-                <button className="quick-picker-add" onClick={() => {/* future: open file picker */}}>+</button>
-              </div>
-            </>
-          )}
-
-          {bgManagerTab === 'gradient' && (
-            <>
-              <label>Gradient Colors</label>
-              <div className="gradient-picker-row">
-                <input
-                  type="color"
-                  value={gradientStart}
-                  onChange={(e) => {
-                    onSetGradientStart(e.target.value)
-                    onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: '' })
-                  }}
-                />
-                <div className="gradient-preview" style={{ background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` }} />
-                <input
-                  type="color"
-                  value={gradientEnd}
-                  onChange={(e) => {
-                    onSetGradientEnd(e.target.value)
-                    onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: '' })
-                  }}
-                />
-              </div>
-            </>
-          )}
-
-          {bgManagerTab === 'color' && (
-            <>
-              <label>Background Color</label>
-              <input
-                type="color"
-                value={theme.bg}
-                onChange={(event) => onSetTheme({ ...theme, bg: event.target.value, gradient: '', backgroundImage: '' })}
-              />
-            </>
-          )}
-
-          <div className="slider-row">
-            <div className="slider-label"><span>Opacity</span><span>{theme.opacity ?? 100}%</span></div>
-            <input type="range" min={0} max={100} value={theme.opacity ?? 100}
-              onChange={(e) => onSetTheme({ ...theme, opacity: Number(e.target.value) })} />
-          </div>
-          <div className="slider-row">
-            <div className="slider-label"><span>Blur</span><span>{theme.blur ?? 0}px</span></div>
-            <input type="range" min={0} max={20} value={theme.blur ?? 0}
-              onChange={(e) => onSetTheme({ ...theme, blur: Number(e.target.value) })} />
-          </div>
-
           <label>Section Type</label>
           <select className="input" value={editorType} onChange={(event) => onEditorTypeChange(event.target.value)}>
             {SECTION_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
@@ -328,41 +258,139 @@ export const EditorWorkspace: React.FC<Props> = ({
           <label>Section Text</label>
           <textarea className="input textarea" value={editorText} onChange={(event) => onEditorTextChange(event.target.value)} />
 
-          <label>Font Size ({theme.fontSize}px)</label>
-          <input type="range" min={24} max={96} value={theme.fontSize}
-            onChange={(event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })} />
+          <details className="collapsible-section">
+            <summary>Background &amp; Style</summary>
+            <div className="collapsible-inner">
+              <div className="bg-tab-group">
+                <button className={`bg-tab ${bgManagerTab === 'media' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('media')}>Media</button>
+                <button className={`bg-tab ${bgManagerTab === 'gradient' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('gradient')}>Gradient</button>
+                <button className={`bg-tab ${bgManagerTab === 'color' ? 'active' : ''}`} onClick={() => onSetBgManagerTab('color')}>Color</button>
+              </div>
 
-          <label>Font Family</label>
-          <select className="input" value={theme.fontFamily || 'Manrope'}
-            onChange={(event) => onSetTheme({ ...theme, fontFamily: event.target.value })}>
-            <option value="Manrope">Manrope</option>
-            <option value="Inter">Inter</option>
-            <option value="Segoe UI">Segoe UI</option>
-          </select>
+              {bgManagerTab === 'media' && (
+                <>
+                  <label>Active Media</label>
+                  <div className="active-media-preview">
+                    {theme.backgroundImage ? (
+                      <img
+                        src={theme.backgroundImage.startsWith('file://') || theme.backgroundImage.startsWith('http')
+                          ? theme.backgroundImage
+                          : `file://${theme.backgroundImage}`}
+                        alt="Background"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                        No media selected
+                      </div>
+                    )}
+                  </div>
+                  <label>Background Image</label>
+                  <input
+                    className="input"
+                    value={theme.backgroundImage || ''}
+                    onChange={(event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: '' })}
+                    placeholder="file://... or https://..."
+                  />
+                  <label>Quick Picker</label>
+                  <div className="quick-picker-grid">
+                    <button className="quick-picker-add" onClick={() => {/* future: open file picker */}}>+</button>
+                  </div>
+                </>
+              )}
 
-          <label>Font Weight ({theme.fontWeight || 700})</label>
-          <input type="range" min={300} max={900} step={100} value={theme.fontWeight || 700}
-            onChange={(event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })} />
+              {bgManagerTab === 'gradient' && (
+                <>
+                  <label>Gradient Colors</label>
+                  <div className="gradient-picker-row">
+                    <input
+                      type="color"
+                      value={gradientStart}
+                      onChange={(e) => {
+                        onSetGradientStart(e.target.value)
+                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: '' })
+                      }}
+                    />
+                    <div className="gradient-preview" style={{ background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` }} />
+                    <input
+                      type="color"
+                      value={gradientEnd}
+                      onChange={(e) => {
+                        onSetGradientEnd(e.target.value)
+                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: '' })
+                      }}
+                    />
+                  </div>
+                </>
+              )}
 
-          <label>Text Alignment</label>
-          <select className="input" value={theme.textAlign || 'center'}
-            onChange={(event) => onSetTheme({ ...theme, textAlign: event.target.value as 'left' | 'center' | 'right' })}>
-            <option value="left">Left</option>
-            <option value="center">Center</option>
-            <option value="right">Right</option>
-          </select>
+              {bgManagerTab === 'color' && (
+                <>
+                  <label>Background Color</label>
+                  <input
+                    type="color"
+                    value={theme.bg}
+                    onChange={(event) => onSetTheme({ ...theme, bg: event.target.value, gradient: '', backgroundImage: '' })}
+                  />
+                </>
+              )}
 
-          <label>Vertical Position</label>
-          <select className="input" value={theme.verticalAlign || 'center'}
-            onChange={(event) => onSetTheme({ ...theme, verticalAlign: event.target.value as 'top' | 'center' | 'bottom' })}>
-            <option value="top">Top Half</option>
-            <option value="center">Center</option>
-            <option value="bottom">Bottom Half</option>
-          </select>
+              <div className="slider-row">
+                <div className="slider-label"><span>Opacity</span><span>{theme.opacity ?? 100}%</span></div>
+                <input type="range" min={0} max={100} value={theme.opacity ?? 100}
+                  onChange={(e) => onSetTheme({ ...theme, opacity: Number(e.target.value) })} />
+              </div>
+              <div className="slider-row">
+                <div className="slider-label"><span>Blur</span><span>{theme.blur ?? 0}px</span></div>
+                <input type="range" min={0} max={20} value={theme.blur ?? 0}
+                  onChange={(e) => onSetTheme({ ...theme, blur: Number(e.target.value) })} />
+              </div>
 
-          <label>Text Color</label>
-          <input type="color" value={theme.color}
-            onChange={(event) => onSetTheme({ ...theme, color: event.target.value })} />
+              <label>Font Size ({theme.fontSize}px)</label>
+              <input type="range" min={24} max={96} value={theme.fontSize}
+                onChange={(event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })} />
+
+              <label>Content Width ({theme.textBoxWidth ?? 90}%)</label>
+              <input type="range" min={40} max={100} value={theme.textBoxWidth ?? 90}
+                onChange={(event) => onSetTheme({ ...theme, textBoxWidth: Number(event.target.value) })} />
+
+              <label>Content Height ({theme.textBoxHeight ?? 70}%)</label>
+              <input type="range" min={25} max={100} value={theme.textBoxHeight ?? 70}
+                onChange={(event) => onSetTheme({ ...theme, textBoxHeight: Number(event.target.value) })} />
+
+              <label>Font Family</label>
+              <select className="input" value={theme.fontFamily || 'Manrope'}
+                onChange={(event) => onSetTheme({ ...theme, fontFamily: event.target.value })}>
+                <option value="Manrope">Manrope</option>
+                <option value="Inter">Inter</option>
+                <option value="Segoe UI">Segoe UI</option>
+              </select>
+
+              <label>Font Weight ({theme.fontWeight || 700})</label>
+              <input type="range" min={300} max={900} step={100} value={theme.fontWeight || 700}
+                onChange={(event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })} />
+
+              <label>Text Alignment</label>
+              <select className="input" value={theme.textAlign || 'center'}
+                onChange={(event) => onSetTheme({ ...theme, textAlign: event.target.value as 'left' | 'center' | 'right' })}>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+
+              <label>Vertical Position</label>
+              <select className="input" value={theme.verticalAlign || 'center'}
+                onChange={(event) => onSetTheme({ ...theme, verticalAlign: event.target.value as 'top' | 'center' | 'bottom' })}>
+                <option value="top">Top Half</option>
+                <option value="center">Center</option>
+                <option value="bottom">Bottom Half</option>
+              </select>
+
+              <label>Text Color</label>
+              <input type="color" value={theme.color}
+                onChange={(event) => onSetTheme({ ...theme, color: event.target.value })} />
+            </div>
+          </details>
 
           <div className="button-row">
             <button className="soft-button full" onClick={onSaveSectionEdits}>Save Section</button>

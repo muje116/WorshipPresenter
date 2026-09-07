@@ -1,7 +1,9 @@
 {
   "name": "worship-presenter",
-  "version": "0.1.0",
-  "description": "WorshipPresenter - Cross-platform worship presentation software",
+  "version": "1.2.0",
+  "description": "WorshipPresenter - Cross-platform worship presentation software for churches",
+  "author": "WorshipPresenter Team",
+  "license": "MIT",
   "main": "dist/src/main/electron.js",
   "scripts": {
     "start": "electron .",
@@ -12,7 +14,11 @@
     "test": "jest",
     "test:e2e": "playwright test",
     "dev": "tsc && node scripts/build-renderer.js && electron .",
-    "dev:watch": "tsc && node scripts/build-renderer.js && start tsc -w && start node scripts/build-renderer.js --watch && electron ."
+    "dev:watch": "tsc && node scripts/build-renderer.js && start tsc -w && start node scripts/build-renderer.js --watch && electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "dist:linux": "npm run build && electron-builder --linux"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
@@ -43,22 +49,43 @@
     "zustand": "^5.0.12"
   },
   "build": {
-    "appId": "com.yourcompany.worshipresenter",
+    "appId": "com.worshipresenter.app",
+    "productName": "WorshipPresenter",
+    "copyright": "Copyright © 2026 WorshipPresenter Team",
+    "directories": {
+      "output": "release"
+    },
     "files": [
       "dist/**/*",
       "package.json"
     ],
-    "mac": {
-      "category": "public.app-category.productivity"
-    },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": null
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "WorshipPresenter",
+      "uninstallDisplayName": "WorshipPresenter",
+      "installerIcon": null,
+      "uninstallerIcon": null
+    },
+    "mac": {
+      "category": "public.app-category.productivity",
+      "target": ["dmg", "zip"]
     },
     "linux": {
-      "target": [
-        "AppImage",
-        "deb"
-      ]
+      "target": ["AppImage", "deb"],
+      "category": "Productivity"
     }
   }
 }

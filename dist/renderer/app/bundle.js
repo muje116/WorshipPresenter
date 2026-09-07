@@ -12933,7 +12933,7 @@
   var useStore2 = create((set, get) => ({
     songs: [],
     schedule: [],
-    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center", verticalAlign: "center" },
+    theme: { bg: "#1a1a1a", color: "#ffffff", backgroundImage: "", fontSize: 42, opacity: 100, blur: 0, gradient: "", fontFamily: "Manrope", fontWeight: 700, textAlign: "center", verticalAlign: "center", textBoxWidth: 90, textBoxHeight: 70 },
     currentSlide: "Welcome",
     liveSlide: "Welcome",
     undoStack: [],
@@ -13073,6 +13073,8 @@
         return next;
       })()
     })),
+    displays: [],
+    setDisplays: (displays) => set({ displays }),
     addScheduleItem: async () => {
       try {
         const newItem = await dbService.schedule.addItem("Song", "New Item");
@@ -13092,7 +13094,7 @@
       });
     },
     setTheme: (t) => set({ theme: t }),
-    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "", textAlign: preset.textAlign ?? "center", verticalAlign: preset.verticalAlign ?? "center" } }),
+    applyPreset: (preset) => set({ theme: { ...preset, opacity: preset.opacity ?? 100, blur: preset.blur ?? 0, gradient: preset.gradient ?? "", textAlign: preset.textAlign ?? "center", verticalAlign: preset.verticalAlign ?? "center", textBoxWidth: preset.textBoxWidth ?? 90, textBoxHeight: preset.textBoxHeight ?? 70 } }),
     saveTemplate: (name) => {
       const theme = get().theme;
       dbService.themes.create(name, theme).catch((err) => {
@@ -13152,6 +13154,8 @@
     const fontWeight = theme?.fontWeight ?? 700;
     const textAlign = theme?.textAlign ?? "center";
     const verticalAlign = theme?.verticalAlign ?? "center";
+    const textBoxWidth = theme?.textBoxWidth ?? 90;
+    const textBoxHeight = theme?.textBoxHeight ?? 70;
     const mediaPlayback = state?.mediaPlayback || {};
     const propsText = state?.propsText || slide;
     const announcementText = state?.announcementText || slide;
@@ -13225,7 +13229,7 @@
               }
             }
           ),
-          (has("announcements") || has("props_overlays")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13263,7 +13267,7 @@
               ]
             }
           ),
-          has("slide_content") && !state?.mediaPath && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
             "div",
             {
               style: {
@@ -13295,7 +13299,12 @@
                     lineHeight: 1.4,
                     whiteSpace: "pre-wrap",
                     textAlign,
-                    maxWidth: "90%"
+                    width: `${textBoxWidth}%`,
+                    minHeight: `${textBoxHeight}%`,
+                    display: "flex",
+                    alignItems: verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center",
+                    justifyContent: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center",
+                    overflowWrap: "anywhere"
                   },
                   children: slide
                 }
@@ -13468,6 +13477,10 @@
     const [searchQuery, setSearchQuery] = (0, import_react3.useState)("");
     const [searchResults, setSearchResults] = (0, import_react3.useState)([]);
     const [importProgress, setImportProgress] = (0, import_react3.useState)(null);
+    const [onlineSources, setOnlineSources] = (0, import_react3.useState)([]);
+    const [downloadProgress, setDownloadProgress] = (0, import_react3.useState)(null);
+    const [downloadingCode, setDownloadingCode] = (0, import_react3.useState)(null);
+    const [showOnlinePanel, setShowOnlinePanel] = (0, import_react3.useState)(false);
     const [isSearching, setIsSearching] = (0, import_react3.useState)(false);
     const [dualMode, setDualMode] = (0, import_react3.useState)(false);
     const [selectedVerse, setSelectedVerse] = (0, import_react3.useState)(null);
@@ -13485,6 +13498,10 @@
             if (translationsList.length > 1) {
               setSecondTranslation(translationsList[1]?.code || "");
             }
+          }
+          const sources = await window.worship.bibles.getOnlineSources();
+          if (sources?.length) {
+            setOnlineSources(sources);
           }
         } catch (error) {
           console.error("Failed to load translations:", error);
@@ -13507,6 +13524,15 @@
         loadSecondVerses();
       }
     }, [selectedChapter, secondTranslation, dualMode]);
+    (0, import_react3.useEffect)(() => {
+      if (!window.worship?.bibles?.onDownloadProgress) return;
+      const cleanup = window.worship.bibles.onDownloadProgress((payload) => {
+        if (payload.translationCode === downloadingCode) {
+          setDownloadProgress(payload.progress);
+        }
+      });
+      return cleanup;
+    }, [downloadingCode]);
     (0, import_react3.useEffect)(() => {
       if (pendingVerseNumber == null || !verses.length) return;
       const verse = verses.find((item) => item.verse === pendingVerseNumber);
@@ -13602,6 +13628,41 @@
         setIsSearching(false);
       }
     };
+    const handleDownloadOnline = async (source) => {
+      if (!source) return;
+      if (source.available === false) {
+        setToast({
+          title: `${source.code} needs a license`,
+          detail: source.license || "Import an authorized OSIS file or configure a licensed API."
+        });
+        return;
+      }
+      setDownloadingCode(source.code);
+      setDownloadProgress(0);
+      try {
+        const result = await window.worship.bibles.downloadFromUrl({
+          code: source.code,
+          name: source.name,
+          language: source.language,
+          url: source.url,
+          format: source.format
+        });
+        if (result.error) {
+          setToast({ title: "Download failed", detail: result.error });
+        } else {
+          setToast({ title: "Bible downloaded", detail: `${source.name}: ${result.versesCount} verses` });
+          const translationsList = await window.worship.bibles.listTranslations();
+          if (translationsList && translationsList.length) {
+            setTranslations(translationsList);
+          }
+        }
+      } catch (e) {
+        setToast({ title: "Download failed", detail: e.message });
+      } finally {
+        setDownloadProgress(null);
+        setDownloadingCode(null);
+      }
+    };
     const handleImportOsis = async () => {
       const filePath = await window.worship?.bibles?.openOsisFile?.();
       if (!filePath) return;
@@ -13618,9 +13679,10 @@
       }
       setImportProgress(0);
       try {
-        await window.worship.bibles.importFromOsis(code, "en", filePath);
+        const result = await window.worship.bibles.importFromOsis(code, "en", filePath);
+        if (result?.error) throw new Error(result.error);
         setImportProgress(null);
-        alert("Bible import completed successfully!");
+        setToast({ title: "Bible import completed", detail: `${code} is ready` });
         const translationsList = await window.worship.bibles.listTranslations();
         if (translationsList && translationsList.length) {
           setTranslations(translationsList);
@@ -13628,8 +13690,36 @@
       } catch (e) {
         console.error(e);
         setImportProgress(null);
-        alert("Bible import failed: " + e.message);
+        setToast({ title: "Bible import failed", detail: e.message });
       } finally {
+        if (cleanup) cleanup();
+      }
+    };
+    const handleImportEasyWorship = async () => {
+      const filePath = await window.worship?.bibles?.openEasyWorshipFile?.();
+      if (!filePath) return;
+      const translationCodeToUse = prompt("Enter Bible translation code (e.g. NIV, KJV, ESV):");
+      if (!translationCodeToUse || !translationCodeToUse.trim()) return;
+      const code = translationCodeToUse.trim().toUpperCase();
+      let cleanup;
+      if (window.worship?.bibles?.onImportProgress) {
+        cleanup = window.worship.bibles.onImportProgress((payload) => {
+          if (payload.translationCode === code) {
+            setImportProgress(payload.progress);
+          }
+        });
+      }
+      setImportProgress(0);
+      try {
+        const result = await window.worship.bibles.importFromEasyWorship(code, "en", filePath);
+        if (result?.error) throw new Error(result.error);
+        setToast({ title: "EasyWorship Bible imported", detail: `${code} is ready` });
+        const translationsList = await window.worship.bibles.listTranslations();
+        if (translationsList && translationsList.length) setTranslations(translationsList);
+      } catch (e) {
+        setToast({ title: "EWB import failed", detail: e.message });
+      } finally {
+        setImportProgress(null);
         if (cleanup) cleanup();
       }
     };
@@ -13640,14 +13730,21 @@
 ${verse.text}`;
       setCurrentSlide(slideText);
     };
-    const sendToProjector = () => {
+    const sendToProjector = async () => {
       if (!selectedVerse) return;
       const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}
 
 ${selectedVerse.text}`;
       setCurrentSlide(slideText);
       setLiveSlide(slideText);
-      const OUTPUT_IDS4 = [1, 2];
+      let OUTPUT_IDS4 = [1, 2];
+      try {
+        const windows = await window?.worship?.outputs?.list?.();
+        if (Array.isArray(windows) && windows.length) {
+          OUTPUT_IDS4 = windows.map((item) => Number(item.id)).filter(Boolean);
+        }
+      } catch {
+      }
       OUTPUT_IDS4.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }));
       setToast({ title: "Verse sent live", detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
     };
@@ -13669,6 +13766,60 @@ ${selectedVerse.text}`;
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "import-osis-row", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: importProgress !== null ? `Importing (${importProgress}%)` : "\u{1F4E5} Import OSIS Bible" }),
           importProgress !== null && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 6, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: `${importProgress}%`, height: "100%", backgroundColor: "#3b82f6", transition: "width 0.2s ease-in-out" } }) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { className: "soft-button full", onClick: handleImportEasyWorship, disabled: importProgress !== null, children: "Import EasyWorship EWB" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "button",
+          {
+            className: "soft-button full",
+            onClick: () => setShowOnlinePanel(!showOnlinePanel),
+            children: showOnlinePanel ? "\u25B2 Hide Online Bibles" : "\u{1F310} Download Bible Online"
+          }
+        ) }),
+        showOnlinePanel && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "online-bibles-panel", children: [
+          downloadProgress !== null && downloadingCode && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { marginBottom: 8 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { style: { color: "var(--text-muted)" }, children: [
+              "Downloading ",
+              downloadingCode,
+              "... (",
+              downloadProgress,
+              "%)"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 4, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { width: `${downloadProgress}%`, height: "100%", backgroundColor: "#22c55e", transition: "width 0.2s ease-in-out" } }) })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "online-sources-list", children: onlineSources.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { padding: 8, color: "var(--text-muted)", fontSize: "0.75rem" }, children: "No online sources available." }) : onlineSources.map((source, idx) => {
+            const isInstalled = translations.some((t) => t.code === source.code);
+            const isDownloading = downloadingCode === source.code;
+            return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: `online-source-row ${source.available === false ? "restricted" : ""}`, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "online-source-info", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: source.name }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("small", { children: [
+                  source.code,
+                  " \xB7 ",
+                  source.language,
+                  " \xB7 ",
+                  source.license || "Direct download"
+                ] })
+              ] }),
+              isInstalled ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "installed-badge", children: "Installed" }) : source.available === false ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                "button",
+                {
+                  className: "soft-button",
+                  onClick: () => handleDownloadOnline(source),
+                  title: source.infoUrl || source.url,
+                  children: "Source"
+                }
+              ) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                "button",
+                {
+                  className: "soft-button",
+                  disabled: isDownloading,
+                  onClick: () => handleDownloadOnline(source),
+                  children: isDownloading ? `${downloadProgress}%` : "Download"
+                }
+              )
+            ] }, idx);
+          }) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: `chevron ${otExpanded ? "open" : ""}`, children: "\u25B6" }),
@@ -14655,7 +14806,11 @@ ${selectedVerse.text}`;
                         textAlign: theme.textAlign || "center",
                         fontFamily: theme.fontFamily || "Manrope",
                         fontWeight: theme.fontWeight || 700,
-                        width: "90%"
+                        width: `${theme.textBoxWidth ?? 90}%`,
+                        minHeight: `${theme.textBoxHeight ?? 70}%`,
+                        display: "flex",
+                        alignItems: (theme.verticalAlign || "center") === "top" ? "flex-start" : (theme.verticalAlign || "center") === "bottom" ? "flex-end" : "center",
+                        justifyContent: (theme.textAlign || "center") === "left" ? "flex-start" : (theme.textAlign || "center") === "right" ? "flex-end" : "center"
                       },
                       children: currentSlide || "Select a section"
                     }
@@ -14677,202 +14832,237 @@ ${selectedVerse.text}`;
             ] })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("aside", { className: "panel inspector-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { children: "Background & Style" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h3", { children: "Editor" }) }),
             /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "inspector-content", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "bg-tab-group", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "media" ? "active" : ""}`, onClick: () => onSetBgManagerTab("media"), children: "Media" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "gradient" ? "active" : ""}`, onClick: () => onSetBgManagerTab("gradient"), children: "Gradient" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "color" ? "active" : ""}`, onClick: () => onSetBgManagerTab("color"), children: "Color" })
-              ] }),
-              bgManagerTab === "media" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Active Media" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "img",
-                  {
-                    src: theme.backgroundImage.startsWith("file://") || theme.backgroundImage.startsWith("http") ? theme.backgroundImage : `file://${theme.backgroundImage}`,
-                    alt: "Background",
-                    onError: (e) => {
-                      e.currentTarget.style.display = "none";
-                    }
-                  }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", fontSize: "0.78rem" }, children: "No media selected" }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Image" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    className: "input",
-                    value: theme.backgroundImage || "",
-                    onChange: (event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: "" }),
-                    placeholder: "file://... or https://..."
-                  }
-                ),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Quick Picker" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "quick-picker-add", onClick: () => {
-                }, children: "+" }) })
-              ] }),
-              bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Gradient Colors" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "gradient-picker-row", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "input",
-                    {
-                      type: "color",
-                      value: gradientStart,
-                      onChange: (e) => {
-                        onSetGradientStart(e.target.value);
-                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: "" });
-                      }
-                    }
-                  ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "gradient-preview", style: { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` } }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "input",
-                    {
-                      type: "color",
-                      value: gradientEnd,
-                      onChange: (e) => {
-                        onSetGradientEnd(e.target.value);
-                        onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: "" });
-                      }
-                    }
-                  )
-                ] })
-              ] }),
-              bgManagerTab === "color" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Color" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "color",
-                    value: theme.bg,
-                    onChange: (event) => onSetTheme({ ...theme, bg: event.target.value, gradient: "", backgroundImage: "" })
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Opacity" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
-                    theme.opacity ?? 100,
-                    "%"
-                  ] })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "range",
-                    min: 0,
-                    max: 100,
-                    value: theme.opacity ?? 100,
-                    onChange: (e) => onSetTheme({ ...theme, opacity: Number(e.target.value) })
-                  }
-                )
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Blur" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
-                    theme.blur ?? 0,
-                    "px"
-                  ] })
-                ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                  "input",
-                  {
-                    type: "range",
-                    min: 0,
-                    max: 20,
-                    value: theme.blur ?? 0,
-                    onChange: (e) => onSetTheme({ ...theme, blur: Number(e.target.value) })
-                  }
-                )
-              ] }),
               /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Type" }),
               /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("select", { className: "input", value: editorType, onChange: (event) => onEditorTypeChange(event.target.value), children: SECTION_TYPES.map((item) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: item, children: item }, item)) }),
               /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Text" }),
               /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("textarea", { className: "input textarea", value: editorText, onChange: (event) => onEditorTextChange(event.target.value) }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
-                "Font Size (",
-                theme.fontSize,
-                "px)"
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("details", { className: "collapsible-section", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("summary", { children: "Background & Style" }),
+                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "collapsible-inner", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "bg-tab-group", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "media" ? "active" : ""}`, onClick: () => onSetBgManagerTab("media"), children: "Media" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "gradient" ? "active" : ""}`, onClick: () => onSetBgManagerTab("gradient"), children: "Gradient" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: `bg-tab ${bgManagerTab === "color" ? "active" : ""}`, onClick: () => onSetBgManagerTab("color"), children: "Color" })
+                  ] }),
+                  bgManagerTab === "media" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Active Media" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      "img",
+                      {
+                        src: theme.backgroundImage.startsWith("file://") || theme.backgroundImage.startsWith("http") ? theme.backgroundImage : `file://${theme.backgroundImage}`,
+                        alt: "Background",
+                        onError: (e) => {
+                          e.currentTarget.style.display = "none";
+                        }
+                      }
+                    ) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", fontSize: "0.78rem" }, children: "No media selected" }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Image" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      "input",
+                      {
+                        className: "input",
+                        value: theme.backgroundImage || "",
+                        onChange: (event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: "" }),
+                        placeholder: "file://... or https://..."
+                      }
+                    ),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Quick Picker" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "quick-picker-add", onClick: () => {
+                    }, children: "+" }) })
+                  ] }),
+                  bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Gradient Colors" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "gradient-picker-row", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                        "input",
+                        {
+                          type: "color",
+                          value: gradientStart,
+                          onChange: (e) => {
+                            onSetGradientStart(e.target.value);
+                            onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${e.target.value}, ${gradientEnd})`, backgroundImage: "" });
+                          }
+                        }
+                      ),
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "gradient-preview", style: { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` } }),
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                        "input",
+                        {
+                          type: "color",
+                          value: gradientEnd,
+                          onChange: (e) => {
+                            onSetGradientEnd(e.target.value);
+                            onSetTheme({ ...theme, gradient: `linear-gradient(135deg, ${gradientStart}, ${e.target.value})`, backgroundImage: "" });
+                          }
+                        }
+                      )
+                    ] })
+                  ] }),
+                  bgManagerTab === "color" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Color" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      "input",
+                      {
+                        type: "color",
+                        value: theme.bg,
+                        onChange: (event) => onSetTheme({ ...theme, bg: event.target.value, gradient: "", backgroundImage: "" })
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Opacity" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
+                        theme.opacity ?? 100,
+                        "%"
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      "input",
+                      {
+                        type: "range",
+                        min: 0,
+                        max: 100,
+                        value: theme.opacity ?? 100,
+                        onChange: (e) => onSetTheme({ ...theme, opacity: Number(e.target.value) })
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Blur" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
+                        theme.blur ?? 0,
+                        "px"
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      "input",
+                      {
+                        type: "range",
+                        min: 0,
+                        max: 20,
+                        value: theme.blur ?? 0,
+                        onChange: (e) => onSetTheme({ ...theme, blur: Number(e.target.value) })
+                      }
+                    )
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                    "Font Size (",
+                    theme.fontSize,
+                    "px)"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "input",
+                    {
+                      type: "range",
+                      min: 24,
+                      max: 96,
+                      value: theme.fontSize,
+                      onChange: (event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                    "Content Width (",
+                    theme.textBoxWidth ?? 90,
+                    "%)"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "input",
+                    {
+                      type: "range",
+                      min: 40,
+                      max: 100,
+                      value: theme.textBoxWidth ?? 90,
+                      onChange: (event) => onSetTheme({ ...theme, textBoxWidth: Number(event.target.value) })
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                    "Content Height (",
+                    theme.textBoxHeight ?? 70,
+                    "%)"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "input",
+                    {
+                      type: "range",
+                      min: 25,
+                      max: 100,
+                      value: theme.textBoxHeight ?? 70,
+                      onChange: (event) => onSetTheme({ ...theme, textBoxHeight: Number(event.target.value) })
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Font Family" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                    "select",
+                    {
+                      className: "input",
+                      value: theme.fontFamily || "Manrope",
+                      onChange: (event) => onSetTheme({ ...theme, fontFamily: event.target.value }),
+                      children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Manrope", children: "Manrope" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Inter", children: "Inter" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Segoe UI", children: "Segoe UI" })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                    "Font Weight (",
+                    theme.fontWeight || 700,
+                    ")"
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "input",
+                    {
+                      type: "range",
+                      min: 300,
+                      max: 900,
+                      step: 100,
+                      value: theme.fontWeight || 700,
+                      onChange: (event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Alignment" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                    "select",
+                    {
+                      className: "input",
+                      value: theme.textAlign || "center",
+                      onChange: (event) => onSetTheme({ ...theme, textAlign: event.target.value }),
+                      children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "left", children: "Left" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "right", children: "Right" })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Vertical Position" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                    "select",
+                    {
+                      className: "input",
+                      value: theme.verticalAlign || "center",
+                      onChange: (event) => onSetTheme({ ...theme, verticalAlign: event.target.value }),
+                      children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "top", children: "Top Half" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "bottom", children: "Bottom Half" })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Color" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    "input",
+                    {
+                      type: "color",
+                      value: theme.color,
+                      onChange: (event) => onSetTheme({ ...theme, color: event.target.value })
+                    }
+                  )
+                ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "range",
-                  min: 24,
-                  max: 96,
-                  value: theme.fontSize,
-                  onChange: (event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Font Family" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.fontFamily || "Manrope",
-                  onChange: (event) => onSetTheme({ ...theme, fontFamily: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Manrope", children: "Manrope" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Inter", children: "Inter" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Segoe UI", children: "Segoe UI" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
-                "Font Weight (",
-                theme.fontWeight || 700,
-                ")"
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "range",
-                  min: 300,
-                  max: 900,
-                  step: 100,
-                  value: theme.fontWeight || 700,
-                  onChange: (event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Alignment" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.textAlign || "center",
-                  onChange: (event) => onSetTheme({ ...theme, textAlign: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "left", children: "Left" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "right", children: "Right" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Vertical Position" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
-                "select",
-                {
-                  className: "input",
-                  value: theme.verticalAlign || "center",
-                  onChange: (event) => onSetTheme({ ...theme, verticalAlign: event.target.value }),
-                  children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "top", children: "Top Half" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "bottom", children: "Bottom Half" })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Color" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "input",
-                {
-                  type: "color",
-                  value: theme.color,
-                  onChange: (event) => onSetTheme({ ...theme, color: event.target.value })
-                }
-              ),
               /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "button-row", children: [
                 /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button full", onClick: onSaveSectionEdits, children: "Save Section" }),
                 /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "live-button full", onClick: onGoLive, children: "Send Live" }),
@@ -14913,6 +15103,9 @@ ${selectedVerse.text}`;
     activeOutputId,
     themePresets,
     logoImage,
+    displays,
+    appVersion,
+    activeOutputWindows,
     onSyncUrlChange,
     onConnectSync,
     onDisconnectSync,
@@ -14928,8 +15121,41 @@ ${selectedVerse.text}`;
     onApplyDisplayChanges,
     onLogoImageChange,
     onPickLogoFile,
-    onNotify
+    onNotify,
+    onRefreshOutputWindows
   }) => {
+    const handleCreateOutput = async (displayId, fullScreen = false) => {
+      if (window.worship?.outputs?.createWindow) {
+        await window.worship.outputs.createWindow(displayId, fullScreen);
+        onRefreshOutputWindows();
+        onNotify("Output created", `New output window created`, "success");
+      }
+    };
+    const handleCreateForDisplays = async (displayIds) => {
+      if (!displayIds.length) {
+        onNotify("No secondary display", "Connect a projector or monitor first", "warn");
+        return;
+      }
+      if (window.worship?.outputs?.createForDisplays) {
+        await window.worship.outputs.createForDisplays(displayIds, true);
+        onRefreshOutputWindows();
+        onNotify("Live outputs ready", `${displayIds.length} display(s) opened fullscreen`, "success");
+      }
+    };
+    const handleDestroyOutput = async (outId) => {
+      if (window.worship?.outputs?.destroyWindow) {
+        await window.worship.outputs.destroyWindow(outId);
+        onRefreshOutputWindows();
+        onNotify("Output removed", `Output window ${outId} closed`, "info");
+      }
+    };
+    const handleAssignOutput = async (outId, displayId) => {
+      if (window.worship?.outputs?.assignToDisplay) {
+        await window.worship.outputs.assignToDisplay(outId, displayId);
+        onRefreshOutputWindows();
+        onNotify("Output assigned", `Output ${outId} moved to display`, "success");
+      }
+    };
     return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "workspace-grid workspace-settings", children: [
       /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
@@ -14938,7 +15164,15 @@ ${selectedVerse.text}`;
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header-actions", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onResetDisplay, children: "Reset to Default" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "live-button", onClick: onApplyDisplayChanges, children: "Apply Changes" })
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "live-button", onClick: onApplyDisplayChanges, children: "Apply Changes" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "button",
+            {
+              className: "soft-button",
+              onClick: () => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id)),
+              children: "Go Live on All Secondary"
+            }
+          )
         ] })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("section", { className: "panel output-routing-cards settings-card-group", children: outputConfigs.map((output) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
@@ -15018,6 +15252,152 @@ ${selectedVerse.text}`;
         },
         output.id
       )) }),
+      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-card-group", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Detected Displays" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+            displays.length,
+            " display(s) found"
+          ] })
+        ] }),
+        displays.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { style: { padding: "12px 0", color: "var(--text-muted)", fontSize: "0.82rem" }, children: "No displays detected. Make sure your monitors are connected." }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "displays-grid", children: displays.map((display) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: `display-card ${display.isPrimary ? "primary" : ""}`, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: display.label }),
+            display.isPrimary && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "display-badge", children: "Primary" }),
+            display.internal && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "display-badge", children: "Built-in" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-info", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+              display.size.width,
+              "\xD7",
+              display.size.height
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+              display.displayFrequency,
+              "Hz"
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+              "Scale: ",
+              display.scaleFactor,
+              "x"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-assign", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Assigned outputs:" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "display-output-list", children: activeOutputWindows.filter((ow) => ow.displayId === display.id).length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { style: { color: "var(--text-muted)", fontSize: "0.75rem" }, children: "None" }) : activeOutputWindows.filter((ow) => ow.displayId === display.id).map((ow) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "output-assign-chip", children: [
+              "Output ",
+              ow.id
+            ] }, ow.id)) })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "button",
+              {
+                className: "soft-button",
+                onClick: () => handleCreateOutput(display.id, true),
+                children: "Go Live Here"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "button",
+              {
+                className: "soft-button",
+                onClick: () => handleCreateOutput(display.id, false),
+                children: "Window Here"
+              }
+            )
+          ] })
+        ] }, display.id)) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-card-group", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Output Windows" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+            activeOutputWindows.length,
+            " active"
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "output-window-list", children: activeOutputWindows.map((ow) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-info", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
+              "Output ",
+              ow.id
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "output-window-display", children: displays.find((d) => d.id === ow.displayId)?.label || `Display ${ow.displayId}` })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "select",
+            {
+              className: "input",
+              value: ow.displayId,
+              onChange: (e) => handleAssignOutput(ow.id, Number(e.target.value)),
+              style: { minWidth: 180 },
+              children: displays.map((d) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("option", { value: d.id, children: [
+                d.label,
+                " (",
+                d.size.width,
+                "\xD7",
+                d.size.height,
+                ")"
+              ] }, d.id))
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "toolbar-inline", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "button",
+              {
+                className: "soft-button",
+                onClick: () => {
+                  window?.worship?.outputs?.windowControl?.(ow.id, "show");
+                  onRefreshOutputWindows();
+                },
+                children: "Show"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              "button",
+              {
+                className: "soft-button",
+                onClick: () => window?.worship?.outputs?.windowControl?.(ow.id, "toggle-fullscreen"),
+                children: "Fullscreen"
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+              "select",
+              {
+                className: "input output-resize-select",
+                defaultValue: "",
+                onChange: (e) => {
+                  const [width, height] = e.target.value.split("x").map(Number);
+                  if (width && height) {
+                    window?.worship?.outputs?.windowControl?.(ow.id, "resize", { width, height });
+                    onRefreshOutputWindows();
+                  }
+                  e.currentTarget.value = "";
+                },
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "", children: "Resize" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1280x720", children: "1280x720" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1600x900", children: "1600x900" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1920x1080", children: "1920x1080" })
+                ]
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button danger", onClick: () => handleDestroyOutput(ow.id), children: "Close" })
+          ] })
+        ] }, ow.id)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: () => handleCreateOutput(void 0), children: "+ Add Output Window" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "button",
+            {
+              className: "soft-button",
+              onClick: () => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id)),
+              children: "Open All Secondary Fullscreen"
+            }
+          )
+        ] })
+      ] }),
       /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-logo-panel settings-card-group", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Logo Mode Image" }),
@@ -15093,7 +15473,7 @@ ${selectedVerse.text}`;
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "settings-layer-grid", children: LAYERS.map((layer) => {
               const enabled = (look.layers || []).includes(layer);
-              const meta = LAYER_META[layer] || { icon: "\u2022", label: layer.replace("_", " ") };
+              const meta = LAYER_META[layer] || { icon: "&bull;", label: layer.replace("_", " ") };
               return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { className: `settings-layer-chip ${enabled ? "active" : ""}`, title: meta.label, children: [
                 /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                   "input",
@@ -15134,7 +15514,7 @@ ${selectedVerse.text}`;
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel canvas-layout-section settings-card-group", children: [
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "canvas-layout-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-layout-title", children: "\u{1F5A5} Canvas Layout" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-layout-title", children: "Canvas Layout" }),
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "ratio-chip-group", children: ["16:9", "4:3", "21:9", "FREE"].map((ratio) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
             "button",
             {
@@ -15173,22 +15553,19 @@ ${selectedVerse.text}`;
         ) })
       ] }),
       /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel dimensions-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimensions-title", children: "\u{1F4D0} Dimensions" }),
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimensions-title", children: "Dimensions" }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Resolution" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-input-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
-              "input",
-              {
-                value: outputResolution,
-                onChange: (e) => {
-                  onSetOutputResolution(e.target.value);
-                  onUpdateOutputConfig(activeOutputId, { resolution: e.target.value });
-                }
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            "input",
+            {
+              value: outputResolution,
+              onChange: (e) => {
+                onSetOutputResolution(e.target.value);
+                onUpdateOutputConfig(activeOutputId, { resolution: e.target.value });
               }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "edit-icon", title: "Edit", children: "\u270F\uFE0F" })
-          ] })
+            }
+          ) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
           /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Aspect Ratio" }),
@@ -15241,34 +15618,141 @@ ${selectedVerse.text}`;
           )
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card-row", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "info-card-badge", children: "Pro Feature" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", style: { fontFamily: "Manrope, Inter, sans-serif", fontWeight: 700, fontSize: "1rem", marginBottom: 4 }, children: "Multi-Display Sync" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { style: { color: "var(--text-muted)", fontSize: "0.72rem", lineHeight: 1.4 }, children: "Synchronize frame delivery across multiple graphics cards for ultra-high-resolution wall displays." })
+      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel about-panel settings-card-group", style: { gridColumn: "1 / -1" }, children: [
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "About WorshipPresenter" }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Application Information" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u{1F3A8} Color Space" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "Rec.709 (High Dynamic)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-bar" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u23F1 Frame Delay" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "1.2ms (Ultra Low)" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-sub", children: "Optimized for IMAG systems" })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "info-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-label", children: "\u{1F504} Refresh Rate" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-value", children: "60.00 Hz" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "info-sub", children: "Matched to Broadcast Clock" })
-        ] })
+        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "about-content", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-grid", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Application" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Version" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: appVersion || "1.0.0" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Platform" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: navigator.platform || "Unknown" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Display Configuration" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "about-value", children: [
+              displays.length,
+              " display(s) \xB7 ",
+              activeOutputWindows.length,
+              " output(s)"
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Brand" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "The Ethereal Stage" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Build" }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "Electron installer via npm run dist:win" })
+          ] })
+        ] }) })
       ] })
     ] });
   };
 
+  // src/renderer/app/components/HelpWorkspace.tsx
+  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+  var bibleSources = [
+    ["KJV", "Direct download in the app"],
+    ["WEB", "Direct download in the app"],
+    ["ASV", "Direct download in the app"],
+    ["NLT", "Use the Tyndale NLT API or import an authorized OSIS file"],
+    ["NIV", "Use Biblica/Zondervan permissions or import an authorized OSIS file"],
+    ["NKJV", "Use HarperCollins permissions or import an authorized OSIS file"],
+    ["The Passion Translation", "Use publisher permission or import an authorized OSIS file"],
+    ["The Message", "Use NavPress permission or import an authorized OSIS file"],
+    ["ESV", "Use the Crossway ESV API or import an authorized OSIS file"],
+    ["Good News Translation", "Use API.Bible/DBL licensing or import an authorized OSIS file"]
+  ];
+  var HelpWorkspace = ({ appVersion, displayCount, outputCount }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "workspace-grid workspace-help", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel help-panel", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "How To" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Operator guide" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-content", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Use A Projector Or External Display" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Connect the projector, monitor, or TV to the computer." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Settings and check Detected Displays." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Choose Go Live Here for one screen, or Go Live on All Secondary for every external screen." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Show if an output was hidden, Fullscreen for presentation mode, or Resize for a windowed preview." })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Download Or Import Bibles" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Scripture, then Download Bible Online." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Download for direct public-domain/public-use sources." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "For restricted translations, use Source as a reminder that a publisher/API license is required." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Import OSIS Bible when you already have an authorized OSIS XML file." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Import EasyWorship EWB for readable EasyWorship Bible files. Protected or encrypted publisher files may still need an OSIS export or licensed API." })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Position And Resize Words" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Song Editor, then Background & Style." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Set Vertical Position to Top Half, Center, or Bottom Half." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Content Width and Content Height to resize the lyric or scripture text area." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Send Live to push the same positioning to projectors and output windows." })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Build An Installer" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Set the release number in package.json." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Run npm run build to compile the app." }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Run npm run dist:win to create the Windows installer in release." })
+          ] })
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("aside", { className: "panel help-side-panel", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "About" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Version" })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-grid help-about-grid", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Application" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Version" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: appVersion || "1.1.0" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Displays" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: displayCount })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Outputs" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: outputCount })
+        ] })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-source-list", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Bible Sources" }),
+        bibleSources.map(([name, detail]) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-source-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: name }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: detail })
+        ] }, name))
+      ] })
+    ] })
+  ] });
+
   // src/renderer/app/components/CommandPalette.tsx
   var import_react5 = __toESM(require_react());
-  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
   var CommandPalette = ({ commands, onClose }) => {
     const [query, setQuery] = import_react5.default.useState("");
     const [selected, setSelected] = import_react5.default.useState(0);
@@ -15319,10 +15803,10 @@ ${selectedVerse.text}`;
       });
       return map;
     }, [filtered]);
-    return /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "palette-backdrop", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-panel", onClick: (e) => e.stopPropagation(), onKeyDown: handleKeyDown, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-search-row", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-search-icon", children: "\u2318" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "palette-backdrop", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-panel", onClick: (e) => e.stopPropagation(), onKeyDown: handleKeyDown, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-search-row", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-search-icon", children: "\u2318" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
           "input",
           {
             ref: inputRef,
@@ -15334,17 +15818,17 @@ ${selectedVerse.text}`;
             spellCheck: false
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { className: "palette-esc-hint", onClick: onClose, children: "ESC" })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { className: "palette-esc-hint", onClick: onClose, children: "ESC" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-list", ref: listRef, children: [
-        filtered.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-empty", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-list", ref: listRef, children: [
+        filtered.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-empty", children: [
           'No commands match "',
           query,
           '"'
         ] }),
-        Array.from(grouped.entries()).map(([cat, items]) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "palette-category", children: cat }),
-          items.map(({ cmd, idx }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
+        Array.from(grouped.entries()).map(([cat, items]) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "palette-category", children: cat }),
+          items.map(({ cmd, idx }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
             "button",
             {
               "data-idx": idx,
@@ -15352,26 +15836,26 @@ ${selectedVerse.text}`;
               onMouseEnter: () => setSelected(idx),
               onClick: () => execute(cmd),
               children: [
-                cmd.icon && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-icon", children: cmd.icon }),
-                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-label", children: cmd.label }),
-                cmd.description && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "palette-item-desc", children: cmd.description })
+                cmd.icon && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-icon", children: cmd.icon }),
+                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-label", children: cmd.label }),
+                cmd.description && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-desc", children: cmd.description })
               ]
             },
             cmd.id
           ))
         ] }, cat))
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "palette-footer", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "\u2191\u2193" }),
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-footer", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "\u2191\u2193" }),
           " navigate"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "\u21B5" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "\u21B5" }),
           " run"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "Esc" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "Esc" }),
           " close"
         ] })
       ] })
@@ -15380,7 +15864,7 @@ ${selectedVerse.text}`;
 
   // src/renderer/app/components/Dialog.tsx
   var import_react6 = __toESM(require_react());
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
   var DialogContext = import_react6.default.createContext(null);
   var useDialog = () => {
     const ctx = import_react6.default.useContext(DialogContext);
@@ -15414,12 +15898,12 @@ ${selectedVerse.text}`;
         dismiss(config?.type === "prompt" ? inputValue : true);
       }
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(DialogContext.Provider, { value: { show }, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(DialogContext.Provider, { value: { show }, children: [
       children,
-      config && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-backdrop", role: "dialog", "aria-modal": "true", onKeyDown: handleKeyDown, tabIndex: -1, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dialog-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-title", children: config.title }),
-        config.message && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "dialog-message", children: config.message }),
-        config.type === "prompt" && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+      config && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-backdrop", role: "dialog", "aria-modal": "true", onKeyDown: handleKeyDown, tabIndex: -1, children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dialog-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-title", children: config.title }),
+        config.message && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-message", children: config.message }),
+        config.type === "prompt" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           "input",
           {
             ref: inputRef,
@@ -15436,8 +15920,8 @@ ${selectedVerse.text}`;
             autoFocus: true
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "dialog-actions", children: [
-          config.type !== "alert" && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dialog-actions", children: [
+          config.type !== "alert" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
             "button",
             {
               className: "soft-button",
@@ -15445,7 +15929,7 @@ ${selectedVerse.text}`;
               children: config.cancelLabel ?? "Cancel"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
             "button",
             {
               className: `soft-button ${config.tone === "danger" ? "danger" : "primary"}`,
@@ -15459,7 +15943,7 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/index.tsx
-  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime13 = __toESM(require_jsx_runtime());
   var OUTPUT_IDS3 = [1, 2];
   var NOTE_INDEX = {
     C: 0,
@@ -15532,6 +16016,8 @@ ${selectedVerse.text}`;
     const setLook = useStore2((state) => state.setLook);
     const outputConfigs = useStore2((state) => state.outputConfigs);
     const updateOutputConfig = useStore2((state) => state.updateOutputConfig);
+    const displays = useStore2((state) => state.displays);
+    const setDisplays = useStore2((state) => state.setDisplays);
     const [workspace, setWorkspace] = import_react7.default.useState("console");
     const [clockValue, setClockValue] = import_react7.default.useState(/* @__PURE__ */ new Date());
     const [dragIndex, setDragIndex] = import_react7.default.useState(null);
@@ -15590,6 +16076,15 @@ ${selectedVerse.text}`;
         return "";
       }
     });
+    const [appVersion, setAppVersion] = import_react7.default.useState("");
+    const [appLoading, setAppLoading] = import_react7.default.useState(true);
+    const [activeOutputWindows, setActiveOutputWindows] = import_react7.default.useState(() => {
+      if (typeof window !== "undefined" && window.worship?.outputs?.list) {
+        window.worship.outputs.list().then((list) => setActiveOutputWindows(list || [])).catch(() => {
+        });
+      }
+      return [];
+    });
     const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
     const selectedSection = selectedSong?.sections.find((s) => s.id === selectedSectionId) || selectedSong?.sections[0];
     const filteredSongs = songs.filter(
@@ -15642,6 +16137,8 @@ ${selectedVerse.text}`;
           }
         } catch (error) {
           console.error("Failed to load operator data:", error);
+        } finally {
+          window.setTimeout(() => setAppLoading(false), 250);
         }
       };
       loadData();
@@ -15681,9 +16178,52 @@ ${selectedVerse.text}`;
       } catch {
       }
     }, [logoImage]);
-    if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(OutputView, { outId, logoImage });
+    import_react7.default.useEffect(() => {
+      if (isOutput) return;
+      const loadDisplays = async () => {
+        try {
+          if (window.worship?.displays?.getAll) {
+            const d = await window.worship.displays.getAll();
+            if (d?.length) setDisplays(d);
+          }
+          if (window.worship?.app?.getVersion) {
+            const v = await window.worship.app.getVersion();
+            setAppVersion(v || "");
+          }
+          if (window.worship?.outputs?.list) {
+            const list = await window.worship.outputs.list();
+            setActiveOutputWindows(list || []);
+          }
+        } catch (e) {
+          console.error("Failed to load system info:", e);
+        }
+      };
+      loadDisplays();
+    }, [isOutput]);
+    import_react7.default.useEffect(() => {
+      if (isOutput || !window.worship?.displays?.onChanged) return;
+      const cleanup = window.worship.displays.onChanged((d) => {
+        if (d?.length) setDisplays(d);
+      });
+      return cleanup;
+    }, [isOutput]);
+    import_react7.default.useEffect(() => {
+      if (isOutput) return;
+      const refresh = async () => {
+        try {
+          if (window.worship?.outputs?.list) {
+            const list = await window.worship.outputs.list();
+            setActiveOutputWindows(list || []);
+          }
+        } catch {
+        }
+      };
+      refresh();
+    }, [displays, isOutput]);
+    if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(OutputView, { outId, logoImage });
     const sendLiveState = (slideTitle) => {
-      OUTPUT_IDS3.forEach(
+      const targetOutputIds = activeOutputWindows.length ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean) : OUTPUT_IDS3;
+      targetOutputIds.forEach(
         (id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: "", mediaType: void 0, theme })
       );
     };
@@ -15813,7 +16353,8 @@ ${selectedVerse.text}`;
       setTheme(updatedTheme);
       setCurrentSlide("");
       setLiveSlide("");
-      OUTPUT_IDS3.forEach(
+      const targetOutputIds = activeOutputWindows.length ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean) : OUTPUT_IDS3;
+      targetOutputIds.forEach(
         (id) => window?.worship?.outputs?.setState?.(id, {
           slideTitle: "",
           mediaPath: asset.path,
@@ -15857,29 +16398,29 @@ ${selectedVerse.text}`;
       { id: "toggle-ndi", label: ndiEnabled ? "Disable NDI" : "Enable NDI", icon: "\u{1F4E1}", category: "Settings", action: toggleNdi },
       { id: "sync-connect", label: syncConnected ? "Disconnect Sync" : "Connect Sync", icon: "\u{1F517}", category: "Settings", action: syncConnected ? disconnectSync : connectSync }
     ];
-    const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("header", { className: "topbar ribbon", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "ribbon-row ribbon-main", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "screen-title", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("small", { children: clockValue.toLocaleTimeString() })
+    const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("header", { className: "topbar ribbon", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "ribbon-row ribbon-main", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "screen-title", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("strong", { children: workspace.charAt(0).toUpperCase() + workspace.slice(1) }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("small", { children: clockValue.toLocaleTimeString() })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "view-tabs", children: ["console", "library", "editor", "scripture", "media", "settings"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: `tab ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "topbar-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "view-tabs", children: ["console", "library", "editor", "scripture", "media", "settings", "help"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: `tab ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item.charAt(0).toUpperCase() + item.slice(1) }, item)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "topbar-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [
             "\u2318 ",
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { children: "K" })
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("kbd", { children: "K" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "action-button dark", onClick: onBlack, children: "BLACK" }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "action-button", onClick: onLogo, children: "LOGO" }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "action-button", onClick: onClear, children: "CLEAR" }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "action-button live", onClick: goLive, children: "SEND LIVE" })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [
-        (workspace === "console" || workspace === "editor") && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Left Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [
+        (workspace === "console" || workspace === "editor") && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Left Pane" }),
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
               "input",
               {
                 type: "range",
@@ -15896,9 +16437,9 @@ ${selectedVerse.text}`;
               }
             )
           ] }),
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Output Area" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Output Area" }),
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
               "input",
               {
                 type: "range",
@@ -15909,9 +16450,9 @@ ${selectedVerse.text}`;
               }
             )
           ] }),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { children: "Inspector Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Inspector Pane" }),
+            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
               "input",
               {
                 type: "range",
@@ -15923,26 +16464,26 @@ ${selectedVerse.text}`;
             )
           ] })
         ] }),
-        workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(import_jsx_runtime12.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })
+        workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })
         ] }),
-        workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." })
+        workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." })
       ] })
     ] });
-    return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "app-shell", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("aside", { className: "app-sidebar", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "brand-block", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("h1", { children: "The Ethereal Stage" }),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("p", { children: "Sanctuary Control" })
+    return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-shell", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("aside", { className: "app-sidebar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "brand-block", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("h1", { children: "The Ethereal Stage" }),
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("p", { children: "Sanctuary Control" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("nav", { className: "sidebar-nav", children: ["console", "library", "editor", "scripture", "media", "settings"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: `nav-button ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item === "console" ? "Console" : item === "library" ? "Library" : item === "editor" ? "Song Editor" : item === "scripture" ? "Scripture" : item === "media" ? "Media" : "Settings" }, item)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "sidebar-footer", children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("nav", { className: "sidebar-nav", children: ["console", "library", "editor", "scripture", "media", "settings", "help"].map((item) => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: `nav-button ${workspace === item ? "active" : ""}`, onClick: () => setWorkspace(item), children: item === "console" ? "Console" : item === "library" ? "Library" : item === "editor" ? "Song Editor" : item === "scripture" ? "Scripture" : item === "media" ? "Media" : item === "settings" ? "Settings" : "Help" }, item)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sidebar-footer", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "live-button full", onClick: goLive, children: "Go Live" }) })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "app-main", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-main", children: [
         renderRibbon(),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("main", { className: "workspace", children: [
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("main", { className: "workspace", children: [
+          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             ConsoleWorkspace,
             {
               schedule,
@@ -15968,7 +16509,7 @@ ${selectedVerse.text}`;
               onGoToEditor: () => setWorkspace("editor")
             }
           ),
-          workspace === "library" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "library" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             LibraryWorkspace,
             {
               songs,
@@ -16013,7 +16554,7 @@ ${selectedVerse.text}`;
               }
             }
           ),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             EditorWorkspace,
             {
               selectedSong,
@@ -16068,8 +16609,8 @@ ${selectedVerse.text}`;
               onNotify: notify
             }
           ),
-          workspace === "scripture" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(BiblePicker, {}),
-          workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "scripture" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(BiblePicker, {}),
+          workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             MediaLibrary,
             {
               mediaType,
@@ -16079,7 +16620,7 @@ ${selectedVerse.text}`;
               onNotify: notify
             }
           ),
-          workspace === "settings" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          workspace === "settings" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             SettingsWorkspace,
             {
               theme,
@@ -16095,6 +16636,9 @@ ${selectedVerse.text}`;
               activeOutputId,
               themePresets: THEME_PRESETS,
               logoImage,
+              displays,
+              appVersion,
+              activeOutputWindows,
               onSyncUrlChange: setSyncUrl,
               onConnectSync: connectSync,
               onDisconnectSync: disconnectSync,
@@ -16118,19 +16662,38 @@ ${selectedVerse.text}`;
               },
               onLogoImageChange: setLogoImage,
               onPickLogoFile: pickLogoFile,
-              onNotify: notify
+              onNotify: notify,
+              onRefreshOutputWindows: async () => {
+                if (window.worship?.outputs?.list) {
+                  const list = await window.worship.outputs.list();
+                  setActiveOutputWindows(list || []);
+                }
+              }
+            }
+          ),
+          workspace === "help" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+            HelpWorkspace,
+            {
+              appVersion,
+              displayCount: displays.length,
+              outputCount: activeOutputWindows.length
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })
       ] }),
-      showPalette && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) })
+      appLoading && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "app-loader-overlay", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-loader-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("strong", { children: "Loading WorshipPresenter" }),
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Preparing songs, media, Bibles, and displays..." }),
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "app-loader-bar", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", {}) })
+      ] }) }),
+      showPalette && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) })
     ] });
   };
-  var App = () => /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(DialogProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(AppInner, {}) });
+  var App = () => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(DialogProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppInner, {}) });
   var mountPoint = document.getElementById("root");
   var root = mountPoint ? (0, import_client.createRoot)(mountPoint) : null;
-  if (root) root.render(/* @__PURE__ */ (0, import_jsx_runtime12.jsx)(App, {}));
+  if (root) root.render(/* @__PURE__ */ (0, import_jsx_runtime13.jsx)(App, {}));
 })();
 /*! Bundled license information:
 

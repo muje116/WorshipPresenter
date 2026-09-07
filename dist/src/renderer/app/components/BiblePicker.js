@@ -39,6 +39,10 @@ const BiblePicker = () => {
     const [searchQuery, setSearchQuery] = (0, react_1.useState)('');
     const [searchResults, setSearchResults] = (0, react_1.useState)([]);
     const [importProgress, setImportProgress] = (0, react_1.useState)(null);
+    const [onlineSources, setOnlineSources] = (0, react_1.useState)([]);
+    const [downloadProgress, setDownloadProgress] = (0, react_1.useState)(null);
+    const [downloadingCode, setDownloadingCode] = (0, react_1.useState)(null);
+    const [showOnlinePanel, setShowOnlinePanel] = (0, react_1.useState)(false);
     const [isSearching, setIsSearching] = (0, react_1.useState)(false);
     const [dualMode, setDualMode] = (0, react_1.useState)(false);
     const [selectedVerse, setSelectedVerse] = (0, react_1.useState)(null);
@@ -57,6 +61,10 @@ const BiblePicker = () => {
                     if (translationsList.length > 1) {
                         setSecondTranslation(translationsList[1]?.code || '');
                     }
+                }
+                const sources = await window.worship.bibles.getOnlineSources();
+                if (sources?.length) {
+                    setOnlineSources(sources);
                 }
             }
             catch (error) {
@@ -83,6 +91,16 @@ const BiblePicker = () => {
             loadSecondVerses();
         }
     }, [selectedChapter, secondTranslation, dualMode]);
+    (0, react_1.useEffect)(() => {
+        if (!window.worship?.bibles?.onDownloadProgress)
+            return;
+        const cleanup = window.worship.bibles.onDownloadProgress((payload) => {
+            if (payload.translationCode === downloadingCode) {
+                setDownloadProgress(payload.progress);
+            }
+        });
+        return cleanup;
+    }, [downloadingCode]);
     (0, react_1.useEffect)(() => {
         if (pendingVerseNumber == null || !verses.length)
             return;
@@ -190,6 +208,45 @@ const BiblePicker = () => {
             setIsSearching(false);
         }
     };
+    const handleDownloadOnline = async (source) => {
+        if (!source)
+            return;
+        if (source.available === false) {
+            setToast({
+                title: `${source.code} needs a license`,
+                detail: source.license || 'Import an authorized OSIS file or configure a licensed API.'
+            });
+            return;
+        }
+        setDownloadingCode(source.code);
+        setDownloadProgress(0);
+        try {
+            const result = await window.worship.bibles.downloadFromUrl({
+                code: source.code,
+                name: source.name,
+                language: source.language,
+                url: source.url,
+                format: source.format
+            });
+            if (result.error) {
+                setToast({ title: 'Download failed', detail: result.error });
+            }
+            else {
+                setToast({ title: 'Bible downloaded', detail: `${source.name}: ${result.versesCount} verses` });
+                const translationsList = await window.worship.bibles.listTranslations();
+                if (translationsList && translationsList.length) {
+                    setTranslations(translationsList);
+                }
+            }
+        }
+        catch (e) {
+            setToast({ title: 'Download failed', detail: e.message });
+        }
+        finally {
+            setDownloadProgress(null);
+            setDownloadingCode(null);
+        }
+    };
     const handleImportOsis = async () => {
         const filePath = await window.worship?.bibles?.openOsisFile?.();
         if (!filePath)
@@ -208,9 +265,11 @@ const BiblePicker = () => {
         }
         setImportProgress(0);
         try {
-            await window.worship.bibles.importFromOsis(code, 'en', filePath);
+            const result = await window.worship.bibles.importFromOsis(code, 'en', filePath);
+            if (result?.error)
+                throw new Error(result.error);
             setImportProgress(null);
-            alert('Bible import completed successfully!');
+            setToast({ title: 'Bible import completed', detail: `${code} is ready` });
             const translationsList = await window.worship.bibles.listTranslations();
             if (translationsList && translationsList.length) {
                 setTranslations(translationsList);
@@ -219,9 +278,44 @@ const BiblePicker = () => {
         catch (e) {
             console.error(e);
             setImportProgress(null);
-            alert('Bible import failed: ' + e.message);
+            setToast({ title: 'Bible import failed', detail: e.message });
         }
         finally {
+            if (cleanup)
+                cleanup();
+        }
+    };
+    const handleImportEasyWorship = async () => {
+        const filePath = await window.worship?.bibles?.openEasyWorshipFile?.();
+        if (!filePath)
+            return;
+        const translationCodeToUse = prompt('Enter Bible translation code (e.g. NIV, KJV, ESV):');
+        if (!translationCodeToUse || !translationCodeToUse.trim())
+            return;
+        const code = translationCodeToUse.trim().toUpperCase();
+        let cleanup;
+        if (window.worship?.bibles?.onImportProgress) {
+            cleanup = window.worship.bibles.onImportProgress((payload) => {
+                if (payload.translationCode === code) {
+                    setImportProgress(payload.progress);
+                }
+            });
+        }
+        setImportProgress(0);
+        try {
+            const result = await window.worship.bibles.importFromEasyWorship(code, 'en', filePath);
+            if (result?.error)
+                throw new Error(result.error);
+            setToast({ title: 'EasyWorship Bible imported', detail: `${code} is ready` });
+            const translationsList = await window.worship.bibles.listTranslations();
+            if (translationsList && translationsList.length)
+                setTranslations(translationsList);
+        }
+        catch (e) {
+            setToast({ title: 'EWB import failed', detail: e.message });
+        }
+        finally {
+            setImportProgress(null);
             if (cleanup)
                 cleanup();
         }
@@ -231,14 +325,22 @@ const BiblePicker = () => {
         const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`;
         setCurrentSlide(slideText);
     };
-    const sendToProjector = () => {
+    const sendToProjector = async () => {
         if (!selectedVerse)
             return;
         const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}\n\n${selectedVerse.text}`;
         setCurrentSlide(slideText);
         setLiveSlide(slideText);
-        // Also send to output windows
-        const OUTPUT_IDS = [1, 2];
+        let OUTPUT_IDS = [1, 2];
+        try {
+            const windows = await window?.worship?.outputs?.list?.();
+            if (Array.isArray(windows) && windows.length) {
+                OUTPUT_IDS = windows.map((item) => Number(item.id)).filter(Boolean);
+            }
+        }
+        catch {
+            // keep fallback outputs
+        }
         OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }));
         setToast({ title: 'Verse sent live', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
     };
@@ -258,7 +360,11 @@ const BiblePicker = () => {
         }
     };
     const wordCount = selectedVerse ? selectedVerse.text.split(/\s+/).filter(Boolean).length : 0;
-    return ((0, jsx_runtime_1.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "panel explorer-panel", children: [(0, jsx_runtime_1.jsxs)("div", { className: "import-osis-row", children: [(0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: importProgress !== null ? `Importing (${importProgress}%)` : '📥 Import OSIS Bible' }), importProgress !== null && ((0, jsx_runtime_1.jsx)("div", { style: { width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 6, overflow: 'hidden' }, children: (0, jsx_runtime_1.jsx)("div", { style: { width: `${importProgress}%`, height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.2s ease-in-out' } }) }))] }), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${otExpanded ? 'open' : ''}`, children: "\u25B6" }), "Old Testament"] }), otExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: OT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) })), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${ntExpanded ? 'open' : ''}`, children: "\u25B6" }), "New Testament"] }), ntExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: NT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) }))] }), (0, jsx_runtime_1.jsxs)("section", { className: "panel scripture-content-panel", children: [(0, jsx_runtime_1.jsxs)("div", { className: "scripture-search-bar", children: [(0, jsx_runtime_1.jsx)("span", { className: "search-icon", children: "\uD83D\uDD0D" }), (0, jsx_runtime_1.jsx)("input", { className: "scripture-search-input", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleSearch(), placeholder: `${selectedBook} 1:1` }), (0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }), (0, jsx_runtime_1.jsxs)("label", { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }), "Dual"] }), dualMode && ((0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }))] }), (0, jsx_runtime_1.jsx)("h2", { className: "scripture-book-title", children: selectedBook }), (0, jsx_runtime_1.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }), (0, jsx_runtime_1.jsx)("div", { className: "chapter-chip-grid", children: chapters.map(ch => ((0, jsx_runtime_1.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? 'active' : ''}`, onClick: () => { setSelectedChapter(ch); setSelectedVerse(null); setSearchResults([]); }, children: ch }, ch))) }), (0, jsx_runtime_1.jsxs)("div", { className: "verse-reader", children: [verses.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "verse-chapter-label", children: [(0, jsx_runtime_1.jsxs)("span", { className: "verse-chapter-pill", children: ["Chapter ", selectedChapter] }), (0, jsx_runtime_1.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })] })), searchResults.length > 0 ? (searchResults.map((result, idx) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse === result ? 'selected' : ''}`, onClick: () => handleVerseSelect(result), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: result.verse }), (0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsxs)("div", { style: { fontSize: '0.72rem', color: 'var(--primary)', marginBottom: 4 }, children: [result.book, " ", result.chapter, ":", result.verse] }), (0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: result.text })] })] }, idx)))) : verses.length > 0 ? (verses.map((verse, index) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`, onClick: () => handleVerseSelect(verse), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: verse.verse }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1 }, children: [(0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: verse.text }), dualMode && secondVerses.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find(v => v.verse === verse.verse)?.text }))] }), (0, jsx_runtime_1.jsx)("div", { className: "verse-row-hotkeys", children: selectedVerse?.verse === verse.verse ? ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: (event) => { event.stopPropagation(); sendToProjector(); }, children: "Live" })) : ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: (event) => {
+    return ((0, jsx_runtime_1.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [(0, jsx_runtime_1.jsxs)("aside", { className: "panel explorer-panel", children: [(0, jsx_runtime_1.jsxs)("div", { className: "import-osis-row", children: [(0, jsx_runtime_1.jsx)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: importProgress !== null ? `Importing (${importProgress}%)` : '📥 Import OSIS Bible' }), importProgress !== null && ((0, jsx_runtime_1.jsx)("div", { style: { width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 6, overflow: 'hidden' }, children: (0, jsx_runtime_1.jsx)("div", { style: { width: `${importProgress}%`, height: '100%', backgroundColor: '#3b82f6', transition: 'width 0.2s ease-in-out' } }) }))] }), (0, jsx_runtime_1.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: (0, jsx_runtime_1.jsx)("button", { className: "soft-button full", onClick: handleImportEasyWorship, disabled: importProgress !== null, children: "Import EasyWorship EWB" }) }), (0, jsx_runtime_1.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: (0, jsx_runtime_1.jsx)("button", { className: "soft-button full", onClick: () => setShowOnlinePanel(!showOnlinePanel), children: showOnlinePanel ? '▲ Hide Online Bibles' : '🌐 Download Bible Online' }) }), showOnlinePanel && ((0, jsx_runtime_1.jsxs)("div", { className: "online-bibles-panel", children: [downloadProgress !== null && downloadingCode && ((0, jsx_runtime_1.jsxs)("div", { style: { marginBottom: 8 }, children: [(0, jsx_runtime_1.jsxs)("small", { style: { color: 'var(--text-muted)' }, children: ["Downloading ", downloadingCode, "... (", downloadProgress, "%)"] }), (0, jsx_runtime_1.jsx)("div", { style: { width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 4, overflow: 'hidden' }, children: (0, jsx_runtime_1.jsx)("div", { style: { width: `${downloadProgress}%`, height: '100%', backgroundColor: '#22c55e', transition: 'width 0.2s ease-in-out' } }) })] })), (0, jsx_runtime_1.jsx)("div", { className: "online-sources-list", children: onlineSources.length === 0 ? ((0, jsx_runtime_1.jsx)("div", { style: { padding: 8, color: 'var(--text-muted)', fontSize: '0.75rem' }, children: "No online sources available." })) : (onlineSources.map((source, idx) => {
+                                    const isInstalled = translations.some(t => t.code === source.code);
+                                    const isDownloading = downloadingCode === source.code;
+                                    return ((0, jsx_runtime_1.jsxs)("div", { className: `online-source-row ${source.available === false ? 'restricted' : ''}`, children: [(0, jsx_runtime_1.jsxs)("div", { className: "online-source-info", children: [(0, jsx_runtime_1.jsx)("strong", { children: source.name }), (0, jsx_runtime_1.jsxs)("small", { children: [source.code, " \u00B7 ", source.language, " \u00B7 ", source.license || 'Direct download'] })] }), isInstalled ? ((0, jsx_runtime_1.jsx)("span", { className: "installed-badge", children: "Installed" })) : source.available === false ? ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: () => handleDownloadOnline(source), title: source.infoUrl || source.url, children: "Source" })) : ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", disabled: isDownloading, onClick: () => handleDownloadOnline(source), children: isDownloading ? `${downloadProgress}%` : 'Download' }))] }, idx));
+                                })) })] })), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${otExpanded ? 'open' : ''}`, children: "\u25B6" }), "Old Testament"] }), otExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: OT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) })), (0, jsx_runtime_1.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [(0, jsx_runtime_1.jsx)("span", { className: `chevron ${ntExpanded ? 'open' : ''}`, children: "\u25B6" }), "New Testament"] }), ntExpanded && ((0, jsx_runtime_1.jsx)("div", { className: "book-list", children: NT_BOOKS.map(book => ((0, jsx_runtime_1.jsx)("button", { className: `book-item ${selectedBook === book ? 'active' : ''}`, onClick: () => { setSelectedBook(book); setSelectedVerse(null); setSearchResults([]); }, children: book }, book))) }))] }), (0, jsx_runtime_1.jsxs)("section", { className: "panel scripture-content-panel", children: [(0, jsx_runtime_1.jsxs)("div", { className: "scripture-search-bar", children: [(0, jsx_runtime_1.jsx)("span", { className: "search-icon", children: "\uD83D\uDD0D" }), (0, jsx_runtime_1.jsx)("input", { className: "scripture-search-input", value: searchQuery, onChange: (e) => setSearchQuery(e.target.value), onKeyDown: (e) => e.key === 'Enter' && handleSearch(), placeholder: `${selectedBook} 1:1` }), (0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }), (0, jsx_runtime_1.jsxs)("label", { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }, children: [(0, jsx_runtime_1.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }), "Dual"] }), dualMode && ((0, jsx_runtime_1.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), children: translations.map(t => (0, jsx_runtime_1.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }))] }), (0, jsx_runtime_1.jsx)("h2", { className: "scripture-book-title", children: selectedBook }), (0, jsx_runtime_1.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }), (0, jsx_runtime_1.jsx)("div", { className: "chapter-chip-grid", children: chapters.map(ch => ((0, jsx_runtime_1.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? 'active' : ''}`, onClick: () => { setSelectedChapter(ch); setSelectedVerse(null); setSearchResults([]); }, children: ch }, ch))) }), (0, jsx_runtime_1.jsxs)("div", { className: "verse-reader", children: [verses.length > 0 && ((0, jsx_runtime_1.jsxs)("div", { className: "verse-chapter-label", children: [(0, jsx_runtime_1.jsxs)("span", { className: "verse-chapter-pill", children: ["Chapter ", selectedChapter] }), (0, jsx_runtime_1.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })] })), searchResults.length > 0 ? (searchResults.map((result, idx) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse === result ? 'selected' : ''}`, onClick: () => handleVerseSelect(result), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: result.verse }), (0, jsx_runtime_1.jsxs)("div", { children: [(0, jsx_runtime_1.jsxs)("div", { style: { fontSize: '0.72rem', color: 'var(--primary)', marginBottom: 4 }, children: [result.book, " ", result.chapter, ":", result.verse] }), (0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: result.text })] })] }, idx)))) : verses.length > 0 ? (verses.map((verse, index) => ((0, jsx_runtime_1.jsxs)("div", { className: `verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`, onClick: () => handleVerseSelect(verse), children: [(0, jsx_runtime_1.jsx)("span", { className: "verse-number", children: verse.verse }), (0, jsx_runtime_1.jsxs)("div", { style: { flex: 1 }, children: [(0, jsx_runtime_1.jsx)("div", { className: "verse-text", children: verse.text }), dualMode && secondVerses.length > 0 && ((0, jsx_runtime_1.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find(v => v.verse === verse.verse)?.text }))] }), (0, jsx_runtime_1.jsx)("div", { className: "verse-row-hotkeys", children: selectedVerse?.verse === verse.verse ? ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: (event) => { event.stopPropagation(); sendToProjector(); }, children: "Live" })) : ((0, jsx_runtime_1.jsx)("button", { className: "soft-button", onClick: (event) => {
                                                 event.stopPropagation();
                                                 handleVerseSelect(verse);
                                                 if (index + 1 < verses.length)

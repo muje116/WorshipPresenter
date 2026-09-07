@@ -10,6 +10,7 @@ import { ConsoleWorkspace } from './components/ConsoleWorkspace'
 import { LibraryWorkspace } from './components/LibraryWorkspace'
 import { EditorWorkspace } from './components/EditorWorkspace'
 import { SettingsWorkspace } from './components/SettingsWorkspace'
+import { HelpWorkspace } from './components/HelpWorkspace'
 import { CommandPalette, Command } from './components/CommandPalette'
 import { DialogProvider, useDialog } from './components/Dialog'
 import './styles.css'
@@ -24,7 +25,7 @@ const NOTE_INDEX: Record<string, number> = {
 }
 const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 
-type Workspace = 'console' | 'library' | 'editor' | 'scripture' | 'media' | 'settings'
+type Workspace = 'console' | 'library' | 'editor' | 'scripture' | 'media' | 'settings' | 'help'
 type PaneSizes = { consoleLeft: number; consoleBottom: number; editorLeft: number; editorRight: number }
 type MediaAsset = { id: number; path: string; type: 'image' | 'video' | string; name?: string; duration?: number }
 
@@ -89,6 +90,8 @@ const AppInner: React.FC = () => {
   const setLook = useStore((state) => state.setLook)
   const outputConfigs = useStore((state) => state.outputConfigs)
   const updateOutputConfig = useStore((state) => state.updateOutputConfig)
+  const displays = useStore((state) => state.displays)
+  const setDisplays = useStore((state) => state.setDisplays)
 
   // UI state
   const [workspace, setWorkspace] = React.useState<Workspace>('console')
@@ -142,6 +145,14 @@ const AppInner: React.FC = () => {
   const [showPalette, setShowPalette] = React.useState(false)
   const [logoImage, setLogoImage] = React.useState<string>(() => {
     try { return localStorage.getItem('worship-logo-image') || '' } catch { return '' }
+  })
+  const [appVersion, setAppVersion] = React.useState('')
+  const [appLoading, setAppLoading] = React.useState(true)
+  const [activeOutputWindows, setActiveOutputWindows] = React.useState<any[]>(() => {
+    if (typeof window !== 'undefined' && window.worship?.outputs?.list) {
+      window.worship.outputs.list().then((list: any) => setActiveOutputWindows(list || [])).catch(() => {})
+    }
+    return []
   })
 
   // Derived
@@ -209,6 +220,8 @@ const AppInner: React.FC = () => {
         }
       } catch (error) {
         console.error('Failed to load operator data:', error)
+      } finally {
+        window.setTimeout(() => setAppLoading(false), 250)
       }
     }
     loadData()
@@ -259,12 +272,62 @@ const AppInner: React.FC = () => {
     try { localStorage.setItem('worship-logo-image', logoImage) } catch {}
   }, [logoImage])
 
+  // Load displays on startup
+  React.useEffect(() => {
+    if (isOutput) return
+    const loadDisplays = async () => {
+      try {
+        if (window.worship?.displays?.getAll) {
+          const d = await window.worship.displays.getAll()
+          if (d?.length) setDisplays(d)
+        }
+        if (window.worship?.app?.getVersion) {
+          const v = await window.worship.app.getVersion()
+          setAppVersion(v || '')
+        }
+        if (window.worship?.outputs?.list) {
+          const list = await window.worship.outputs.list()
+          setActiveOutputWindows(list || [])
+        }
+      } catch (e) {
+        console.error('Failed to load system info:', e)
+      }
+    }
+    loadDisplays()
+  }, [isOutput])
+
+  // Listen for display changes
+  React.useEffect(() => {
+    if (isOutput || !window.worship?.displays?.onChanged) return
+    const cleanup = window.worship.displays.onChanged((d: any[]) => {
+      if (d?.length) setDisplays(d)
+    })
+    return cleanup
+  }, [isOutput])
+
+  // Refresh output list when displays change
+  React.useEffect(() => {
+    if (isOutput) return
+    const refresh = async () => {
+      try {
+        if (window.worship?.outputs?.list) {
+          const list = await window.worship.outputs.list()
+          setActiveOutputWindows(list || [])
+        }
+      } catch {}
+    }
+    refresh()
+  }, [displays, isOutput])
+
   if (isOutput) return <OutputView outId={outId} logoImage={logoImage} />
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   const sendLiveState = (slideTitle: string) => {
-    OUTPUT_IDS.forEach((id) =>
+    const targetOutputIds = activeOutputWindows.length
+      ? activeOutputWindows.map((item: any) => Number(item.id)).filter(Boolean)
+      : OUTPUT_IDS
+    targetOutputIds.forEach((id) =>
       window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: '', mediaType: undefined, theme })
     )
   }
@@ -399,7 +462,10 @@ const AppInner: React.FC = () => {
     setTheme(updatedTheme)
     setCurrentSlide('')
     setLiveSlide('')
-    OUTPUT_IDS.forEach((id) =>
+    const targetOutputIds = activeOutputWindows.length
+      ? activeOutputWindows.map((item: any) => Number(item.id)).filter(Boolean)
+      : OUTPUT_IDS
+    targetOutputIds.forEach((id) =>
       window?.worship?.outputs?.setState?.(id, {
         slideTitle: '', mediaPath: asset.path, mediaType: asset.type,
         mediaPlayback: playback, theme: updatedTheme,
@@ -451,7 +517,7 @@ const AppInner: React.FC = () => {
           <small>{clockValue.toLocaleTimeString()}</small>
         </div>
         <div className="view-tabs">
-          {(['console', 'library', 'editor', 'scripture', 'media', 'settings'] as Workspace[]).map((item) => (
+          {(['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'] as Workspace[]).map((item) => (
             <button key={item} className={`tab ${workspace === item ? 'active' : ''}`} onClick={() => setWorkspace(item)}>
               {item.charAt(0).toUpperCase() + item.slice(1)}
             </button>
@@ -523,10 +589,10 @@ const AppInner: React.FC = () => {
           <p>Sanctuary Control</p>
         </div>
         <nav className="sidebar-nav">
-          {(['console', 'library', 'editor', 'scripture', 'media', 'settings'] as Workspace[]).map((item) => (
+          {(['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'] as Workspace[]).map((item) => (
             <button key={item} className={`nav-button ${workspace === item ? 'active' : ''}`} onClick={() => setWorkspace(item)}>
               {item === 'console' ? 'Console' : item === 'library' ? 'Library' : item === 'editor' ? 'Song Editor' :
-               item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : 'Settings'}
+               item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : item === 'settings' ? 'Settings' : 'Help'}
             </button>
           ))}
         </nav>
@@ -672,6 +738,9 @@ const AppInner: React.FC = () => {
               activeOutputId={activeOutputId}
               themePresets={THEME_PRESETS}
               logoImage={logoImage}
+              displays={displays}
+              appVersion={appVersion}
+              activeOutputWindows={activeOutputWindows}
               onSyncUrlChange={setSyncUrl}
               onConnectSync={connectSync}
               onDisconnectSync={disconnectSync}
@@ -696,12 +765,36 @@ const AppInner: React.FC = () => {
               onLogoImageChange={setLogoImage}
               onPickLogoFile={pickLogoFile}
               onNotify={notify}
+              onRefreshOutputWindows={async () => {
+                if (window.worship?.outputs?.list) {
+                  const list = await window.worship.outputs.list()
+                  setActiveOutputWindows(list || [])
+                }
+              }}
+            />
+          )}
+
+          {workspace === 'help' && (
+            <HelpWorkspace
+              appVersion={appVersion}
+              displayCount={displays.length}
+              outputCount={activeOutputWindows.length}
             />
           )}
         </main>
 
         <Notifications items={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((item) => item.id !== id))} />
       </div>
+
+      {appLoading && (
+        <div className="app-loader-overlay">
+          <div className="app-loader-card">
+            <strong>Loading WorshipPresenter</strong>
+            <span>Preparing songs, media, Bibles, and displays...</span>
+            <div className="app-loader-bar"><div /></div>
+          </div>
+        </div>
+      )}
 
       {showPalette && (
         <CommandPalette commands={paletteCommands} onClose={() => setShowPalette(false)} />

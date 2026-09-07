@@ -5,6 +5,16 @@ import { dbService } from '../services/db'
 declare const window: any
 
 type Translation = { code: string; name: string; id?: number }
+type OnlineSource = {
+  code: string
+  name: string
+  language: string
+  url: string
+  format: string
+  license?: string
+  available?: boolean
+  infoUrl?: string
+}
 
 const OT_BOOKS = [
   'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy',
@@ -44,6 +54,10 @@ export const BiblePicker: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [importProgress, setImportProgress] = useState<number | null>(null)
+  const [onlineSources, setOnlineSources] = useState<OnlineSource[]>([])
+  const [downloadProgress, setDownloadProgress] = useState<number | null>(null)
+  const [downloadingCode, setDownloadingCode] = useState<string | null>(null)
+  const [showOnlinePanel, setShowOnlinePanel] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
   const [dualMode, setDualMode] = useState(false)
   const [selectedVerse, setSelectedVerse] = useState<any | null>(null)
@@ -63,6 +77,10 @@ export const BiblePicker: React.FC = () => {
           if (translationsList.length > 1) {
             setSecondTranslation(translationsList[1]?.code || '')
           }
+        }
+        const sources = await window.worship.bibles.getOnlineSources()
+        if (sources?.length) {
+          setOnlineSources(sources)
         }
       } catch (error) {
         console.error('Failed to load translations:', error)
@@ -91,6 +109,16 @@ export const BiblePicker: React.FC = () => {
       loadSecondVerses()
     }
   }, [selectedChapter, secondTranslation, dualMode])
+
+  useEffect(() => {
+    if (!window.worship?.bibles?.onDownloadProgress) return
+    const cleanup = window.worship.bibles.onDownloadProgress((payload: any) => {
+      if (payload.translationCode === downloadingCode) {
+        setDownloadProgress(payload.progress)
+      }
+    })
+    return cleanup
+  }, [downloadingCode])
 
   useEffect(() => {
     if (pendingVerseNumber == null || !verses.length) return
@@ -193,6 +221,42 @@ export const BiblePicker: React.FC = () => {
     }
   }
 
+  const handleDownloadOnline = async (source: OnlineSource) => {
+    if (!source) return
+    if (source.available === false) {
+      setToast({
+        title: `${source.code} needs a license`,
+        detail: source.license || 'Import an authorized OSIS file or configure a licensed API.'
+      })
+      return
+    }
+    setDownloadingCode(source.code)
+    setDownloadProgress(0)
+    try {
+      const result = await window.worship.bibles.downloadFromUrl({
+        code: source.code,
+        name: source.name,
+        language: source.language,
+        url: source.url,
+        format: source.format
+      })
+      if (result.error) {
+        setToast({ title: 'Download failed', detail: result.error })
+      } else {
+        setToast({ title: 'Bible downloaded', detail: `${source.name}: ${result.versesCount} verses` })
+        const translationsList = await window.worship.bibles.listTranslations()
+        if (translationsList && translationsList.length) {
+          setTranslations(translationsList)
+        }
+      }
+    } catch (e) {
+      setToast({ title: 'Download failed', detail: (e as Error).message })
+    } finally {
+      setDownloadProgress(null)
+      setDownloadingCode(null)
+    }
+  }
+
   const handleImportOsis = async () => {
     const filePath = await window.worship?.bibles?.openOsisFile?.()
     if (!filePath) return
@@ -212,9 +276,10 @@ export const BiblePicker: React.FC = () => {
     setImportProgress(0)
 
     try {
-      await window.worship.bibles.importFromOsis(code, 'en', filePath)
+      const result = await window.worship.bibles.importFromOsis(code, 'en', filePath)
+      if (result?.error) throw new Error(result.error)
       setImportProgress(null)
-      alert('Bible import completed successfully!')
+      setToast({ title: 'Bible import completed', detail: `${code} is ready` })
       const translationsList = await window.worship.bibles.listTranslations()
       if (translationsList && translationsList.length) {
         setTranslations(translationsList)
@@ -222,8 +287,39 @@ export const BiblePicker: React.FC = () => {
     } catch (e) {
       console.error(e)
       setImportProgress(null)
-      alert('Bible import failed: ' + (e as Error).message)
+      setToast({ title: 'Bible import failed', detail: (e as Error).message })
     } finally {
+      if (cleanup) cleanup()
+    }
+  }
+
+  const handleImportEasyWorship = async () => {
+    const filePath = await window.worship?.bibles?.openEasyWorshipFile?.()
+    if (!filePath) return
+    const translationCodeToUse = prompt('Enter Bible translation code (e.g. NIV, KJV, ESV):')
+    if (!translationCodeToUse || !translationCodeToUse.trim()) return
+    const code = translationCodeToUse.trim().toUpperCase()
+
+    let cleanup: (() => void) | undefined
+    if (window.worship?.bibles?.onImportProgress) {
+      cleanup = window.worship.bibles.onImportProgress((payload: any) => {
+        if (payload.translationCode === code) {
+          setImportProgress(payload.progress)
+        }
+      })
+    }
+
+    setImportProgress(0)
+    try {
+      const result = await window.worship.bibles.importFromEasyWorship(code, 'en', filePath)
+      if (result?.error) throw new Error(result.error)
+      setToast({ title: 'EasyWorship Bible imported', detail: `${code} is ready` })
+      const translationsList = await window.worship.bibles.listTranslations()
+      if (translationsList && translationsList.length) setTranslations(translationsList)
+    } catch (e) {
+      setToast({ title: 'EWB import failed', detail: (e as Error).message })
+    } finally {
+      setImportProgress(null)
       if (cleanup) cleanup()
     }
   }
@@ -234,13 +330,20 @@ export const BiblePicker: React.FC = () => {
     setCurrentSlide(slideText)
   }
 
-  const sendToProjector = () => {
+  const sendToProjector = async () => {
     if (!selectedVerse) return
     const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}\n\n${selectedVerse.text}`
     setCurrentSlide(slideText)
     setLiveSlide(slideText)
-    // Also send to output windows
-    const OUTPUT_IDS = [1, 2]
+    let OUTPUT_IDS = [1, 2]
+    try {
+      const windows = await window?.worship?.outputs?.list?.()
+      if (Array.isArray(windows) && windows.length) {
+        OUTPUT_IDS = windows.map((item: any) => Number(item.id)).filter(Boolean)
+      }
+    } catch {
+      // keep fallback outputs
+    }
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }))
     setToast({ title: 'Verse sent live', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
   }
@@ -275,6 +378,75 @@ export const BiblePicker: React.FC = () => {
             </div>
           )}
         </div>
+
+        <div className="import-osis-row" style={{ marginTop: 6 }}>
+          <button className="soft-button full" onClick={handleImportEasyWorship} disabled={importProgress !== null}>
+            Import EasyWorship EWB
+          </button>
+        </div>
+
+        <div className="import-osis-row" style={{ marginTop: 6 }}>
+          <button
+            className="soft-button full"
+            onClick={() => setShowOnlinePanel(!showOnlinePanel)}
+          >
+            {showOnlinePanel ? '▲ Hide Online Bibles' : '🌐 Download Bible Online'}
+          </button>
+        </div>
+
+        {showOnlinePanel && (
+          <div className="online-bibles-panel">
+            {downloadProgress !== null && downloadingCode && (
+              <div style={{ marginBottom: 8 }}>
+                <small style={{ color: 'var(--text-muted)' }}>
+                  Downloading {downloadingCode}... ({downloadProgress}%)
+                </small>
+                <div style={{ width: '100%', height: 6, backgroundColor: '#334155', borderRadius: 3, marginTop: 4, overflow: 'hidden' }}>
+                  <div style={{ width: `${downloadProgress}%`, height: '100%', backgroundColor: '#22c55e', transition: 'width 0.2s ease-in-out' }} />
+                </div>
+              </div>
+            )}
+            <div className="online-sources-list">
+              {onlineSources.length === 0 ? (
+                <div style={{ padding: 8, color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+                  No online sources available.
+                </div>
+              ) : (
+                onlineSources.map((source, idx) => {
+                  const isInstalled = translations.some(t => t.code === source.code)
+                  const isDownloading = downloadingCode === source.code
+                  return (
+                    <div key={idx} className={`online-source-row ${source.available === false ? 'restricted' : ''}`}>
+                      <div className="online-source-info">
+                        <strong>{source.name}</strong>
+                        <small>{source.code} &middot; {source.language} &middot; {source.license || 'Direct download'}</small>
+                      </div>
+                      {isInstalled ? (
+                        <span className="installed-badge">Installed</span>
+                      ) : source.available === false ? (
+                        <button
+                          className="soft-button"
+                          onClick={() => handleDownloadOnline(source)}
+                          title={source.infoUrl || source.url}
+                        >
+                          Source
+                        </button>
+                      ) : (
+                        <button
+                          className="soft-button"
+                          disabled={isDownloading}
+                          onClick={() => handleDownloadOnline(source)}
+                        >
+                          {isDownloading ? `${downloadProgress}%` : 'Download'}
+                        </button>
+                      )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="explorer-section-header" onClick={() => setOtExpanded(!otExpanded)}>
           <span className={`chevron ${otExpanded ? 'open' : ''}`}>▶</span>
