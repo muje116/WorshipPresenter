@@ -13,6 +13,7 @@ import { SettingsWorkspace } from './components/SettingsWorkspace'
 import { HelpWorkspace } from './components/HelpWorkspace'
 import { CommandPalette, Command } from './components/CommandPalette'
 import { DialogProvider, useDialog } from './components/Dialog'
+import { AppIcon, IconName } from './components/ui'
 import './styles.css'
 
 declare const window: any
@@ -28,6 +29,25 @@ const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 
 type Workspace = 'console' | 'library' | 'editor' | 'scripture' | 'media' | 'settings' | 'help'
 type PaneSizes = { consoleLeft: number; consoleBottom: number; editorLeft: number; editorRight: number }
 type MediaAsset = { id: number; path: string; type: 'image' | 'video' | string; name?: string; duration?: number }
+
+const NAV_ITEMS: Array<{ id: Exclude<Workspace, 'help'>; label: string; icon: IconName }> = [
+  { id: 'console', label: 'Console', icon: 'console' },
+  { id: 'library', label: 'Library', icon: 'library' },
+  { id: 'editor', label: 'Song Editor', icon: 'editor' },
+  { id: 'scripture', label: 'Scripture', icon: 'scripture' },
+  { id: 'media', label: 'Media', icon: 'media' },
+  { id: 'settings', label: 'Settings', icon: 'settings' },
+]
+
+const PAGE_META: Record<Workspace, { title: string; subtitle: string }> = {
+  console: { title: 'Console', subtitle: 'Control your worship experience' },
+  library: { title: 'Song Library', subtitle: 'Manage and organize your worship songs' },
+  editor: { title: 'Song Editor', subtitle: 'Create and edit your worship content' },
+  scripture: { title: 'Bible', subtitle: 'Display scripture with clarity and focus' },
+  media: { title: 'Media Assets', subtitle: 'Manage images, videos, and backgrounds' },
+  settings: { title: 'Settings', subtitle: 'Configure displays, outputs, and preferences' },
+  help: { title: 'Help', subtitle: 'Guides and operational shortcuts' },
+}
 
 const getOutId = (): number => {
   try {
@@ -107,6 +127,8 @@ const AppInner: React.FC = () => {
   const [songTitleDraft, setSongTitleDraft] = React.useState('')
   const [ndiEnabled, setNdiEnabled] = React.useState(false)
   const [outputStates, setOutputStates] = React.useState<Record<number, { slideTitle?: string; mode?: string }>>({})
+  const [isOnAir, setIsOnAir] = React.useState(false)
+  const [presentationPaused, setPresentationPaused] = React.useState(false)
   const [mediaType, setMediaType] = React.useState<'image' | 'video'>('image')
   const [mediaAssets, setMediaAssets] = React.useState<MediaAsset[]>([])
   const [mediaSearchQuery, setMediaSearchQuery] = React.useState('')
@@ -261,7 +283,7 @@ const AppInner: React.FC = () => {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType])
+  }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType, presentationPaused])
 
   React.useEffect(() => {
     if (isOutput) return
@@ -339,23 +361,45 @@ const AppInner: React.FC = () => {
   }
 
   const goLive = () => {
+    if (presentationPaused) {
+      notify('Presentation paused', 'Resume the live feed before sending a new slide', 'warn')
+      return
+    }
     setLiveSlide(currentSlide)
     sendLiveState(currentSlide)
+    setIsOnAir(true)
     notify('Live updated', 'Preview pushed to all outputs', 'success')
   }
 
   const onBlack = () => {
     window?.worship?.outputs?.actions?.black?.()
+    setIsOnAir(true)
     notify('Black screen enabled', 'Outputs set to black', 'warn')
   }
   const onLogo = () => {
     window?.worship?.outputs?.actions?.logo?.()
+    setIsOnAir(true)
     notify('Logo mode', 'Outputs switched to logo standby', 'info')
   }
   const onClear = () => {
     window?.worship?.outputs?.actions?.clear?.()
     sendLiveState(liveSlide)
     notify('Cleared output mode', 'Live slide restored', 'success')
+  }
+
+  const togglePresentationPause = () => {
+    setPresentationPaused((paused) => {
+      const next = !paused
+      notify(next ? 'Presentation paused' : 'Presentation resumed', next ? 'Live output is held on the current slide' : 'New slides can be sent live', next ? 'warn' : 'success')
+      return next
+    })
+  }
+
+  const endLive = () => {
+    onClear()
+    setIsOnAir(false)
+    setPresentationPaused(false)
+    notify('Live session ended', 'Outputs returned to standby', 'info')
   }
 
   const pickSection = (sectionId: number, live = false) => {
@@ -471,6 +515,7 @@ const AppInner: React.FC = () => {
         mediaPlayback: playback, theme: updatedTheme,
       })
     )
+    setIsOnAir(true)
     notify('Media sent live', asset.name || 'Live outputs updated', 'success')
   }
 
@@ -507,33 +552,48 @@ const AppInner: React.FC = () => {
     { id: 'sync-connect', label: syncConnected ? 'Disconnect Sync' : 'Connect Sync', icon: '🔗', category: 'Settings', action: syncConnected ? disconnectSync : connectSync },
   ]
 
-  // ── Ribbon ─────────────────────────────────────────────────────────────────
+  // ── Command bar ─────────────────────────────────────────────────────────────
 
   const renderRibbon = () => (
     <header className="topbar ribbon">
       <div className="ribbon-row ribbon-main">
-        <div className="screen-title">
-          <strong>{workspace.charAt(0).toUpperCase() + workspace.slice(1)}</strong>
-          <small>{clockValue.toLocaleTimeString()}</small>
+        <div className="topbar-context">
+          <span className="topbar-eyebrow">WORSHIP PRESENTER / WORKSPACE</span>
+          <div className="screen-title">
+            <strong>{PAGE_META[workspace].title}</strong>
+            <small>{PAGE_META[workspace].subtitle}</small>
+          </div>
         </div>
-        <div className="view-tabs">
-          {(['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'] as Workspace[]).map((item) => (
-            <button key={item} className={`tab ${workspace === item ? 'active' : ''}`} onClick={() => setWorkspace(item)}>
-              {item.charAt(0).toUpperCase() + item.slice(1)}
-            </button>
-          ))}
+        <div className="topbar-center-status">
+          <span className={`topbar-live-state ${isOnAir ? 'on-air' : ''}`}>
+            <span className="topbar-live-dot" />
+            {isOnAir ? 'ON AIR' : 'STANDBY'}
+          </span>
+          <span className="topbar-output-summary">
+            <span className="connected-dot" />
+            {activeOutputWindows.length || 2} outputs connected
+          </span>
         </div>
         <div className="topbar-actions">
           <button className="palette-trigger" onClick={() => setShowPalette(true)} title="Command Palette (Ctrl+K)">
-            ⌘ <kbd>K</kbd>
+            <span>Search</span><kbd>Ctrl K</kbd>
           </button>
-          <button className="action-button dark" onClick={onBlack}>BLACK</button>
-          <button className="action-button" onClick={onLogo}>LOGO</button>
-          <button className="action-button" onClick={onClear}>CLEAR</button>
-          <button className="action-button live" onClick={goLive}>SEND LIVE</button>
+          <button className="action-button dark" onClick={onBlack} title="Black screen">
+            <AppIcon name="black" size={14} /> BLACK
+          </button>
+          <button className="action-button" onClick={onLogo} title="Logo mode">
+            <AppIcon name="logo" size={14} /> LOGO
+          </button>
+          <button className="action-button" onClick={onClear} title="Clear output override">
+            <AppIcon name="clear" size={14} /> CLEAR
+          </button>
+          <button className="action-button live" onClick={goLive} title="Send preview live">
+            <AppIcon name="send" size={14} /> SEND LIVE
+          </button>
         </div>
       </div>
       <div className="ribbon-row ribbon-tools">
+        <span className="command-bar-label"><AppIcon name="spark" size={13} /> Operator controls</span>
         {(workspace === 'console' || workspace === 'editor') && (
           <>
             <label className="ribbon-control">
@@ -585,19 +645,37 @@ const AppInner: React.FC = () => {
     <div className="app-shell">
       <aside className="app-sidebar">
         <div className="brand-block">
-          <h1>The Ethereal Stage</h1>
-          <p>Sanctuary Control</p>
+          <div className="brand-lockup">
+            <span className="brand-mark"><AppIcon name="spark" size={18} strokeWidth={2.2} /></span>
+            <div>
+              <h1>Worship Presenter</h1>
+              <p>Present <span>•</span> Worship <span>•</span> Inspire</p>
+            </div>
+          </div>
         </div>
-        <nav className="sidebar-nav">
-          {(['console', 'library', 'editor', 'scripture', 'media', 'settings', 'help'] as Workspace[]).map((item) => (
-            <button key={item} className={`nav-button ${workspace === item ? 'active' : ''}`} onClick={() => setWorkspace(item)}>
-              {item === 'console' ? 'Console' : item === 'library' ? 'Library' : item === 'editor' ? 'Song Editor' :
-               item === 'scripture' ? 'Scripture' : item === 'media' ? 'Media' : item === 'settings' ? 'Settings' : 'Help'}
+        <div className="sidebar-section-label">WORKSPACE</div>
+        <nav className="sidebar-nav" aria-label="Primary navigation">
+          {NAV_ITEMS.map((item) => (
+            <button key={item.id} className={`nav-button ${workspace === item.id ? 'active' : ''}`} onClick={() => setWorkspace(item.id)} aria-current={workspace === item.id ? 'page' : undefined}>
+              <span className="nav-icon"><AppIcon name={item.icon} size={17} /></span>
+              <span>{item.label}</span>
             </button>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <button className="live-button full" onClick={goLive}>Go Live</button>
+          <div className="sidebar-section-label">SUPPORT</div>
+          <button className={`nav-button ${workspace === 'help' ? 'active' : ''}`} onClick={() => setWorkspace('help')} aria-current={workspace === 'help' ? 'page' : undefined}>
+            <span className="nav-icon"><AppIcon name="help" size={17} /></span>
+            <span>Help &amp; shortcuts</span>
+          </button>
+          <div className="sidebar-operator-card">
+            <span className="operator-avatar">WP</span>
+            <span className="operator-copy"><strong>Operator</strong><small>{isOnAir ? 'Live session' : 'Ready to present'}</small></span>
+            <span className={`operator-status ${isOnAir ? 'live' : ''}`} />
+          </div>
+          <button className="live-button sidebar-go-live" onClick={goLive}>
+            <AppIcon name="send" size={15} /> Go Live
+          </button>
         </div>
       </aside>
 
@@ -619,6 +697,14 @@ const AppInner: React.FC = () => {
               onScheduleItemClick={(content) => { setCurrentSlide(content) }}
               onAddScheduleItem={() => { addScheduleItem(); notify('Schedule updated', 'New service item added', 'success') }}
               onGoToEditor={() => setWorkspace('editor')}
+              isOnAir={isOnAir}
+              presentationPaused={presentationPaused}
+              onGoLive={goLive}
+              onClear={onClear}
+              onLogo={onLogo}
+              onBlack={onBlack}
+              onTogglePause={togglePresentationPause}
+              onEndLive={endLive}
             />
           )}
 
