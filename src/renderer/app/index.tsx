@@ -14,6 +14,7 @@ import { HelpWorkspace } from './components/HelpWorkspace'
 import { CommandPalette, Command } from './components/CommandPalette'
 import { DialogProvider, useDialog } from './components/Dialog'
 import { AppIcon, IconName } from './components/ui'
+import { getRichTextHtml, hasRichTextMarkup, richTextToPlainText } from './components/RichText'
 import './styles.css'
 
 declare const window: any
@@ -58,7 +59,7 @@ const getOutId = (): number => {
 }
 
 const stripChordMarkup = (text: string): string =>
-  text.replace(/\[([^\]]+)\]/g, '').replace(/\s+/g, ' ').trim()
+  richTextToPlainText(text).replace(/\[([^\]]+)\]/g, '').replace(/\s+/g, ' ').trim()
 
 const transposeChord = (chord: string, steps: number): string => {
   const match = chord.match(/^([A-G])([#b]?)(.*)$/)
@@ -208,6 +209,13 @@ const AppInner: React.FC = () => {
   }, [selectedSection?.id, selectedSection?.text, selectedSection?.type])
 
   React.useEffect(() => {
+    const firstSectionId = selectedSong?.sections[0]?.id ?? null
+    if (selectedSectionId === null || !selectedSong?.sections.some((section) => section.id === selectedSectionId)) {
+      setSelectedSectionId(firstSectionId)
+    }
+  }, [selectedSong?.id, selectedSong?.sections, selectedSectionId])
+
+  React.useEffect(() => {
     setSongTitleDraft(selectedSong?.title || '')
   }, [selectedSong?.id, selectedSong?.title])
 
@@ -349,8 +357,16 @@ const AppInner: React.FC = () => {
     const targetOutputIds = activeOutputWindows.length
       ? activeOutputWindows.map((item: any) => Number(item.id)).filter(Boolean)
       : OUTPUT_IDS
+    const slideHtml = hasRichTextMarkup(slideTitle) ? getRichTextHtml(slideTitle) : undefined
+    const state = {
+      slideTitle: richTextToPlainText(slideTitle),
+      ...(slideHtml ? { slideHtml } : {}),
+      mediaPath: '',
+      mediaType: undefined,
+      theme,
+    }
     targetOutputIds.forEach((id) =>
-      window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: '', mediaType: undefined, theme })
+      window?.worship?.outputs?.setState?.(id, state)
     )
   }
 
@@ -542,7 +558,7 @@ const AppInner: React.FC = () => {
     { id: 'black', label: 'Black Screen', description: 'Set all outputs to black', icon: '⬛', category: 'Output', action: onBlack },
     { id: 'logo', label: 'Logo Mode', description: 'Show church logo on outputs', icon: '🏛', category: 'Output', action: onLogo },
     { id: 'clear', label: 'Clear Override', description: 'Restore normal output', icon: '✨', category: 'Output', action: onClear },
-    { id: 'add-song', label: 'Add New Song', icon: '➕', category: 'Library', action: async () => { await addSong(); setWorkspace('editor') } },
+    { id: 'add-song', label: 'Add New Song', icon: '➕', category: 'Library', action: async () => { const id = await addSong(); if (id) setSelectedSongId(id); setWorkspace('editor') } },
     { id: 'import-songs', label: 'Import Songs', icon: '📥', category: 'Library', action: importSongs },
     { id: 'add-section', label: 'Add Section to Song', icon: '➕', category: 'Editor', action: () => selectedSong && addSongSection(selectedSong.id) },
     { id: 'save-section', label: 'Save Section Edits', icon: '💾', category: 'Editor', action: saveSectionEdits },
@@ -722,7 +738,7 @@ const AppInner: React.FC = () => {
               onSortChange={setLibrarySort}
               onViewModeChange={setLibraryViewMode}
               onSelectSong={(id) => { setSelectedSongId(id); setWorkspace('editor') }}
-              onAddSong={() => { addSong(); setWorkspace('editor') }}
+              onAddSong={async () => { const id = await addSong(); if (id) setSelectedSongId(id); setWorkspace('editor') }}
               onImportSongs={importSongs}
               onRenameSong={async (song) => {
                 const next = await showDialog({ type: 'prompt', title: 'Rename Song', defaultValue: song.title, confirmLabel: 'Rename' })

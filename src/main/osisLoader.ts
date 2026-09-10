@@ -164,11 +164,14 @@ export async function importOsisBibleFromFile(
   onProgress?: (percent: number) => void
 ): Promise<number> {
   let bibleId: number
-  const bibleRow = db.prepare('SELECT id FROM bibles WHERE translation = ?').get(translationCode) as { id: number } | undefined
+  const bibleRow = db.prepare('SELECT id FROM bibles WHERE UPPER(translation) = UPPER(?) LIMIT 1').get(translationCode) as { id: number } | undefined
   if (bibleRow?.id) {
     bibleId = bibleRow.id
+    const verseCount = (db.prepare('SELECT COUNT(*) AS count FROM verses WHERE bible_id = ?').get(bibleId) as { count: number } | undefined)?.count || 0
+    if (verseCount > 0) return bibleId
+    db.prepare('UPDATE bibles SET language = ?, path = ? WHERE id = ?').run(language, path.resolve(filePath), bibleId)
   } else {
-    const info = db.prepare('INSERT INTO bibles (translation, language, path) VALUES (?, ?, ?)').run(translationCode, language, filePath)
+    const info = db.prepare('INSERT INTO bibles (translation, language, path) VALUES (?, ?, ?)').run(translationCode, language, path.resolve(filePath))
     bibleId = info.lastInsertRowid as number
   }
 

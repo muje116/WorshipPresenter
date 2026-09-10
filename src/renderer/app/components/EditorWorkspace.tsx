@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { AppIcon } from './ui'
+import { FitText, RichTextEditor } from './RichText'
 
 declare const window: any
 
@@ -191,47 +192,19 @@ export const EditorWorkspace: React.FC<Props> = ({
             }}
           />
           <div className="slide-overlay live" />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 1,
-              display: 'flex',
-              alignItems:
-                (theme.verticalAlign || 'center') === 'top'
-                  ? 'flex-start'
-                  : (theme.verticalAlign || 'center') === 'bottom'
-                  ? 'flex-end'
-                  : 'center',
-              justifyContent: 'center',
-              padding: '40px 60px',
-            }}
-          >
-            <h1
-              style={{
-                textAlign: theme.textAlign || 'center',
-                fontFamily: theme.fontFamily || 'Manrope',
-                fontWeight: theme.fontWeight || 700,
-                width: `${theme.textBoxWidth ?? 90}%`,
-                minHeight: `${theme.textBoxHeight ?? 70}%`,
-                display: 'flex',
-                alignItems:
-                  (theme.verticalAlign || 'center') === 'top'
-                    ? 'flex-start'
-                    : (theme.verticalAlign || 'center') === 'bottom'
-                    ? 'flex-end'
-                    : 'center',
-                justifyContent:
-                  (theme.textAlign || 'center') === 'left'
-                    ? 'flex-start'
-                    : (theme.textAlign || 'center') === 'right'
-                    ? 'flex-end'
-                    : 'center',
-              }}
-            >
-              {currentSlide || 'Select a section'}
-            </h1>
-          </div>
+          <FitText
+            value={currentSlide || 'Select a section'}
+            className="editor-fit"
+            baseFontSize={theme.fontSize}
+            fontFamily={theme.fontFamily || 'Manrope'}
+            fontWeight={theme.fontWeight || 700}
+            textAlign={theme.textAlign || 'center'}
+            verticalAlign={theme.verticalAlign || 'center'}
+            textBoxWidth={theme.textBoxWidth ?? 90}
+            textBoxHeight={theme.textBoxHeight ?? 70}
+            style={{ position: 'absolute', inset: 0, zIndex: 1, padding: '40px 60px', color: theme.color }}
+            aria-label="Song slide preview"
+          />
           <span className="live-pill stage">Live View</span>
         </div>
         <div className="stage-toolbar">
@@ -257,7 +230,12 @@ export const EditorWorkspace: React.FC<Props> = ({
           </select>
 
           <label>Section Text</label>
-          <textarea className="input textarea" value={editorText} onChange={(event) => onEditorTextChange(event.target.value)} />
+          <RichTextEditor
+            value={editorText}
+            onChange={onEditorTextChange}
+            placeholder="Type lyrics, then format them for the screen..."
+            aria-label="Section rich text"
+          />
 
           <details className="collapsible-section">
             <summary>Background &amp; Style</summary>

@@ -5,7 +5,7 @@ import { AppIcon } from './ui'
 
 declare const window: any
 
-type Translation = { code: string; name: string; id?: number }
+type Translation = { code: string; name: string; id?: number; language?: string }
 type OnlineSource = {
   code: string
   name: string
@@ -39,6 +39,16 @@ const NT_BOOKS = [
 
 const ALL_BOOKS = [...OT_BOOKS, ...NT_BOOKS]
 
+const uniqueTranslations = (items: Translation[]): Translation[] => {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const code = String(item.code || '').trim().toUpperCase()
+    if (!code || seen.has(code)) return false
+    seen.add(code)
+    return true
+  }).map((item) => ({ ...item, code: String(item.code).trim().toUpperCase() }))
+}
+
 export const BiblePicker: React.FC = () => {
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
@@ -66,19 +76,32 @@ export const BiblePicker: React.FC = () => {
   const [ntExpanded, setNtExpanded] = useState(false)
   const [toast, setToast] = useState<{ title: string; detail?: string } | null>(null)
   const [pendingVerseNumber, setPendingVerseNumber] = useState<number | null>(null)
+  const chapterRequestRef = React.useRef(0)
+  const verseRequestRef = React.useRef(0)
+  const secondVerseRequestRef = React.useRef(0)
+
+  const refreshTranslations = async () => {
+    const translationsList = await window.worship.bibles.listTranslations()
+    const nextTranslations = uniqueTranslations(translationsList || [])
+    setTranslations(nextTranslations)
+    if (!nextTranslations.length) {
+      setSelectedTranslation('')
+      setSecondTranslation('')
+      return nextTranslations
+    }
+    setSelectedTranslation((current) => nextTranslations.some((item) => item.code === current) ? current : nextTranslations[0].code)
+    setSecondTranslation((current) => {
+      if (nextTranslations.some((item) => item.code === current) && current !== nextTranslations[0].code) return current
+      return nextTranslations.find((item) => item.code !== nextTranslations[0].code)?.code || ''
+    })
+    return nextTranslations
+  }
 
   // Load translations
   useEffect(() => {
     const loadBibleData = async () => {
       try {
-        const translationsList = await window.worship.bibles.listTranslations()
-        if (translationsList && translationsList.length) {
-          setTranslations(translationsList)
-          setSelectedTranslation(translationsList[0]?.code || '')
-          if (translationsList.length > 1) {
-            setSecondTranslation(translationsList[1]?.code || '')
-          }
-        }
+        await refreshTranslations()
         const sources = await window.worship.bibles.getOnlineSources()
         if (sources?.length) {
           setOnlineSources(sources)
@@ -93,23 +116,40 @@ export const BiblePicker: React.FC = () => {
   // Load chapters when book changes
   useEffect(() => {
     if (selectedBook) {
-      loadChapters(selectedBook)
+      const translation = translations.find((item) => item.code === selectedTranslation)
+      loadChapters(selectedBook, translation?.id)
     }
-  }, [selectedBook])
+  }, [selectedBook, selectedTranslation, translations])
 
   // Load verses when chapter changes
   useEffect(() => {
     if (selectedBook && selectedChapter) {
-      loadVerses()
+      loadVerses(selectedBook, selectedChapter, selectedTranslation)
     }
-  }, [selectedChapter, selectedTranslation])
+  }, [selectedBook, selectedChapter, selectedTranslation, translations])
 
   // Load second translation verses
   useEffect(() => {
     if (dualMode && secondTranslation && selectedBook && selectedChapter) {
-      loadSecondVerses()
+      loadSecondVerses(selectedBook, selectedChapter, secondTranslation)
+    } else {
+      setSecondVerses([])
     }
-  }, [selectedChapter, secondTranslation, dualMode])
+  }, [selectedBook, selectedChapter, secondTranslation, dualMode, translations])
+
+  useEffect(() => {
+    if (!translations.length || secondTranslation !== selectedTranslation) return
+    const alternate = translations.find((item) => item.code !== selectedTranslation)
+    setSecondTranslation(alternate?.code || '')
+    setSecondVerses([])
+  }, [selectedTranslation, secondTranslation, translations])
+
+  useEffect(() => {
+    setSelectedVerse(null)
+    setVerses([])
+    setSecondVerses([])
+    setSearchResults([])
+  }, [selectedTranslation])
 
   useEffect(() => {
     if (!window.worship?.bibles?.onDownloadProgress) return
@@ -156,42 +196,50 @@ export const BiblePicker: React.FC = () => {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [verses, selectedVerse])
 
-  const loadChapters = async (book: string) => {
+  const loadChapters = async (book: string, translationId?: number) => {
+    const requestId = chapterRequestRef.current + 1
+    chapterRequestRef.current = requestId
     try {
-      const chaptersList = await window.worship.bibles.getChapters(book)
+      const chaptersList = await window.worship.bibles.getChapters(book, translationId)
+      if (requestId !== chapterRequestRef.current) return
       if (chaptersList && chaptersList.length) {
         setChapters(chaptersList)
-        setSelectedChapter(chaptersList[0])
+        setSelectedChapter((current) => chaptersList.includes(current) ? current : chaptersList[0])
       } else {
         setChapters([1])
         setSelectedChapter(1)
       }
     } catch (error) {
       console.error('Failed to load chapters:', error)
+      if (requestId !== chapterRequestRef.current) return
       setChapters([1])
       setSelectedChapter(1)
     }
   }
 
-  const loadVerses = async () => {
+  const loadVerses = async (book: string, chapter: number, translationCode: string) => {
+    const requestId = verseRequestRef.current + 1
+    verseRequestRef.current = requestId
     try {
-      const translation = translations.find(t => t.code === selectedTranslation)
-      const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id)
-      setVerses(versesList || [])
+      const translation = translations.find((item) => item.code === translationCode)
+      const versesList = await window.worship.bibles.getVerses(book, chapter, translation?.id)
+      if (requestId === verseRequestRef.current) setVerses(versesList || [])
     } catch (error) {
       console.error('Failed to load verses:', error)
-      setVerses([])
+      if (requestId === verseRequestRef.current) setVerses([])
     }
   }
 
-  const loadSecondVerses = async () => {
+  const loadSecondVerses = async (book: string, chapter: number, translationCode: string) => {
+    const requestId = secondVerseRequestRef.current + 1
+    secondVerseRequestRef.current = requestId
     try {
-      const translation = translations.find(t => t.code === secondTranslation)
-      const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id)
-      setSecondVerses(versesList || [])
+      const translation = translations.find((item) => item.code === translationCode)
+      const versesList = await window.worship.bibles.getVerses(book, chapter, translation?.id)
+      if (requestId === secondVerseRequestRef.current) setSecondVerses(versesList || [])
     } catch (error) {
       console.error('Failed to load second verses:', error)
-      setSecondVerses([])
+      if (requestId === secondVerseRequestRef.current) setSecondVerses([])
     }
   }
 
@@ -245,10 +293,7 @@ export const BiblePicker: React.FC = () => {
         setToast({ title: 'Download failed', detail: result.error })
       } else {
         setToast({ title: 'Bible downloaded', detail: `${source.name}: ${result.versesCount} verses` })
-        const translationsList = await window.worship.bibles.listTranslations()
-        if (translationsList && translationsList.length) {
-          setTranslations(translationsList)
-        }
+        await refreshTranslations()
       }
     } catch (e) {
       setToast({ title: 'Download failed', detail: (e as Error).message })
@@ -281,10 +326,7 @@ export const BiblePicker: React.FC = () => {
       if (result?.error) throw new Error(result.error)
       setImportProgress(null)
       setToast({ title: 'Bible import completed', detail: `${code} is ready` })
-      const translationsList = await window.worship.bibles.listTranslations()
-      if (translationsList && translationsList.length) {
-        setTranslations(translationsList)
-      }
+      await refreshTranslations()
     } catch (e) {
       console.error(e)
       setImportProgress(null)
@@ -315,8 +357,7 @@ export const BiblePicker: React.FC = () => {
       const result = await window.worship.bibles.importFromEasyWorship(code, 'en', filePath)
       if (result?.error) throw new Error(result.error)
       setToast({ title: 'EasyWorship Bible imported', detail: `${code} is ready` })
-      const translationsList = await window.worship.bibles.listTranslations()
-      if (translationsList && translationsList.length) setTranslations(translationsList)
+      await refreshTranslations()
     } catch (e) {
       setToast({ title: 'EWB import failed', detail: (e as Error).message })
     } finally {
@@ -325,15 +366,67 @@ export const BiblePicker: React.FC = () => {
     }
   }
 
-  const handleVerseSelect = (verse: any) => {
-    setSelectedVerse(verse)
-    const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}\n\n${verse.text}`
-    setCurrentSlide(slideText)
+  const handleImportXmlPack = async () => {
+    const filePaths = await window.worship?.bibles?.openXmlFiles?.()
+    if (!filePaths?.length || !window.worship?.bibles?.importXmlFiles) return
+
+    let cleanup: (() => void) | undefined
+    if (window.worship?.bibles?.onImportProgress) {
+      cleanup = window.worship.bibles.onImportProgress((payload: any) => {
+        if (payload?.progress != null) setImportProgress(Number(payload.progress))
+      })
+    }
+
+    setImportProgress(0)
+    try {
+      const results = await window.worship.bibles.importXmlFiles(filePaths)
+      const imported = (results || []).filter((result: any) => result && !result.error && !result.skipped)
+      const skipped = (results || []).filter((result: any) => result?.skipped)
+      const failed = (results || []).filter((result: any) => result?.error)
+      await refreshTranslations()
+      setToast({
+        title: 'Bible translations loaded',
+        detail: `${imported.length} imported${skipped.length ? `, ${skipped.length} duplicate${skipped.length === 1 ? '' : 's'} skipped` : ''}${failed.length ? `, ${failed.length} failed` : ''}`,
+      })
+    } catch (error) {
+      setToast({ title: 'Bible pack import failed', detail: (error as Error).message })
+    } finally {
+      setImportProgress(null)
+      cleanup?.()
+    }
   }
 
-  const sendToProjector = async () => {
-    if (!selectedVerse) return
-    const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}\n\n${selectedVerse.text}`
+  const getVerseContext = (verse: any) => ({
+    book: verse?.book || selectedBook,
+    chapter: Number(verse?.chapter || selectedChapter),
+  })
+
+  const buildVerseSlide = (verse: any): string => {
+    const context = getVerseContext(verse)
+    const mainLabel = selectedTranslation.toUpperCase() || 'TEXT'
+    const lines = [
+      `${context.book} ${context.chapter}:${verse.verse}`,
+      `${mainLabel}: ${verse.text}`,
+    ]
+    if (dualMode && secondTranslation && secondTranslation !== selectedTranslation) {
+      const secondary = secondVerses.find((item) => item.verse === verse.verse)
+      if (secondary?.text) lines.push(`${secondTranslation.toUpperCase()}: ${secondary.text}`)
+    }
+    return lines.join('\n\n')
+  }
+
+  const handleVerseSelect = (verse: any) => {
+    const context = getVerseContext(verse)
+    setSelectedVerse(verse)
+    if (verse?.book) setSelectedBook(context.book)
+    if (verse?.chapter) setSelectedChapter(context.chapter)
+    setCurrentSlide(buildVerseSlide(verse))
+  }
+
+  const sendVerseToProjector = async (verse: any) => {
+    if (!verse) return
+    const context = getVerseContext(verse)
+    const slideText = buildVerseSlide(verse)
     setCurrentSlide(slideText)
     setLiveSlide(slideText)
     let OUTPUT_IDS = [1, 2]
@@ -346,18 +439,28 @@ export const BiblePicker: React.FC = () => {
       // keep fallback outputs
     }
     OUTPUT_IDS.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }))
-    setToast({ title: 'Verse sent live', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
+    setToast({ title: 'Verse sent live', detail: `${context.book} ${context.chapter}:${verse.verse} · ${selectedTranslation.toUpperCase()}` })
+  }
+
+  const sendToProjector = async () => {
+    await sendVerseToProjector(selectedVerse)
+  }
+
+  const handleVerseDoubleClick = (verse: any) => {
+    handleVerseSelect(verse)
+    void sendVerseToProjector(verse)
   }
 
   const addToSchedule = async () => {
     if (!selectedVerse) return
     try {
-      const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`
+      const context = getVerseContext(selectedVerse)
+      const content = `${context.book} ${context.chapter}:${selectedVerse.verse} - ${selectedVerse.text}`
       await dbService.schedule.addItem('scripture', content)
       // Reload schedule items in Zustand store
       const nextItems = await dbService.schedule.getItems()
       useStore.setState({ schedule: nextItems })
-      setToast({ title: 'Added to schedule', detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` })
+      setToast({ title: 'Added to schedule', detail: `${context.book} ${context.chapter}:${selectedVerse.verse}` })
     } catch (error) {
       console.error('Failed to add to schedule:', error)
     }
@@ -369,6 +472,20 @@ export const BiblePicker: React.FC = () => {
     <div className="workspace-grid workspace-scripture">
       {/* LEFT: Explorer Panel */}
       <aside className="panel explorer-panel">
+        <div className="bible-pack-card">
+          <div className="bible-pack-heading">
+            <div>
+              <span className="panel-eyebrow">TRANSLATION PACK</span>
+              <strong>English Bible XML</strong>
+            </div>
+            <AppIcon name="globe" size={16} />
+          </div>
+          <p>Import multiple numbered Bible XML files at once. Translation codes are detected automatically and duplicate versions are skipped.</p>
+          <button className="live-button full" onClick={handleImportXmlPack} disabled={importProgress !== null}>
+            <AppIcon name="upload" size={14} /> {importProgress !== null ? `Loading XML (${importProgress}%)` : 'Load Bible XML set'}
+          </button>
+          <small className="bible-pack-codes">TPT · NIV · GW · GNT · EASY · AMPC · AMP · TLB · NLT</small>
+        </div>
         <div className="import-osis-row">
           <button className="live-button full" onClick={handleImportOsis} disabled={importProgress !== null}>
             <AppIcon name="upload" size={14} /> {importProgress !== null ? `Importing (${importProgress}%)` : 'Import OSIS Bible'}
@@ -489,16 +606,31 @@ export const BiblePicker: React.FC = () => {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             placeholder={`${selectedBook} 1:1`}
           />
-          <select className="translation-selector" value={selectedTranslation} onChange={(e) => setSelectedTranslation(e.target.value)}>
-            {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>)}
+          <select
+            className="translation-selector"
+            value={selectedTranslation}
+            onChange={(e) => {
+              setSelectedTranslation(e.target.value)
+              setSelectedVerse(null)
+              setVerses([])
+              setSecondVerses([])
+              setSearchResults([])
+            }}
+            aria-label="Bible translation"
+          >
+            {!translations.length && <option value="">No versions loaded</option>}
+            {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()} · {t.name}</option>)}
           </select>
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.72rem', color: 'var(--text-muted)', cursor: 'pointer' }}>
             <input type="checkbox" checked={dualMode} onChange={(e) => setDualMode(e.target.checked)} style={{ borderRadius: 4 }} />
             Dual
           </label>
           {dualMode && (
-            <select className="translation-selector" value={secondTranslation} onChange={(e) => setSecondTranslation(e.target.value)}>
-              {translations.map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()}</option>)}
+            <select className="translation-selector" value={secondTranslation} onChange={(e) => {
+              setSecondTranslation(e.target.value)
+              setSecondVerses([])
+            }} aria-label="Second Bible translation">
+              {translations.filter((item) => item.code !== selectedTranslation).map(t => <option key={t.code} value={t.code}>{t.code.toUpperCase()} · {t.name}</option>)}
             </select>
           )}
         </div>
@@ -528,7 +660,13 @@ export const BiblePicker: React.FC = () => {
           {/* Search Results */}
           {searchResults.length > 0 ? (
             searchResults.map((result, idx) => (
-              <div key={idx} className={`verse-row ${selectedVerse === result ? 'selected' : ''}`} onClick={() => handleVerseSelect(result)}>
+              <div
+                key={idx}
+                className={`verse-row ${selectedVerse === result ? 'selected' : ''}`}
+                onClick={() => handleVerseSelect(result)}
+                onDoubleClick={() => handleVerseDoubleClick(result)}
+                title="Click to preview · double-click to send live"
+              >
                 <span className="verse-number">{result.verse}</span>
                 <div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--primary)', marginBottom: 4 }}>{result.book} {result.chapter}:{result.verse}</div>
@@ -538,7 +676,13 @@ export const BiblePicker: React.FC = () => {
             ))
           ) : verses.length > 0 ? (
             verses.map((verse, index) => (
-              <div key={verse.verse} className={`verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`} onClick={() => handleVerseSelect(verse)}>
+              <div
+                key={verse.verse}
+                className={`verse-row ${selectedVerse?.verse === verse.verse ? 'selected' : ''}`}
+                onClick={() => handleVerseSelect(verse)}
+                onDoubleClick={() => handleVerseDoubleClick(verse)}
+                title="Click to preview · double-click to send live"
+              >
                 <span className="verse-number">{verse.verse}</span>
                 <div style={{ flex: 1 }}>
                   <div className="verse-text">{verse.text}</div>
@@ -554,7 +698,6 @@ export const BiblePicker: React.FC = () => {
                   ) : (
                     <button className="soft-button" onClick={(event) => {
                       event.stopPropagation()
-                      handleVerseSelect(verse)
                       if (index + 1 < verses.length) handleVerseSelect(verses[index + 1])
                     }}><AppIcon name="chevron" size={13} /> Next</button>
                   )}

@@ -63,7 +63,7 @@ type Store = {
   pushSlideUndo: (s: string) => void
   undo: () => void
   redo: () => void
-  addSong: () => Promise<void>
+  addSong: () => Promise<number | void>
   deleteSong: (id: number) => Promise<void>
   updateSongSection: (songId: number, sectionId: number, patch: Partial<Section>) => void
   updateSongTitle: (songId: number, title: string) => void
@@ -112,8 +112,10 @@ export const useStore = create<Store>((set, get) => ({
       const title = 'New Song ' + tempId
       const newSong = await dbService.songs.create(title)
       set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }))
+      return newSong.id
     } catch (err) {
       console.error('Failed to persist new song:', err)
+      return undefined
     }
   },
   deleteSong: async (id) => {

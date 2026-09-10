@@ -10,6 +10,7 @@ const db_1 = require("./db");
 const sync_1 = require("./sync");
 const osisLoader_1 = require("./osisLoader");
 const easyWorshipBibleLoader_1 = require("./easyWorshipBibleLoader");
+const bibleXmlLoader_1 = require("./bibleXmlLoader");
 const windowManager_1 = require("./windowManager");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -634,6 +635,37 @@ function registerBibleHandlers() {
             return { error: err.message };
         }
     });
+    electron_1.ipcMain.handle('bibles.openXmlFiles', async () => {
+        const res = await electron_1.dialog.showOpenDialog({
+            properties: ['openFile', 'multiSelections'],
+            filters: [{ name: 'Bible XML', extensions: ['xml'] }],
+            title: 'Import Bible translation XML files',
+        });
+        if (res.canceled)
+            return [];
+        return res.filePaths;
+    });
+    electron_1.ipcMain.handle('bibles.importXmlFiles', async (event, filePaths) => {
+        const results = [];
+        for (const filePath of Array.isArray(filePaths) ? filePaths : []) {
+            if (!filePath)
+                continue;
+            try {
+                const result = await (0, bibleXmlLoader_1.importBibleXmlFromFile)(filePath, (progress) => {
+                    event.sender.send('bible-import-progress', {
+                        translationCode: path_1.default.basename(filePath),
+                        filePath,
+                        progress,
+                    });
+                });
+                results.push(result);
+            }
+            catch (error) {
+                results.push({ filePath, error: error.message });
+            }
+        }
+        return results;
+    });
     electron_1.ipcMain.handle('bibles.openOsisFile', async () => {
         const res = await electron_1.dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'OSIS XML', extensions: ['osis', 'xml'] }] });
         if (res.canceled || res.filePaths.length === 0)
@@ -659,36 +691,52 @@ function registerBibleHandlers() {
         }
     });
     electron_1.ipcMain.handle('bibles.listTranslations', async () => {
-        const osisPaths = [
-            path_1.default.join(electron_1.app.getPath('userData'), 'bibles', 'niv.osis'),
-            path_1.default.join(electron_1.app.getPath('userData'), 'bibles', 'kjv.osis')
-        ];
         try {
-            const translations = await (0, osisLoader_1.loadOsisTranslations)(osisPaths);
-            if (translations.length > 0)
-                return translations;
-        }
-        catch { }
-        try {
-            const rows = db_1.db.prepare('SELECT translation AS code, translation AS name, language FROM bibles').all();
-            return rows.map((r) => ({ code: r.code ?? r.translation, name: r.name ?? r.translation, language: r.language }));
+            const rows = db_1.db.prepare('SELECT id, translation AS code, COALESCE(NULLIF(name, \'\'), translation) AS name, language FROM bibles ORDER BY id').all();
+            const seen = new Set();
+            return rows.filter((row) => {
+                const key = String(row.code || '').trim().toUpperCase();
+                if (!key || seen.has(key))
+                    return false;
+                seen.add(key);
+                return true;
+            }).map((r) => ({ id: r.id, code: r.code, name: r.name || r.code, language: r.language || 'en' }));
         }
         catch {
             return [];
         }
     });
-    electron_1.ipcMain.handle('bibles.getBooks', async () => [
-        'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
-        '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
-        'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
-        'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
-        'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
-        'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon',
-        'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
-    ]);
+    electron_1.ipcMain.handle('bibles.getBooks', async (_ev, args) => {
+        const orderedBooks = [
+            'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
+            '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
+            'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
+            'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah', 'Malachi',
+            'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
+            'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon',
+            'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
+        ];
+        if (!args?.translationId)
+            return orderedBooks;
+        try {
+            const rows = db_1.db.prepare('SELECT DISTINCT book FROM verses WHERE bible_id = ?').all(args.translationId);
+            const available = new Set(rows.map((row) => row.book));
+            return orderedBooks.filter((book) => available.has(book));
+        }
+        catch {
+            return orderedBooks;
+        }
+    });
     electron_1.ipcMain.handle('bibles.getChapters', async (_ev, args) => {
         try {
-            const rows = db_1.db.prepare('SELECT DISTINCT chapter FROM verses WHERE book = ? ORDER BY chapter').all(args.book);
+            let sql = 'SELECT DISTINCT chapter FROM verses WHERE book = ?';
+            const params = [args.book];
+            if (args.translationId) {
+                sql = 'SELECT DISTINCT chapter FROM verses WHERE bible_id = ? AND book = ?';
+                params.unshift(args.translationId);
+            }
+            sql += ' ORDER BY chapter';
+            const rows = db_1.db.prepare(sql).all(...params);
             return rows.map((r) => r.chapter);
         }
         catch {

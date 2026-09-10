@@ -1,5 +1,6 @@
 import React from 'react'
 import { useStore } from '../store'
+import { FitText } from './RichText'
 
 type Props = {
   outId: number
@@ -8,6 +9,7 @@ type Props = {
 
 type State = {
   slideTitle?: string
+  slideHtml?: string
   mode?: string
   mediaPath?: string
   mediaType?: 'image' | 'video'
@@ -76,6 +78,7 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
 
   const mode = state?.mode
   const slide = state?.slideTitle ?? 'Idle'
+  const slideContent = state?.slideHtml ?? slide
   const theme = state?.theme
   const lookBg = perOutLook.background
 
@@ -242,24 +245,21 @@ export const OutputView: React.FC<Props> = ({ outId, logoImage }) => {
             </div>
           )
         ) : (
-          <div
-            style={{
-              fontSize: fontSize,
-              fontFamily,
-              fontWeight,
-              lineHeight: 1.4,
-              whiteSpace: 'pre-wrap',
-              textAlign,
-              width: `${textBoxWidth}%`,
-              minHeight: `${textBoxHeight}%`,
-              display: 'flex',
-              alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
-              justifyContent: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center',
-              overflowWrap: 'anywhere'
-            }}
-          >
-            {slide}
-          </div>
+          <FitText
+            value={slideContent}
+            className="output-fit"
+            baseFontSize={fontSize}
+            minFontSize={12}
+            lineHeight={1.22}
+            fontFamily={fontFamily}
+            fontWeight={fontWeight}
+            textAlign={textAlign}
+            verticalAlign={verticalAlign}
+            textBoxWidth={textBoxWidth}
+            textBoxHeight={textBoxHeight}
+            style={{ color: textColor }}
+            aria-label={`Output ${outId} slide content`}
+          />
         )}
       </div>}
 

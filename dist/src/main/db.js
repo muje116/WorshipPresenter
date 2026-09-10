@@ -58,6 +58,7 @@ function initDB() {
     CREATE TABLE IF NOT EXISTS bibles (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       translation TEXT,
+      name TEXT,
       language TEXT,
       path TEXT
     );
@@ -147,6 +148,7 @@ function initDB() {
     ensureColumn('themes', 'backgroundImage', 'TEXT');
     ensureColumn('themes', 'text_color', 'TEXT');
     ensureColumn('themes', 'font_size', 'INTEGER');
+    ensureColumn('bibles', 'name', 'TEXT');
     ensureColumn('media_assets', 'name', 'TEXT');
     ensureColumn('media_assets', 'thumbnail', 'TEXT');
     ensureColumn('media_assets', 'folder_id', 'INTEGER');

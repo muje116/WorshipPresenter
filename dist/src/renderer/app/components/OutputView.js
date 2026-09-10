@@ -7,6 +7,7 @@ exports.OutputView = void 0;
 const jsx_runtime_1 = require("react/jsx-runtime");
 const react_1 = __importDefault(require("react"));
 const store_1 = require("../store");
+const RichText_1 = require("./RichText");
 const toFileUrl = (input) => {
     if (!input)
         return null;
@@ -51,6 +52,7 @@ const OutputView = ({ outId, logoImage }) => {
     }, [outId]);
     const mode = state?.mode;
     const slide = state?.slideTitle ?? 'Idle';
+    const slideContent = state?.slideHtml ?? slide;
     const theme = state?.theme;
     const lookBg = perOutLook.background;
     // Determine background
@@ -146,20 +148,7 @@ const OutputView = ({ outId, logoImage }) => {
                     padding: '40px 60px',
                     maxWidth: '100%',
                     textShadow: '2px 2px 8px rgba(0,0,0,0.8)'
-                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? (logoImage ? ((0, jsx_runtime_1.jsx)("img", { src: toFileUrl(logoImage) || logoImage, alt: "Church logo", style: { maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' } })) : ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }))) : ((0, jsx_runtime_1.jsx)("div", { style: {
-                        fontSize: fontSize,
-                        fontFamily,
-                        fontWeight,
-                        lineHeight: 1.4,
-                        whiteSpace: 'pre-wrap',
-                        textAlign,
-                        width: `${textBoxWidth}%`,
-                        minHeight: `${textBoxHeight}%`,
-                        display: 'flex',
-                        alignItems: verticalAlign === 'top' ? 'flex-start' : verticalAlign === 'bottom' ? 'flex-end' : 'center',
-                        justifyContent: textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center',
-                        overflowWrap: 'anywhere'
-                    }, children: slide })) }), has('lower_thirds') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: {
+                }, children: mode === 'black' ? ((0, jsx_runtime_1.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" })) : mode === 'logo' ? (logoImage ? ((0, jsx_runtime_1.jsx)("img", { src: toFileUrl(logoImage) || logoImage, alt: "Church logo", style: { maxWidth: '60%', maxHeight: '60%', objectFit: 'contain', filter: 'drop-shadow(0 8px 24px rgba(0,0,0,0.35))' } })) : ((0, jsx_runtime_1.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }))) : ((0, jsx_runtime_1.jsx)(RichText_1.FitText, { value: slideContent, className: "output-fit", baseFontSize: fontSize, minFontSize: 12, lineHeight: 1.22, fontFamily: fontFamily, fontWeight: fontWeight, textAlign: textAlign, verticalAlign: verticalAlign, textBoxWidth: textBoxWidth, textBoxHeight: textBoxHeight, style: { color: textColor }, "aria-label": `Output ${outId} slide content` })) }), has('lower_thirds') && mode !== 'black' && ((0, jsx_runtime_1.jsxs)("div", { style: {
                     position: 'absolute',
                     left: 32,
                     right: 32,

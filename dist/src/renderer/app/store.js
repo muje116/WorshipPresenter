@@ -46,9 +46,11 @@ exports.useStore = (0, zustand_1.create)((set, get) => ({
             const title = 'New Song ' + tempId;
             const newSong = await db_1.dbService.songs.create(title);
             set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }));
+            return newSong.id;
         }
         catch (err) {
             console.error('Failed to persist new song:', err);
+            return undefined;
         }
     },
     deleteSong: async (id) => {

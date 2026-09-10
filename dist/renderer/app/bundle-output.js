@@ -768,7 +768,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React4 = require_react();
+      var React5 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -808,7 +808,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React4.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React5.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -944,7 +944,7 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React4 = require_react();
+      var React5 = require_react();
       var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
@@ -1135,7 +1135,7 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React4.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React5.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
@@ -12581,7 +12581,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1840 = React4.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1840 = React5.version;
       if ("19.2.5" !== isomorphicReactPackageVersion$jscomp$inline_1840)
         throw Error(
           formatProdErrorMessage(
@@ -12749,11 +12749,11 @@
   });
 
   // src/renderer/app/output.tsx
-  var import_react3 = __toESM(require_react());
+  var import_react4 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // src/renderer/app/components/OutputView.tsx
-  var import_react2 = __toESM(require_react());
+  var import_react3 = __toESM(require_react());
 
   // node_modules/zustand/esm/vanilla.mjs
   var createStoreImpl = (createState) => {
@@ -12951,8 +12951,10 @@
         const title = "New Song " + tempId;
         const newSong = await dbService.songs.create(title);
         set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }));
+        return newSong.id;
       } catch (err) {
         console.error("Failed to persist new song:", err);
+        return void 0;
       }
     },
     deleteSong: async (id) => {
@@ -13095,8 +13097,222 @@
     }
   }));
 
-  // src/renderer/app/components/OutputView.tsx
+  // src/renderer/app/components/RichText.tsx
+  var import_react2 = __toESM(require_react());
   var import_jsx_runtime = __toESM(require_jsx_runtime());
+  var ALLOWED_TAGS = /* @__PURE__ */ new Set([
+    "B",
+    "STRONG",
+    "I",
+    "EM",
+    "U",
+    "S",
+    "BR",
+    "P",
+    "DIV",
+    "SPAN",
+    "UL",
+    "OL",
+    "LI",
+    "SUB",
+    "SUP"
+  ]);
+  var BLOCKED_TAGS = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "LINK", "META"]);
+  var escapeHtml = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  var isSafeStyleValue = (property, value) => {
+    if (!value || /url\s*\(|expression\s*\(|javascript\s*:/i.test(value)) return false;
+    if (property === "color" || property === "background-color") {
+      return /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\)|[a-z]+)$/i.test(value);
+    }
+    if (property === "font-size") return /^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i.test(value);
+    if (property === "text-align") return /^(?:left|center|right|justify)$/i.test(value);
+    if (property === "font-weight") return /^(?:normal|bold|[1-9]00)$/i.test(value);
+    if (property === "font-style") return /^(?:normal|italic|oblique)$/i.test(value);
+    if (property === "text-decoration") return /^(?:none|underline|line-through)(?:\s+(?:underline|line-through))*$/i.test(value);
+    return false;
+  };
+  var sanitizeStyle = (style) => style.split(";").map((declaration) => declaration.trim()).filter(Boolean).map((declaration) => {
+    const separator = declaration.indexOf(":");
+    if (separator < 0) return null;
+    const property = declaration.slice(0, separator).trim().toLowerCase();
+    const value = declaration.slice(separator + 1).trim();
+    return isSafeStyleValue(property, value) ? `${property}: ${value}` : null;
+  }).filter((declaration) => Boolean(declaration)).join("; ");
+  var normalizeFontElement = (element) => {
+    const span = document.createElement("span");
+    const color = element.getAttribute("color");
+    const size = element.getAttribute("size");
+    if (color && isSafeStyleValue("color", color)) span.style.color = color;
+    if (size) {
+      const sizeMap = { "1": "12px", "2": "14px", "3": "16px", "4": "20px", "5": "26px", "6": "34px", "7": "44px" };
+      const fontSize = sizeMap[size] || (/^\d+(?:\.\d+)?px$/.test(size) ? size : "");
+      if (fontSize) span.style.fontSize = fontSize;
+    }
+    while (element.firstChild) span.appendChild(element.firstChild);
+    element.replaceWith(span);
+    return span;
+  };
+  var sanitizeNode = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (!(child instanceof HTMLElement)) return;
+      const tag = child.tagName.toUpperCase();
+      if (BLOCKED_TAGS.has(tag)) {
+        child.remove();
+        return;
+      }
+      if (tag === "FONT") {
+        sanitizeNode(normalizeFontElement(child));
+        return;
+      }
+      if (!ALLOWED_TAGS.has(tag)) {
+        const fragment = document.createDocumentFragment();
+        while (child.firstChild) fragment.appendChild(child.firstChild);
+        child.replaceWith(fragment);
+        sanitizeNode(node);
+        return;
+      }
+      Array.from(child.attributes).forEach((attribute) => {
+        if (attribute.name.toLowerCase() !== "style") child.removeAttribute(attribute.name);
+      });
+      if (child.hasAttribute("style")) {
+        const safeStyle = sanitizeStyle(child.getAttribute("style") || "");
+        if (safeStyle) child.setAttribute("style", safeStyle);
+        else child.removeAttribute("style");
+      }
+      sanitizeNode(child);
+    });
+  };
+  var hasRichTextMarkup = (value) => /<\/?[a-z][^>]*>/i.test(value);
+  var plainTextToHtml = (value) => escapeHtml(value || "").replace(/\r\n?|\n/g, "<br />");
+  var sanitizeRichText = (value) => {
+    if (!value) return "";
+    if (!hasRichTextMarkup(value)) return plainTextToHtml(value);
+    const template = document.createElement("template");
+    template.innerHTML = value;
+    sanitizeNode(template.content);
+    return template.innerHTML;
+  };
+  var getRichTextHtml = (value) => sanitizeRichText(value || "");
+  var RichText = ({ value, className = "", ...rest }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    "div",
+    {
+      ...rest,
+      className: `rich-text-content ${className}`.trim(),
+      dangerouslySetInnerHTML: { __html: getRichTextHtml(value) }
+    }
+  );
+  var FitText = ({
+    value,
+    className = "",
+    baseFontSize = 48,
+    minFontSize = 12,
+    lineHeight = 1.22,
+    fontFamily = "Manrope",
+    fontWeight = 700,
+    textAlign = "center",
+    verticalAlign = "center",
+    textBoxWidth = 90,
+    textBoxHeight = 90,
+    style,
+    "aria-label": ariaLabel
+  }) => {
+    const viewportRef = import_react2.default.useRef(null);
+    const contentRef = import_react2.default.useRef(null);
+    const [fit, setFit] = import_react2.default.useState({ fontSize: baseFontSize, scale: 1 });
+    const measure = import_react2.default.useCallback(() => {
+      const viewport = viewportRef.current;
+      const content = contentRef.current;
+      if (!viewport || !content || viewport.clientWidth <= 0 || viewport.clientHeight <= 0) return;
+      const availableWidth = Math.max(1, viewport.clientWidth);
+      const availableHeight = Math.max(1, viewport.clientHeight);
+      const minimum = Math.max(8, Math.min(minFontSize, baseFontSize));
+      const maximum = Math.max(minimum, baseFontSize);
+      const canFit = (fontSize) => {
+        content.style.fontSize = `${fontSize}px`;
+        content.style.transform = "none";
+        return content.scrollWidth <= availableWidth + 1 && content.scrollHeight <= availableHeight + 1;
+      };
+      let best = minimum;
+      if (canFit(maximum)) {
+        best = maximum;
+      } else {
+        let low = minimum;
+        let high = maximum;
+        for (let index = 0; index < 14; index += 1) {
+          const midpoint = (low + high) / 2;
+          if (canFit(midpoint)) {
+            best = midpoint;
+            low = midpoint;
+          } else {
+            high = midpoint;
+          }
+        }
+      }
+      canFit(best);
+      const overflowScale = Math.min(1, availableWidth / Math.max(1, content.scrollWidth), availableHeight / Math.max(1, content.scrollHeight));
+      const nextScale = Number.isFinite(overflowScale) ? Math.max(0.12, overflowScale) : 1;
+      setFit((previous) => Math.abs(previous.fontSize - best) < 0.1 && Math.abs(previous.scale - nextScale) < 0.01 ? previous : { fontSize: best, scale: nextScale });
+    }, [baseFontSize, minFontSize, value, textBoxHeight, textBoxWidth]);
+    import_react2.default.useLayoutEffect(() => {
+      let frame = 0;
+      const requestFrame = (callback) => typeof window.requestAnimationFrame === "function" ? window.requestAnimationFrame(callback) : window.setTimeout(() => callback(Date.now()), 0);
+      const cancelFrame = (handle) => {
+        if (typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(handle);
+        else window.clearTimeout(handle);
+      };
+      const scheduleMeasure = () => {
+        if (frame) cancelFrame(frame);
+        frame = requestFrame(() => {
+          frame = 0;
+          measure();
+        });
+      };
+      scheduleMeasure();
+      const viewport = viewportRef.current;
+      const observer = typeof ResizeObserver !== "undefined" && viewport ? new ResizeObserver(scheduleMeasure) : null;
+      observer?.observe(viewport);
+      window.addEventListener("resize", scheduleMeasure);
+      return () => {
+        if (frame) cancelFrame(frame);
+        observer?.disconnect();
+        window.removeEventListener("resize", scheduleMeasure);
+      };
+    }, [measure]);
+    const alignItems = verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center";
+    const justifyContent = textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center";
+    const transformOrigin = `${textAlign} ${verticalAlign}`;
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      "div",
+      {
+        ref: viewportRef,
+        className: `fit-text-viewport ${className}`.trim(),
+        style: { alignItems, justifyContent, ...style },
+        "aria-label": ariaLabel,
+        children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "div",
+          {
+            ref: contentRef,
+            className: "fit-text-content",
+            style: {
+              width: `${Math.min(100, Math.max(30, textBoxWidth))}%`,
+              minHeight: `${Math.min(100, Math.max(0, textBoxHeight))}%`,
+              fontSize: `${fit.fontSize}px`,
+              lineHeight,
+              fontFamily,
+              fontWeight,
+              textAlign,
+              transform: `scale(${fit.scale})`,
+              transformOrigin
+            },
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RichText, { value })
+          }
+        )
+      }
+    );
+  };
+
+  // src/renderer/app/components/OutputView.tsx
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   var toFileUrl = (input) => {
     if (!input) return null;
     if (input.startsWith("http://") || input.startsWith("https://") || input.startsWith("file://")) return input;
@@ -13106,9 +13322,9 @@
   };
   var OutputView = ({ outId, logoImage }) => {
     const perOutLook = useStore2((state2) => state2.looks?.[outId]) || {};
-    const [state, setState] = import_react2.default.useState({ slideTitle: "Idle" });
-    const videoRef = import_react2.default.useRef(null);
-    import_react2.default.useEffect(() => {
+    const [state, setState] = import_react3.default.useState({ slideTitle: "Idle" });
+    const videoRef = import_react3.default.useRef(null);
+    import_react3.default.useEffect(() => {
       if (window.worship?.outputs?.onOutputState) {
         window.worship.outputs.onOutputState((payload) => {
           if (payload?.outputId === outId && payload?.state) {
@@ -13135,6 +13351,7 @@
     }, [outId]);
     const mode = state?.mode;
     const slide = state?.slideTitle ?? "Idle";
+    const slideContent = state?.slideHtml ?? slide;
     const theme = state?.theme;
     const lookBg = perOutLook.background;
     const bgImage = state?.mediaPath || theme?.backgroundImage;
@@ -13152,7 +13369,7 @@
     const announcementText = state?.announcementText || slide;
     const alertText = state?.alertText || slide;
     const liveVideoLabel = state?.liveVideoLabel || "Live Camera";
-    import_react2.default.useEffect(() => {
+    import_react3.default.useEffect(() => {
       if (videoRef.current) {
         videoRef.current.playbackRate = mediaPlayback.playbackRate || 1;
       }
@@ -13162,7 +13379,7 @@
     const bgImageUrl = toFileUrl(bgImage);
     const layers = perOutLook.layers || ["background", "media", "slide_content"];
     const has = (layer) => layers.includes(layer);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
       "div",
       {
         "data-testid": "output-root",
@@ -13178,7 +13395,7 @@
           overflow: "hidden"
         },
         children: [
-          has("background") && bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("background") && bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "img",
             {
               src: bgImageUrl,
@@ -13197,7 +13414,7 @@
               }
             }
           ),
-          has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "video",
             {
               ref: videoRef,
@@ -13220,7 +13437,7 @@
               }
             }
           ),
-          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "div",
             {
               style: {
@@ -13234,7 +13451,7 @@
               }
             }
           ),
-          has("announcements") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          has("announcements") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13258,7 +13475,7 @@
               ]
             }
           ),
-          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "div",
             {
               style: {
@@ -13273,36 +13490,34 @@
                 maxWidth: "100%",
                 textShadow: "2px 2px 8px rgba(0,0,0,0.8)"
               },
-              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
                 "img",
                 {
                   src: toFileUrl(logoImage) || logoImage,
                   alt: "Church logo",
                   style: { maxWidth: "60%", maxHeight: "60%", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }
                 }
-              ) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-                "div",
+              ) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                FitText,
                 {
-                  style: {
-                    fontSize,
-                    fontFamily,
-                    fontWeight,
-                    lineHeight: 1.4,
-                    whiteSpace: "pre-wrap",
-                    textAlign,
-                    width: `${textBoxWidth}%`,
-                    minHeight: `${textBoxHeight}%`,
-                    display: "flex",
-                    alignItems: verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center",
-                    justifyContent: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center",
-                    overflowWrap: "anywhere"
-                  },
-                  children: slide
+                  value: slideContent,
+                  className: "output-fit",
+                  baseFontSize: fontSize,
+                  minFontSize: 12,
+                  lineHeight: 1.22,
+                  fontFamily,
+                  fontWeight,
+                  textAlign,
+                  verticalAlign,
+                  textBoxWidth,
+                  textBoxHeight,
+                  style: { color: textColor },
+                  "aria-label": `Output ${outId} slide content`
                 }
               )
             }
           ),
-          has("lower_thirds") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          has("lower_thirds") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13324,21 +13539,21 @@
               ]
             }
           ),
-          has("props_overlays") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: "42%", padding: "8px 12px", borderRadius: 8, background: "rgba(19, 27, 46, 0.85)", border: "1px solid rgba(187, 195, 255, 0.18)", color: "#fff", fontSize: 12, lineHeight: 1.35, boxShadow: "0 8px 18px rgba(0,0,0,0.22)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#aeb8df", marginBottom: 4 }, children: "Props" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: propsText })
+          has("props_overlays") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: "42%", padding: "8px 12px", borderRadius: 8, background: "rgba(19, 27, 46, 0.85)", border: "1px solid rgba(187, 195, 255, 0.18)", color: "#fff", fontSize: 12, lineHeight: 1.35, boxShadow: "0 8px 18px rgba(0,0,0,0.22)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#aeb8df", marginBottom: 4 }, children: "Props" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { children: propsText })
           ] }),
-          has("live_video") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(5,8,15,0.72)", overflow: "hidden", boxShadow: "0 10px 24px rgba(0,0,0,0.28)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { position: "absolute", inset: 0, background: bgImageUrl && isVideo ? "rgba(0,0,0,0.18)" : "linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))" } }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, color: "#fff" }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#c8d0f0" }, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Live Feed" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.12)" }, children: "On Air" })
+          has("live_video") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(5,8,15,0.72)", overflow: "hidden", boxShadow: "0 10px 24px rgba(0,0,0,0.28)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { position: "absolute", inset: 0, background: bgImageUrl && isVideo ? "rgba(0,0,0,0.18)" : "linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))" } }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, color: "#fff" }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#c8d0f0" }, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Live Feed" }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { style: { padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.12)" }, children: "On Air" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 18, fontWeight: 800, lineHeight: 1.1 }, children: liveVideoLabel }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 11, color: "#c6cde8" }, children: bgImageUrl ? "Media feed ready" : "Camera input placeholder" })
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 18, fontWeight: 800, lineHeight: 1.1 }, children: liveVideoLabel }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 11, color: "#c6cde8" }, children: bgImageUrl ? "Media feed ready" : "Camera input placeholder" })
             ] }),
-            bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
               "video",
               {
                 src: bgImageUrl,
@@ -13350,11 +13565,11 @@
               }
             )
           ] }),
-          has("alerts") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: "42%", background: "linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))", color: "#fff", padding: "8px 10px", borderRadius: 8, fontSize: 12, boxShadow: "0 10px 20px rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.9, marginBottom: 4 }, children: "Alert" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 13, fontWeight: 700, lineHeight: 1.35 }, children: alertText })
+          has("alerts") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: "42%", background: "linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))", color: "#fff", padding: "8px 10px", borderRadius: 8, fontSize: 12, boxShadow: "0 10px 20px rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.9, marginBottom: 4 }, children: "Alert" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 13, fontWeight: 700, lineHeight: 1.35 }, children: alertText })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13380,7 +13595,7 @@
   };
 
   // src/renderer/app/output.tsx
-  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
   var getOutId = () => {
     try {
       const q = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
@@ -13392,13 +13607,13 @@
   };
   var App = () => {
     const outId = getOutId();
-    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(OutputView, { outId });
+    return /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(OutputView, { outId });
   };
   var rootEl = document.getElementById("root");
   if (rootEl) {
     const root = (0, import_client.createRoot)(rootEl);
     root.render(
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_react3.default.StrictMode, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}) })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_react4.default.StrictMode, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(App, {}) })
     );
   }
 })();

@@ -1,8 +1,9 @@
 import { ipcMain, BrowserWindow, app, dialog, screen } from 'electron'
 import { db } from './db'
 import { broadcastState } from './sync'
-import { importOsisBibleFromFile, loadOsisTranslations } from './osisLoader'
+import { importOsisBibleFromFile } from './osisLoader'
 import { importEasyWorshipBibleFromFile } from './easyWorshipBibleLoader'
+import { importBibleXmlFromFile } from './bibleXmlLoader'
 import { createOutputWindow, destroyOutputWindow, getOutputWindowList, assignOutputToDisplay, getOutputWindowsArray, getOutputWindows, getDisplayInfo, createOrShowOutputOnDisplay } from './windowManager'
 import path from 'path'
 import fs from 'fs'
@@ -690,6 +691,36 @@ function registerBibleHandlers() {
     }
   })
 
+  ipcMain.handle('bibles.openXmlFiles', async () => {
+    const res = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Bible XML', extensions: ['xml'] }],
+      title: 'Import Bible translation XML files',
+    })
+    if (res.canceled) return []
+    return res.filePaths
+  })
+
+  ipcMain.handle('bibles.importXmlFiles', async (event, filePaths: string[]) => {
+    const results: any[] = []
+    for (const filePath of Array.isArray(filePaths) ? filePaths : []) {
+      if (!filePath) continue
+      try {
+        const result = await importBibleXmlFromFile(filePath, (progress) => {
+          event.sender.send('bible-import-progress', {
+            translationCode: path.basename(filePath),
+            filePath,
+            progress,
+          })
+        })
+        results.push(result)
+      } catch (error) {
+        results.push({ filePath, error: (error as Error).message })
+      }
+    }
+    return results
+  })
+
   ipcMain.handle('bibles.openOsisFile', async () => {
     const res = await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'OSIS XML', extensions: ['osis', 'xml'] }] })
     if (res.canceled || res.filePaths.length === 0) return null
@@ -715,23 +746,22 @@ function registerBibleHandlers() {
   })
 
   ipcMain.handle('bibles.listTranslations', async () => {
-    const osisPaths = [
-      path.join(app.getPath('userData'), 'bibles', 'niv.osis'),
-      path.join(app.getPath('userData'), 'bibles', 'kjv.osis')
-    ]
     try {
-      const translations = await loadOsisTranslations(osisPaths)
-      if (translations.length > 0) return translations
-    } catch {}
-    try {
-      const rows = db.prepare('SELECT translation AS code, translation AS name, language FROM bibles').all()
-      return rows.map((r: any) => ({ code: r.code ?? r.translation, name: r.name ?? r.translation, language: r.language }))
+      const rows = db.prepare('SELECT id, translation AS code, COALESCE(NULLIF(name, \'\'), translation) AS name, language FROM bibles ORDER BY id').all()
+      const seen = new Set<string>()
+      return rows.filter((row: any) => {
+        const key = String(row.code || '').trim().toUpperCase()
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      }).map((r: any) => ({ id: r.id, code: r.code, name: r.name || r.code, language: r.language || 'en' }))
     } catch {
       return []
     }
   })
 
-  ipcMain.handle('bibles.getBooks', async () => [
+  ipcMain.handle('bibles.getBooks', async (_ev, args?: { translationId?: number }) => {
+    const orderedBooks = [
     'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth', '1 Samuel', '2 Samuel',
     '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra', 'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs',
     'Ecclesiastes', 'Song of Solomon', 'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
@@ -739,11 +769,27 @@ function registerBibleHandlers() {
     'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians', '2 Corinthians', 'Galatians', 'Ephesians',
     'Philippians', 'Colossians', '1 Thessalonians', '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon',
     'Hebrews', 'James', '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
-  ])
-
-  ipcMain.handle('bibles.getChapters', async (_ev, args: { book: string }) => {
+    ]
+    if (!args?.translationId) return orderedBooks
     try {
-      const rows = db.prepare('SELECT DISTINCT chapter FROM verses WHERE book = ? ORDER BY chapter').all(args.book)
+      const rows = db.prepare('SELECT DISTINCT book FROM verses WHERE bible_id = ?').all(args.translationId) as Array<{ book: string }>
+      const available = new Set(rows.map((row) => row.book))
+      return orderedBooks.filter((book) => available.has(book))
+    } catch {
+      return orderedBooks
+    }
+  })
+
+  ipcMain.handle('bibles.getChapters', async (_ev, args: { book: string; translationId?: number }) => {
+    try {
+      let sql = 'SELECT DISTINCT chapter FROM verses WHERE book = ?'
+      const params: any[] = [args.book]
+      if (args.translationId) {
+        sql = 'SELECT DISTINCT chapter FROM verses WHERE bible_id = ? AND book = ?'
+        params.unshift(args.translationId)
+      }
+      sql += ' ORDER BY chapter'
+      const rows = db.prepare(sql).all(...params)
       return rows.map((r: any) => r.chapter)
     } catch {
       return []

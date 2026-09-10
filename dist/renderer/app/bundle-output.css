@@ -5266,4 +5266,215 @@ textarea:focus-visible,
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.rich-text-editor {
+  min-width: 0;
+  overflow: hidden;
+  background: rgba(7, 18, 32, 0.78);
+  border: 1px solid rgba(108, 140, 183, 0.24);
+  border-radius: var(--radius-sm);
+}
+.rich-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 38px;
+  padding: 5px 7px;
+  background: rgba(21, 42, 70, 0.66);
+  border-bottom: 1px solid rgba(108, 140, 183, 0.18);
+}
+.rich-toolbar-button {
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  color: #b9c8df;
+  background: rgba(6, 18, 32, 0.55);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family:
+    Manrope,
+    Inter,
+    sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+.rich-toolbar-button:hover,
+.rich-toolbar-button:focus-visible {
+  color: #e8eeff;
+  background: rgba(74, 103, 188, 0.5);
+  border-color: rgba(143, 167, 255, 0.34);
+  outline: none;
+}
+.rich-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: rgba(117, 149, 193, 0.25);
+}
+.rich-toolbar-color {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  color: #dbe4ff;
+  background: rgba(6, 18, 32, 0.55);
+  border: 1px solid transparent;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.rich-toolbar-color:hover {
+  background: rgba(74, 103, 188, 0.5);
+  border-color: rgba(143, 167, 255, 0.34);
+}
+.rich-toolbar-color input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+.rich-toolbar-select {
+  min-height: 27px;
+  max-width: 82px;
+  padding: 0 5px;
+  color: #b9c8df;
+  background: rgba(6, 18, 32, 0.55);
+  border: 1px solid rgba(108, 140, 183, 0.2);
+  border-radius: 5px;
+  font-size: 0.58rem;
+}
+.rich-editor-surface {
+  min-height: 176px;
+  max-height: 310px;
+  padding: 12px 13px;
+  color: #e8efff;
+  outline: none;
+  overflow: auto;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.rich-editor-surface:focus {
+  box-shadow: inset 0 0 0 2px rgba(143, 167, 255, 0.22);
+}
+.rich-editor-surface:empty::before {
+  content: attr(data-placeholder);
+  color: #6f84a2;
+  pointer-events: none;
+}
+.rich-text-content {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.rich-text-content p,
+.rich-text-content div {
+  margin: 0;
+}
+.rich-text-content p + p,
+.rich-text-content div + div,
+.rich-text-content p + div,
+.rich-text-content div + p {
+  margin-top: 0.32em;
+}
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 0.25em 0;
+  padding-left: 1.35em;
+}
+.rich-text-content li {
+  margin: 0.12em 0;
+}
+.fit-text-viewport {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.fit-text-content {
+  position: relative;
+  flex: 0 1 auto;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: visible;
+  text-shadow: inherit;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.fit-text-content > .rich-text-content {
+  width: 100%;
+  max-width: 100%;
+}
+.fit-text-content .rich-text-content p,
+.fit-text-content .rich-text-content div {
+  max-width: 100%;
+}
+.slide-fit,
+.editor-fit {
+  z-index: 1;
+}
+.slide-fit {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.output-fit {
+  width: 100%;
+  height: 100%;
+}
+.bible-pack-card {
+  margin: 10px 0 8px;
+  padding: 11px;
+  color: #aebed5;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(47, 72, 124, 0.42),
+      rgba(14, 35, 59, 0.72));
+  border: 1px solid rgba(112, 145, 211, 0.26);
+  border-radius: var(--radius-sm);
+}
+.bible-pack-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.bible-pack-heading strong {
+  display: block;
+  color: #e5ecff;
+  font-size: 0.72rem;
+}
+.bible-pack-heading > .app-icon {
+  color: #9eafff;
+}
+.bible-pack-card p {
+  margin: 8px 0 10px;
+  color: #91a6c4;
+  font-size: 0.61rem;
+  line-height: 1.45;
+}
+.bible-pack-codes {
+  display: block;
+  margin-top: 8px;
+  color: #7e94b5;
+  font-size: 0.52rem;
+  letter-spacing: 0.07em;
+  line-height: 1.45;
+}
+.scripture-search-bar .translation-selector {
+  min-width: 145px;
+}
 /*# sourceMappingURL=bundle-output.css.map */

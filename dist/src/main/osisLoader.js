@@ -168,12 +168,16 @@ function parseOsisXml(xml) {
 }
 async function importOsisBibleFromFile(translationCode, language, filePath, onProgress) {
     let bibleId;
-    const bibleRow = db_1.db.prepare('SELECT id FROM bibles WHERE translation = ?').get(translationCode);
+    const bibleRow = db_1.db.prepare('SELECT id FROM bibles WHERE UPPER(translation) = UPPER(?) LIMIT 1').get(translationCode);
     if (bibleRow?.id) {
         bibleId = bibleRow.id;
+        const verseCount = db_1.db.prepare('SELECT COUNT(*) AS count FROM verses WHERE bible_id = ?').get(bibleId)?.count || 0;
+        if (verseCount > 0)
+            return bibleId;
+        db_1.db.prepare('UPDATE bibles SET language = ?, path = ? WHERE id = ?').run(language, path_1.default.resolve(filePath), bibleId);
     }
     else {
-        const info = db_1.db.prepare('INSERT INTO bibles (translation, language, path) VALUES (?, ?, ?)').run(translationCode, language, filePath);
+        const info = db_1.db.prepare('INSERT INTO bibles (translation, language, path) VALUES (?, ?, ?)').run(translationCode, language, path_1.default.resolve(filePath));
         bibleId = info.lastInsertRowid;
     }
     const stats = await fs_1.default.promises.stat(filePath);

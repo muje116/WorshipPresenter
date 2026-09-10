@@ -1,5 +1,6 @@
 import React from 'react'
 import { AppIcon, Panel, SectionHeader, StatusBadge } from './ui'
+import { FitText, richTextToPlainText } from './RichText'
 
 declare const window: any
 
@@ -17,6 +18,8 @@ type Theme = {
   fontWeight?: number
   textAlign?: 'left' | 'center' | 'right'
   verticalAlign?: 'top' | 'center' | 'bottom'
+  textBoxWidth?: number
+  textBoxHeight?: number
 }
 
 type Props = {
@@ -75,9 +78,6 @@ export const ConsoleWorkspace: React.FC<Props> = ({
     backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : undefined,
     backgroundSize: 'cover',
     color: theme.color,
-    fontSize: theme.fontSize,
-    fontFamily: theme.fontFamily || 'Manrope',
-    fontWeight: theme.fontWeight || 700,
   }
 
   const queueItems = schedule.slice(0, 4)
@@ -116,7 +116,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
               <span className="schedule-drag-handle" aria-hidden="true">⋮⋮</span>
               <div className="schedule-index">{String(index + 1).padStart(2, '0')}</div>
               <div className="schedule-item-copy">
-                <strong>{item.content || 'Untitled item'}</strong>
+                <strong>{richTextToPlainText(item.content || 'Untitled item')}</strong>
                 <small>{formatType(item.type)} <span>•</span> {index === 0 ? 'Current' : index === 1 ? 'Next' : 'Upcoming'}</small>
               </div>
               {index === 0 ? <StatusBadge tone="success">CURRENT</StatusBadge> : null}
@@ -164,7 +164,19 @@ export const ConsoleWorkspace: React.FC<Props> = ({
             <div className="slide-frame" style={previewStyle}>
               <div className="slide-overlay" />
               <span className="frame-badge preview-badge">PREVIEW</span>
-              <div className="slide-content">{currentSlide || 'Select a slide to preview'}</div>
+              <FitText
+                value={currentSlide || 'Select a slide to preview'}
+                className="slide-fit"
+                baseFontSize={theme.fontSize}
+                fontFamily={theme.fontFamily || 'Manrope'}
+                fontWeight={theme.fontWeight || 700}
+                textAlign={theme.textAlign || 'center'}
+                verticalAlign={theme.verticalAlign || 'center'}
+                textBoxWidth={theme.textBoxWidth ?? 90}
+                textBoxHeight={theme.textBoxHeight ?? 90}
+                style={previewStyle}
+                aria-label="Preview slide content"
+              />
             </div>
           </Panel>
 
@@ -182,7 +194,19 @@ export const ConsoleWorkspace: React.FC<Props> = ({
             <div className="slide-frame" style={previewStyle}>
               <div className="slide-overlay live" />
               <span className="frame-badge live-badge">{isOnAir ? 'LIVE' : 'STANDBY'}</span>
-              <div className="slide-content">{liveSlide || 'Nothing live yet'}</div>
+              <FitText
+                value={liveSlide || 'Nothing live yet'}
+                className="slide-fit"
+                baseFontSize={theme.fontSize}
+                fontFamily={theme.fontFamily || 'Manrope'}
+                fontWeight={theme.fontWeight || 700}
+                textAlign={theme.textAlign || 'center'}
+                verticalAlign={theme.verticalAlign || 'center'}
+                textBoxWidth={theme.textBoxWidth ?? 90}
+                textBoxHeight={theme.textBoxHeight ?? 90}
+                style={previewStyle}
+                aria-label="Live slide content"
+              />
             </div>
           </Panel>
         </div>
@@ -202,7 +226,7 @@ export const ConsoleWorkspace: React.FC<Props> = ({
                 <span className="queue-card-number">{index + 1}</span>
                 <span className="queue-card-copy">
                   <strong>{formatType(item.type)}</strong>
-                  <small>{item.content || 'Empty slide'}</small>
+                  <small>{richTextToPlainText(item.content || 'Empty slide')}</small>
                 </span>
                 {index === 0 ? <span className="queue-selected"><AppIcon name="check" size={13} /> SELECTED</span> : <AppIcon name="chevron" size={15} className="queue-card-chevron" />}
               </button>

@@ -768,7 +768,7 @@
   var require_react_dom_production = __commonJS({
     "node_modules/react-dom/cjs/react-dom.production.js"(exports) {
       "use strict";
-      var React9 = require_react();
+      var React10 = require_react();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
         if (1 < arguments.length) {
@@ -808,7 +808,7 @@
           implementation
         };
       }
-      var ReactSharedInternals = React9.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React10.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       function getCrossOriginStringAs(as, input) {
         if ("font" === as) return "";
         if ("string" === typeof input)
@@ -944,7 +944,7 @@
     "node_modules/react-dom/cjs/react-dom-client.production.js"(exports) {
       "use strict";
       var Scheduler = require_scheduler();
-      var React9 = require_react();
+      var React10 = require_react();
       var ReactDOM = require_react_dom();
       function formatProdErrorMessage(code) {
         var url = "https://react.dev/errors/" + code;
@@ -1135,7 +1135,7 @@
         return null;
       }
       var isArrayImpl = Array.isArray;
-      var ReactSharedInternals = React9.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+      var ReactSharedInternals = React10.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var ReactDOMSharedInternals = ReactDOM.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
       var sharedNotPendingObject = {
         pending: false,
@@ -12581,7 +12581,7 @@
           0 === i && attemptExplicitHydrationTarget(target);
         }
       };
-      var isomorphicReactPackageVersion$jscomp$inline_1840 = React9.version;
+      var isomorphicReactPackageVersion$jscomp$inline_1840 = React10.version;
       if ("19.2.5" !== isomorphicReactPackageVersion$jscomp$inline_1840)
         throw Error(
           formatProdErrorMessage(
@@ -12749,7 +12749,7 @@
   });
 
   // src/renderer/app/index.tsx
-  var import_react8 = __toESM(require_react());
+  var import_react9 = __toESM(require_react());
   var import_client = __toESM(require_client());
 
   // node_modules/zustand/esm/vanilla.mjs
@@ -12959,8 +12959,10 @@
         const title = "New Song " + tempId;
         const newSong = await dbService.songs.create(title);
         set((state) => ({ songs: [...state.songs, newSong], currentSlide: newSong.title }));
+        return newSong.id;
       } catch (err) {
         console.error("Failed to persist new song:", err);
+        return void 0;
       }
     },
     deleteSong: async (id) => {
@@ -13104,8 +13106,346 @@
   }));
 
   // src/renderer/app/components/OutputView.tsx
+  var import_react3 = __toESM(require_react());
+
+  // src/renderer/app/components/RichText.tsx
   var import_react2 = __toESM(require_react());
   var import_jsx_runtime = __toESM(require_jsx_runtime());
+  var ALLOWED_TAGS = /* @__PURE__ */ new Set([
+    "B",
+    "STRONG",
+    "I",
+    "EM",
+    "U",
+    "S",
+    "BR",
+    "P",
+    "DIV",
+    "SPAN",
+    "UL",
+    "OL",
+    "LI",
+    "SUB",
+    "SUP"
+  ]);
+  var BLOCK_TAGS = /* @__PURE__ */ new Set(["P", "DIV", "LI"]);
+  var BLOCKED_TAGS = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "LINK", "META"]);
+  var escapeHtml = (value) => value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  var isSafeStyleValue = (property, value) => {
+    if (!value || /url\s*\(|expression\s*\(|javascript\s*:/i.test(value)) return false;
+    if (property === "color" || property === "background-color") {
+      return /^(?:#[0-9a-f]{3,8}|rgba?\([0-9.,%\s]+\)|hsla?\([0-9.,%\s]+\)|[a-z]+)$/i.test(value);
+    }
+    if (property === "font-size") return /^\d+(?:\.\d+)?(?:px|pt|em|rem|%)$/i.test(value);
+    if (property === "text-align") return /^(?:left|center|right|justify)$/i.test(value);
+    if (property === "font-weight") return /^(?:normal|bold|[1-9]00)$/i.test(value);
+    if (property === "font-style") return /^(?:normal|italic|oblique)$/i.test(value);
+    if (property === "text-decoration") return /^(?:none|underline|line-through)(?:\s+(?:underline|line-through))*$/i.test(value);
+    return false;
+  };
+  var sanitizeStyle = (style) => style.split(";").map((declaration) => declaration.trim()).filter(Boolean).map((declaration) => {
+    const separator = declaration.indexOf(":");
+    if (separator < 0) return null;
+    const property = declaration.slice(0, separator).trim().toLowerCase();
+    const value = declaration.slice(separator + 1).trim();
+    return isSafeStyleValue(property, value) ? `${property}: ${value}` : null;
+  }).filter((declaration) => Boolean(declaration)).join("; ");
+  var normalizeFontElement = (element) => {
+    const span = document.createElement("span");
+    const color = element.getAttribute("color");
+    const size = element.getAttribute("size");
+    if (color && isSafeStyleValue("color", color)) span.style.color = color;
+    if (size) {
+      const sizeMap = { "1": "12px", "2": "14px", "3": "16px", "4": "20px", "5": "26px", "6": "34px", "7": "44px" };
+      const fontSize = sizeMap[size] || (/^\d+(?:\.\d+)?px$/.test(size) ? size : "");
+      if (fontSize) span.style.fontSize = fontSize;
+    }
+    while (element.firstChild) span.appendChild(element.firstChild);
+    element.replaceWith(span);
+    return span;
+  };
+  var sanitizeNode = (node) => {
+    Array.from(node.childNodes).forEach((child) => {
+      if (!(child instanceof HTMLElement)) return;
+      const tag = child.tagName.toUpperCase();
+      if (BLOCKED_TAGS.has(tag)) {
+        child.remove();
+        return;
+      }
+      if (tag === "FONT") {
+        sanitizeNode(normalizeFontElement(child));
+        return;
+      }
+      if (!ALLOWED_TAGS.has(tag)) {
+        const fragment = document.createDocumentFragment();
+        while (child.firstChild) fragment.appendChild(child.firstChild);
+        child.replaceWith(fragment);
+        sanitizeNode(node);
+        return;
+      }
+      Array.from(child.attributes).forEach((attribute) => {
+        if (attribute.name.toLowerCase() !== "style") child.removeAttribute(attribute.name);
+      });
+      if (child.hasAttribute("style")) {
+        const safeStyle = sanitizeStyle(child.getAttribute("style") || "");
+        if (safeStyle) child.setAttribute("style", safeStyle);
+        else child.removeAttribute("style");
+      }
+      sanitizeNode(child);
+    });
+  };
+  var hasRichTextMarkup = (value) => /<\/?[a-z][^>]*>/i.test(value);
+  var plainTextToHtml = (value) => escapeHtml(value || "").replace(/\r\n?|\n/g, "<br />");
+  var sanitizeRichText = (value) => {
+    if (!value) return "";
+    if (!hasRichTextMarkup(value)) return plainTextToHtml(value);
+    const template = document.createElement("template");
+    template.innerHTML = value;
+    sanitizeNode(template.content);
+    return template.innerHTML;
+  };
+  var getRichTextHtml = (value) => sanitizeRichText(value || "");
+  var richTextToPlainText = (value) => {
+    if (!value) return "";
+    if (!hasRichTextMarkup(value)) return value;
+    const container = document.createElement("div");
+    container.innerHTML = sanitizeRichText(value);
+    const walk = (node) => Array.from(node.childNodes).map((child) => {
+      if (child.nodeType === Node.TEXT_NODE) return child.textContent || "";
+      if (!(child instanceof HTMLElement)) return walk(child);
+      const tag = child.tagName.toUpperCase();
+      if (tag === "BR") return "\n";
+      const text = walk(child);
+      return BLOCK_TAGS.has(tag) ? `${text}
+` : text;
+    }).join("");
+    return walk(container).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  };
+  var RichText = ({ value, className = "", ...rest }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    "div",
+    {
+      ...rest,
+      className: `rich-text-content ${className}`.trim(),
+      dangerouslySetInnerHTML: { __html: getRichTextHtml(value) }
+    }
+  );
+  var FitText = ({
+    value,
+    className = "",
+    baseFontSize = 48,
+    minFontSize = 12,
+    lineHeight = 1.22,
+    fontFamily = "Manrope",
+    fontWeight = 700,
+    textAlign = "center",
+    verticalAlign = "center",
+    textBoxWidth = 90,
+    textBoxHeight = 90,
+    style,
+    "aria-label": ariaLabel
+  }) => {
+    const viewportRef = import_react2.default.useRef(null);
+    const contentRef = import_react2.default.useRef(null);
+    const [fit, setFit] = import_react2.default.useState({ fontSize: baseFontSize, scale: 1 });
+    const measure = import_react2.default.useCallback(() => {
+      const viewport = viewportRef.current;
+      const content = contentRef.current;
+      if (!viewport || !content || viewport.clientWidth <= 0 || viewport.clientHeight <= 0) return;
+      const availableWidth = Math.max(1, viewport.clientWidth);
+      const availableHeight = Math.max(1, viewport.clientHeight);
+      const minimum = Math.max(8, Math.min(minFontSize, baseFontSize));
+      const maximum = Math.max(minimum, baseFontSize);
+      const canFit = (fontSize) => {
+        content.style.fontSize = `${fontSize}px`;
+        content.style.transform = "none";
+        return content.scrollWidth <= availableWidth + 1 && content.scrollHeight <= availableHeight + 1;
+      };
+      let best = minimum;
+      if (canFit(maximum)) {
+        best = maximum;
+      } else {
+        let low = minimum;
+        let high = maximum;
+        for (let index = 0; index < 14; index += 1) {
+          const midpoint = (low + high) / 2;
+          if (canFit(midpoint)) {
+            best = midpoint;
+            low = midpoint;
+          } else {
+            high = midpoint;
+          }
+        }
+      }
+      canFit(best);
+      const overflowScale = Math.min(1, availableWidth / Math.max(1, content.scrollWidth), availableHeight / Math.max(1, content.scrollHeight));
+      const nextScale = Number.isFinite(overflowScale) ? Math.max(0.12, overflowScale) : 1;
+      setFit((previous) => Math.abs(previous.fontSize - best) < 0.1 && Math.abs(previous.scale - nextScale) < 0.01 ? previous : { fontSize: best, scale: nextScale });
+    }, [baseFontSize, minFontSize, value, textBoxHeight, textBoxWidth]);
+    import_react2.default.useLayoutEffect(() => {
+      let frame = 0;
+      const requestFrame = (callback) => typeof window.requestAnimationFrame === "function" ? window.requestAnimationFrame(callback) : window.setTimeout(() => callback(Date.now()), 0);
+      const cancelFrame = (handle) => {
+        if (typeof window.cancelAnimationFrame === "function") window.cancelAnimationFrame(handle);
+        else window.clearTimeout(handle);
+      };
+      const scheduleMeasure = () => {
+        if (frame) cancelFrame(frame);
+        frame = requestFrame(() => {
+          frame = 0;
+          measure();
+        });
+      };
+      scheduleMeasure();
+      const viewport = viewportRef.current;
+      const observer = typeof ResizeObserver !== "undefined" && viewport ? new ResizeObserver(scheduleMeasure) : null;
+      observer?.observe(viewport);
+      window.addEventListener("resize", scheduleMeasure);
+      return () => {
+        if (frame) cancelFrame(frame);
+        observer?.disconnect();
+        window.removeEventListener("resize", scheduleMeasure);
+      };
+    }, [measure]);
+    const alignItems = verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center";
+    const justifyContent = textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center";
+    const transformOrigin = `${textAlign} ${verticalAlign}`;
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      "div",
+      {
+        ref: viewportRef,
+        className: `fit-text-viewport ${className}`.trim(),
+        style: { alignItems, justifyContent, ...style },
+        "aria-label": ariaLabel,
+        children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "div",
+          {
+            ref: contentRef,
+            className: "fit-text-content",
+            style: {
+              width: `${Math.min(100, Math.max(30, textBoxWidth))}%`,
+              minHeight: `${Math.min(100, Math.max(0, textBoxHeight))}%`,
+              fontSize: `${fit.fontSize}px`,
+              lineHeight,
+              fontFamily,
+              fontWeight,
+              textAlign,
+              transform: `scale(${fit.scale})`,
+              transformOrigin
+            },
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(RichText, { value })
+          }
+        )
+      }
+    );
+  };
+  var FONT_SIZE_COMMANDS = {
+    small: "2",
+    normal: "3",
+    large: "5",
+    huge: "7"
+  };
+  var RichTextEditor = ({ value, onChange, placeholder, "aria-label": ariaLabel }) => {
+    const editorRef = import_react2.default.useRef(null);
+    const focusedRef = import_react2.default.useRef(false);
+    const lastValueRef = import_react2.default.useRef("");
+    const syncEditor = import_react2.default.useCallback(() => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const html = sanitizeRichText(editor.innerHTML);
+      lastValueRef.current = html;
+      onChange(html);
+    }, [onChange]);
+    import_react2.default.useEffect(() => {
+      const editor = editorRef.current;
+      if (!editor || focusedRef.current || lastValueRef.current === value) return;
+      editor.innerHTML = getRichTextHtml(value);
+      lastValueRef.current = value;
+    }, [value]);
+    const runCommand = (command, commandValue) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.focus();
+      try {
+        document.execCommand("styleWithCSS", false, "true");
+        document.execCommand(command, false, commandValue);
+      } catch {
+      }
+      syncEditor();
+    };
+    const runFontSize = (size) => {
+      runCommand("fontSize", FONT_SIZE_COMMANDS[size] || FONT_SIZE_COMMANDS.normal);
+      const editor = editorRef.current;
+      if (!editor) return;
+      const fontSize = size === "small" ? "14px" : size === "large" ? "26px" : size === "huge" ? "44px" : "18px";
+      editor.querySelectorAll('font[size="2"], font[size="3"], font[size="5"], font[size="7"]').forEach((node) => {
+        const span = document.createElement("span");
+        span.style.fontSize = fontSize;
+        while (node.firstChild) span.appendChild(node.firstChild);
+        node.replaceWith(span);
+      });
+      syncEditor();
+    };
+    const toolbarButton = (label, command, icon) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+      "button",
+      {
+        type: "button",
+        className: "rich-toolbar-button",
+        title: label,
+        "aria-label": label,
+        onMouseDown: (event) => event.preventDefault(),
+        onClick: () => runCommand(command),
+        children: icon
+      }
+    );
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rich-text-editor", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "rich-toolbar", role: "toolbar", "aria-label": "Rich text formatting", children: [
+        toolbarButton("Bold", "bold", "B"),
+        toolbarButton("Italic", "italic", "I"),
+        toolbarButton("Underline", "underline", "U"),
+        toolbarButton("Strikethrough", "strikeThrough", "S"),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rich-toolbar-divider" }),
+        toolbarButton("Align left", "justifyLeft", "\u2261"),
+        toolbarButton("Align center", "justifyCenter", "\u2261"),
+        toolbarButton("Align right", "justifyRight", "\u2261"),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("label", { className: "rich-toolbar-color", title: "Text color", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "A" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("input", { type: "color", defaultValue: "#ffffff", "aria-label": "Text color", onChange: (event) => runCommand("foreColor", event.target.value) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("select", { className: "rich-toolbar-select", "aria-label": "Text size", defaultValue: "normal", onChange: (event) => runFontSize(event.target.value), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "small", children: "Small" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "normal", children: "Normal" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "large", children: "Large" }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("option", { value: "huge", children: "Huge" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { className: "rich-toolbar-divider" }),
+        toolbarButton("Undo", "undo", "\u21B6"),
+        toolbarButton("Redo", "redo", "\u21B7")
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+        "div",
+        {
+          ref: editorRef,
+          className: "rich-editor-surface",
+          contentEditable: true,
+          suppressContentEditableWarning: true,
+          role: "textbox",
+          "aria-label": ariaLabel || "Song rich text",
+          "data-placeholder": placeholder || "Type song lyrics here...",
+          onFocus: () => {
+            focusedRef.current = true;
+          },
+          onBlur: () => {
+            focusedRef.current = false;
+            syncEditor();
+          },
+          onInput: syncEditor
+        }
+      )
+    ] });
+  };
+
+  // src/renderer/app/components/OutputView.tsx
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
   var toFileUrl = (input) => {
     if (!input) return null;
     if (input.startsWith("http://") || input.startsWith("https://") || input.startsWith("file://")) return input;
@@ -13115,9 +13455,9 @@
   };
   var OutputView = ({ outId, logoImage }) => {
     const perOutLook = useStore2((state2) => state2.looks?.[outId]) || {};
-    const [state, setState] = import_react2.default.useState({ slideTitle: "Idle" });
-    const videoRef = import_react2.default.useRef(null);
-    import_react2.default.useEffect(() => {
+    const [state, setState] = import_react3.default.useState({ slideTitle: "Idle" });
+    const videoRef = import_react3.default.useRef(null);
+    import_react3.default.useEffect(() => {
       if (window.worship?.outputs?.onOutputState) {
         window.worship.outputs.onOutputState((payload) => {
           if (payload?.outputId === outId && payload?.state) {
@@ -13144,6 +13484,7 @@
     }, [outId]);
     const mode = state?.mode;
     const slide = state?.slideTitle ?? "Idle";
+    const slideContent = state?.slideHtml ?? slide;
     const theme = state?.theme;
     const lookBg = perOutLook.background;
     const bgImage = state?.mediaPath || theme?.backgroundImage;
@@ -13161,7 +13502,7 @@
     const announcementText = state?.announcementText || slide;
     const alertText = state?.alertText || slide;
     const liveVideoLabel = state?.liveVideoLabel || "Live Camera";
-    import_react2.default.useEffect(() => {
+    import_react3.default.useEffect(() => {
       if (videoRef.current) {
         videoRef.current.playbackRate = mediaPlayback.playbackRate || 1;
       }
@@ -13171,7 +13512,7 @@
     const bgImageUrl = toFileUrl(bgImage);
     const layers = perOutLook.layers || ["background", "media", "slide_content"];
     const has = (layer) => layers.includes(layer);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
       "div",
       {
         "data-testid": "output-root",
@@ -13187,7 +13528,7 @@
           overflow: "hidden"
         },
         children: [
-          has("background") && bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("background") && bgImageUrl && !isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "img",
             {
               src: bgImageUrl,
@@ -13206,7 +13547,7 @@
               }
             }
           ),
-          has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("media") && bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "video",
             {
               ref: videoRef,
@@ -13229,7 +13570,7 @@
               }
             }
           ),
-          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          (has("announcements") || has("props_overlays") || has("slide_content")) && (bgImageUrl || mode === "black") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "div",
             {
               style: {
@@ -13243,7 +13584,7 @@
               }
             }
           ),
-          has("announcements") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          has("announcements") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13267,7 +13608,7 @@
               ]
             }
           ),
-          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          has("slide_content") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "div",
             {
               style: {
@@ -13282,36 +13623,34 @@
                 maxWidth: "100%",
                 textShadow: "2px 2px 8px rgba(0,0,0,0.8)"
               },
-              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+              children: mode === "black" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { "data-testid": "black-mode", style: { fontSize: 72, fontWeight: 700 }, children: "BLACK" }) : mode === "logo" ? logoImage ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
                 "img",
                 {
                   src: toFileUrl(logoImage) || logoImage,
                   alt: "Church logo",
                   style: { maxWidth: "60%", maxHeight: "60%", objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.35))" }
                 }
-              ) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }) : /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
-                "div",
+              ) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 72, fontWeight: 700 }, children: "Church Logo" }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                FitText,
                 {
-                  style: {
-                    fontSize,
-                    fontFamily,
-                    fontWeight,
-                    lineHeight: 1.4,
-                    whiteSpace: "pre-wrap",
-                    textAlign,
-                    width: `${textBoxWidth}%`,
-                    minHeight: `${textBoxHeight}%`,
-                    display: "flex",
-                    alignItems: verticalAlign === "top" ? "flex-start" : verticalAlign === "bottom" ? "flex-end" : "center",
-                    justifyContent: textAlign === "left" ? "flex-start" : textAlign === "right" ? "flex-end" : "center",
-                    overflowWrap: "anywhere"
-                  },
-                  children: slide
+                  value: slideContent,
+                  className: "output-fit",
+                  baseFontSize: fontSize,
+                  minFontSize: 12,
+                  lineHeight: 1.22,
+                  fontFamily,
+                  fontWeight,
+                  textAlign,
+                  verticalAlign,
+                  textBoxWidth,
+                  textBoxHeight,
+                  style: { color: textColor },
+                  "aria-label": `Output ${outId} slide content`
                 }
               )
             }
           ),
-          has("lower_thirds") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          has("lower_thirds") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13333,21 +13672,21 @@
               ]
             }
           ),
-          has("props_overlays") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: "42%", padding: "8px 12px", borderRadius: 8, background: "rgba(19, 27, 46, 0.85)", border: "1px solid rgba(187, 195, 255, 0.18)", color: "#fff", fontSize: 12, lineHeight: 1.35, boxShadow: "0 8px 18px rgba(0,0,0,0.22)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#aeb8df", marginBottom: 4 }, children: "Props" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { children: propsText })
+          has("props_overlays") && mode !== "black" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", left: 18, top: 58, zIndex: 5, minWidth: 160, maxWidth: "42%", padding: "8px 12px", borderRadius: 8, background: "rgba(19, 27, 46, 0.85)", border: "1px solid rgba(187, 195, 255, 0.18)", color: "#fff", fontSize: 12, lineHeight: 1.35, boxShadow: "0 8px 18px rgba(0,0,0,0.22)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#aeb8df", marginBottom: 4 }, children: "Props" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { children: propsText })
           ] }),
-          has("live_video") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(5,8,15,0.72)", overflow: "hidden", boxShadow: "0 10px 24px rgba(0,0,0,0.28)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { position: "absolute", inset: 0, background: bgImageUrl && isVideo ? "rgba(0,0,0,0.18)" : "linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))" } }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, color: "#fff" }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#c8d0f0" }, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: "Live Feed" }),
-                /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { style: { padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.12)" }, children: "On Air" })
+          has("live_video") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", right: 18, bottom: 18, zIndex: 5, width: 250, height: 140, borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(5,8,15,0.72)", overflow: "hidden", boxShadow: "0 10px 24px rgba(0,0,0,0.28)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { position: "absolute", inset: 0, background: bgImageUrl && isVideo ? "rgba(0,0,0,0.18)" : "linear-gradient(135deg, rgba(63,81,181,0.22), rgba(0,0,0,0.45))" } }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 12, color: "#fff" }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#c8d0f0" }, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Live Feed" }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { style: { padding: "3px 7px", borderRadius: 999, background: "rgba(255,255,255,0.12)" }, children: "On Air" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 18, fontWeight: 800, lineHeight: 1.1 }, children: liveVideoLabel }),
-              /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 11, color: "#c6cde8" }, children: bgImageUrl ? "Media feed ready" : "Camera input placeholder" })
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 18, fontWeight: 800, lineHeight: 1.1 }, children: liveVideoLabel }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 11, color: "#c6cde8" }, children: bgImageUrl ? "Media feed ready" : "Camera input placeholder" })
             ] }),
-            bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+            bgImageUrl && isVideo && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
               "video",
               {
                 src: bgImageUrl,
@@ -13359,11 +13698,11 @@
               }
             )
           ] }),
-          has("alerts") && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { style: { position: "absolute", top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: "42%", background: "linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))", color: "#fff", padding: "8px 10px", borderRadius: 8, fontSize: 12, boxShadow: "0 10px 20px rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.9, marginBottom: 4 }, children: "Alert" }),
-            /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { style: { fontSize: 13, fontWeight: 700, lineHeight: 1.35 }, children: alertText })
+          has("alerts") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { style: { position: "absolute", top: 16, right: 16, zIndex: 6, minWidth: 180, maxWidth: "42%", background: "linear-gradient(180deg, rgba(229,72,77,0.96), rgba(170,26,32,0.96))", color: "#fff", padding: "8px 10px", borderRadius: 8, fontSize: 12, boxShadow: "0 10px 20px rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.12)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", opacity: 0.9, marginBottom: 4 }, children: "Alert" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { style: { fontSize: 13, fontWeight: 700, lineHeight: 1.35 }, children: alertText })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
             "div",
             {
               style: {
@@ -13389,139 +13728,139 @@
   };
 
   // src/renderer/app/components/BiblePicker.tsx
-  var import_react3 = __toESM(require_react());
+  var import_react4 = __toESM(require_react());
 
   // src/renderer/app/components/ui.tsx
-  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
   var ICON_PATHS = {
-    console: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M7 8h4M7 12h10M7 16h6M16 8h2" })
+    console: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M7 8h4M7 12h10M7 16h6M16 8h2" })
     ] }),
-    library: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 4.5h13a1 1 0 0 1 1 1v14H6a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M6 17.5h13M8 8h7M8 11.5h7" })
+    library: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 4.5h13a1 1 0 0 1 1 1v14H6a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M6 17.5h13M8 8h7M8 11.5h7" })
     ] }),
-    editor: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m4 17.5-.8 3.3 3.3-.8L19 7.5a2.3 2.3 0 0 0-3.3-3.3L4 17.5Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m14 5 3 3" })
+    editor: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m4 17.5-.8 3.3 3.3-.8L19 7.5a2.3 2.3 0 0 0-3.3-3.3L4 17.5Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m14 5 3 3" })
     ] }),
-    scripture: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 7h6M8 10.5h6M8 14h4" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M17 7h2v13h-9" })
+    scripture: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 4h9a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8 7h6M8 10.5h6M8 14h4" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M17 7h2v13h-9" })
     ] }),
-    media: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "8", cy: "9", r: "1.3" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m4 17 5-5 3 3 2-2 6 5" })
+    media: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "4", width: "18", height: "16", rx: "2" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "8", cy: "9", r: "1.3" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m4 17 5-5 3 3 2-2 6 5" })
     ] }),
-    settings: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1A1.8 1.8 0 0 0 3.3 12a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1A1.8 1.8 0 0 0 10.4 3h.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-1.7 1.3Z" })
+    settings: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3.1 1.3v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3.1-1.3l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1A1.8 1.8 0 0 0 3.3 12a1.8 1.8 0 0 1 0-3.6h.2a1.8 1.8 0 0 0 1.3-3.1l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1A1.8 1.8 0 0 0 10.4 3h.2a1.8 1.8 0 0 1 3.6 0v.2a1.8 1.8 0 0 0 3.1 1.3l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 1.3 3.1h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-1.7 1.3Z" })
     ] }),
-    help: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M9.7 9a2.5 2.5 0 1 1 4.5 1.5c-.9 1.1-2.2 1.3-2.2 3M12 17h.01" })
+    help: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M9.7 9a2.5 2.5 0 1 1 4.5 1.5c-.9 1.1-2.2 1.3-2.2 3M12 17h.01" })
     ] }),
-    spark: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" })
+    spark: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m12 3 1.6 5.4L19 10l-5.4 1.6L12 17l-1.6-5.4L5 10l5.4-1.6L12 3Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m19 16 .7 2.3L22 19l-2.3.7L19 22l-.7-2.3L16 19l2.3-.7L19 16Z" })
     ] }),
-    search: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "10.8", cy: "10.8", r: "6.3" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m16 16 4.5 4.5" })
+    search: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "10.8", cy: "10.8", r: "6.3" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m16 16 4.5 4.5" })
     ] }),
-    plus: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 5v14M5 12h14" }) }),
-    send: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m21 3-8.5 18-2.3-7.2L3 11.5 21 3Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M10.2 13.8 21 3" })
+    plus: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 5v14M5 12h14" }) }),
+    send: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m21 3-8.5 18-2.3-7.2L3 11.5 21 3Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M10.2 13.8 21 3" })
     ] }),
-    black: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "4", y: "4", width: "16", height: "16", rx: "2" }) }),
-    logo: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M4 18V7l4 3 4-6 4 6 4-3v11l-4-2-4 2-4-2-4 2Z" }) }),
-    clear: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m7 7 10 10M17 7 7 17" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "9" })
+    black: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "4", y: "4", width: "16", height: "16", rx: "2" }) }),
+    logo: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M4 18V7l4 3 4-6 4 6 4-3v11l-4-2-4 2-4-2-4 2Z" }) }),
+    clear: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m7 7 10 10M17 7 7 17" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "9" })
     ] }),
-    pause: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "6", y: "5", width: "3.5", height: "14", rx: "1" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "14.5", y: "5", width: "3.5", height: "14", rx: "1" })
+    pause: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "6", y: "5", width: "3.5", height: "14", rx: "1" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "14.5", y: "5", width: "3.5", height: "14", rx: "1" })
     ] }),
-    stop: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "5", y: "5", width: "14", height: "14", rx: "2" }) }),
-    queue: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 6h14M5 12h14M5 18h9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M3 6h.01M3 12h.01M3 18h.01" })
+    stop: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "5", y: "5", width: "14", height: "14", rx: "2" }) }),
+    queue: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 6h14M5 12h14M5 18h9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M3 6h.01M3 12h.01M3 18h.01" })
     ] }),
-    chevron: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m9 6 6 6-6 6" }),
-    folder: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M3.5 6.5h6l1.8 2h9.2v9a2 2 0 0 1-2 2h-15v-13Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M3.5 9h17" })
+    chevron: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m9 6 6 6-6 6" }),
+    folder: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M3.5 6.5h6l1.8 2h9.2v9a2 2 0 0 1-2 2h-15v-13Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M3.5 9h17" })
     ] }),
-    upload: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" }) }),
-    grid: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "4", y: "4", width: "6", height: "6", rx: "1" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "14", y: "4", width: "6", height: "6", rx: "1" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "4", y: "14", width: "6", height: "6", rx: "1" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "14", y: "14", width: "6", height: "6", rx: "1" })
+    upload: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 15V4M8 8l4-4 4 4M5 14v5h14v-5" }) }),
+    grid: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "4", y: "4", width: "6", height: "6", rx: "1" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "14", y: "4", width: "6", height: "6", rx: "1" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "4", y: "14", width: "6", height: "6", rx: "1" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "14", y: "14", width: "6", height: "6", rx: "1" })
     ] }),
-    list: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 6h12M8 12h12M8 18h12" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M4 6h.01M4 12h.01M4 18h.01" })
+    list: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8 6h12M8 12h12M8 18h12" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M4 6h.01M4 12h.01M4 18h.01" })
     ] }),
-    more: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "5", cy: "12", r: "1", fill: "currentColor", stroke: "none" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "1", fill: "currentColor", stroke: "none" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "19", cy: "12", r: "1", fill: "currentColor", stroke: "none" })
+    more: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "5", cy: "12", r: "1", fill: "currentColor", stroke: "none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "1", fill: "currentColor", stroke: "none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "19", cy: "12", r: "1", fill: "currentColor", stroke: "none" })
     ] }),
-    play: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m8 5 11 7-11 7V5Z" }),
-    check: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m5 12 4.5 4.5L19 7" }),
-    monitor: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("rect", { x: "3", y: "4", width: "18", height: "12", rx: "2" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 20h8M12 16v4" })
+    play: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m8 5 11 7-11 7V5Z" }),
+    check: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m5 12 4.5 4.5L19 7" }),
+    monitor: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("rect", { x: "3", y: "4", width: "18", height: "12", rx: "2" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8 20h8M12 16v4" })
     ] }),
-    sync: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M20 7v5h-5M4 17v-5h5" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M6.2 9A7 7 0 0 1 18.8 7M17.8 15A7 7 0 0 1 5.2 17" })
+    sync: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M20 7v5h-5M4 17v-5h5" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M6.2 9A7 7 0 0 1 18.8 7M17.8 15A7 7 0 0 1 5.2 17" })
     ] }),
-    eye: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M2.5 12s3.2-5 9.5-5 9.5 5 9.5 5-3.2 5-9.5 5-9.5-5-9.5-5Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "2.3" })
+    eye: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M2.5 12s3.2-5 9.5-5 9.5 5 9.5 5-3.2 5-9.5 5-9.5-5-9.5-5Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "2.3" })
     ] }),
-    save: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 4h12l2 2v14H5V4Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M8 4v6h8V4M8 16h8" })
+    save: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 4h12l2 2v14H5V4Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M8 4v6h8V4M8 16h8" })
     ] }),
-    trash: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" }) }),
-    undo: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M9 7 4 12l5 5" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 12h8a6 6 0 0 1 6 6" })
+    trash: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" }) }),
+    undo: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M9 7 4 12l5 5" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 12h8a6 6 0 0 1 6 6" })
     ] }),
-    redo: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "m15 7 5 5-5 5" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M19 12h-8a6 6 0 0 0-6 6" })
+    redo: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "m15 7 5 5-5 5" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M19 12h-8a6 6 0 0 0-6 6" })
     ] }),
-    type: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(import_jsx_runtime2.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M5 6V4h14v2M12 4v16M8 20h8" }) }),
-    palette: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 3a9 9 0 0 0 0 18h1.2a1.8 1.8 0 0 0 1.1-3.2 1.8 1.8 0 0 1 1.1-3.2H17a4 4 0 0 0 4-4A7.6 7.6 0 0 0 12 3Z" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "7.5", cy: "11", r: ".8", fill: "currentColor", stroke: "none" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "9", cy: "7.5", r: ".8", fill: "currentColor", stroke: "none" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "14", cy: "7", r: ".8", fill: "currentColor", stroke: "none" })
+    type: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(import_jsx_runtime3.Fragment, { children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M5 6V4h14v2M12 4v16M8 20h8" }) }),
+    palette: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 3a9 9 0 0 0 0 18h1.2a1.8 1.8 0 0 0 1.1-3.2 1.8 1.8 0 0 1 1.1-3.2H17a4 4 0 0 0 4-4A7.6 7.6 0 0 0 12 3Z" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "7.5", cy: "11", r: ".8", fill: "currentColor", stroke: "none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "9", cy: "7.5", r: ".8", fill: "currentColor", stroke: "none" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "14", cy: "7", r: ".8", fill: "currentColor", stroke: "none" })
     ] }),
-    info: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 11v5M12 8h.01" })
+    info: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 11v5M12 8h.01" })
     ] }),
-    clock: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M12 7v5l3 2" })
+    clock: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M12 7v5l3 2" })
     ] }),
-    external: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M14 4h6v6M20 4l-9 9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" })
+    external: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M14 4h6v6M20 4l-9 9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5" })
     ] }),
-    globe: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("path", { d: "M3 12h18M12 3c2.2 2.5 3.2 5.5 3.2 9s-1 6.5-3.2 9c-2.2-2.5-3.2-5.5-3.2-9S9.8 5.5 12 3Z" })
+    globe: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("circle", { cx: "12", cy: "12", r: "9" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("path", { d: "M3 12h18M12 3c2.2 2.5 3.2 5.5 3.2 9s-1 6.5-3.2 9c-2.2-2.5-3.2-5.5-3.2-9S9.8 5.5 12 3Z" })
     ] })
   };
   var AppIcon = ({
@@ -13529,7 +13868,7 @@
     size = 16,
     className = "",
     strokeWidth = 1.8
-  }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+  }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
     "svg",
     {
       className: `app-icon ${className}`.trim(),
@@ -13545,29 +13884,29 @@
       children: ICON_PATHS[name]
     }
   );
-  var Panel = ({ children, className = "", ...rest }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("section", { className: `panel ${className}`.trim(), ...rest, children });
-  var SectionHeader = ({ title, meta, action }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "panel-header", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { children: title }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "section-header-tools", children: [
-      meta ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: meta }) : null,
+  var Panel = ({ children, className = "", ...rest }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("section", { className: `panel ${className}`.trim(), ...rest, children });
+  var SectionHeader = ({ title, meta, action }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "panel-header", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { children: title }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "section-header-tools", children: [
+      meta ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: meta }) : null,
       action
     ] })
   ] });
-  var Chip = ({ children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: `chip ${className}`.trim(), children });
-  var MediaCard = ({ title, subtitle, active, onClick }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("article", { className: `media-card ${active ? "live" : ""}`, onClick, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "media-thumb", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: title.slice(0, 1).toUpperCase() }) }),
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "media-meta", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: title }),
-      subtitle ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("small", { children: subtitle }) : null
+  var Chip = ({ children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: `chip ${className}`.trim(), children });
+  var MediaCard = ({ title, subtitle, active, onClick }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("article", { className: `media-card ${active ? "live" : ""}`, onClick, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "media-thumb", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: title.slice(0, 1).toUpperCase() }) }),
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "media-meta", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: title }),
+      subtitle ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("small", { children: subtitle }) : null
     ] })
   ] });
-  var StatusBadge = ({ children, className = "", tone = "neutral" }) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { className: `status-badge status-badge-${tone} ${className}`.trim(), children: [
-    tone === "live" ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "status-badge-dot" }) : null,
+  var StatusBadge = ({ children, className = "", tone = "neutral" }) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: `status-badge status-badge-${tone} ${className}`.trim(), children: [
+    tone === "live" ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "status-badge-dot" }) : null,
     children
   ] });
 
   // src/renderer/app/components/BiblePicker.tsx
-  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
   var OT_BOOKS = [
     "Genesis",
     "Exodus",
@@ -13639,43 +13978,64 @@
     "Revelation"
   ];
   var ALL_BOOKS = [...OT_BOOKS, ...NT_BOOKS];
+  var uniqueTranslations = (items) => {
+    const seen = /* @__PURE__ */ new Set();
+    return items.filter((item) => {
+      const code = String(item.code || "").trim().toUpperCase();
+      if (!code || seen.has(code)) return false;
+      seen.add(code);
+      return true;
+    }).map((item) => ({ ...item, code: String(item.code).trim().toUpperCase() }));
+  };
   var BiblePicker = () => {
     const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
     const setLiveSlide = useStore2((state) => state.setLiveSlide);
     const liveSlide = useStore2((state) => state.liveSlide);
-    const [translations, setTranslations] = (0, import_react3.useState)([]);
-    const [selectedTranslation, setSelectedTranslation] = (0, import_react3.useState)("");
-    const [secondTranslation, setSecondTranslation] = (0, import_react3.useState)("");
-    const [selectedBook, setSelectedBook] = (0, import_react3.useState)("Genesis");
-    const [selectedChapter, setSelectedChapter] = (0, import_react3.useState)(1);
-    const [chapters, setChapters] = (0, import_react3.useState)([]);
-    const [verses, setVerses] = (0, import_react3.useState)([]);
-    const [secondVerses, setSecondVerses] = (0, import_react3.useState)([]);
-    const [searchQuery, setSearchQuery] = (0, import_react3.useState)("");
-    const [searchResults, setSearchResults] = (0, import_react3.useState)([]);
-    const [importProgress, setImportProgress] = (0, import_react3.useState)(null);
-    const [onlineSources, setOnlineSources] = (0, import_react3.useState)([]);
-    const [downloadProgress, setDownloadProgress] = (0, import_react3.useState)(null);
-    const [downloadingCode, setDownloadingCode] = (0, import_react3.useState)(null);
-    const [showOnlinePanel, setShowOnlinePanel] = (0, import_react3.useState)(false);
-    const [isSearching, setIsSearching] = (0, import_react3.useState)(false);
-    const [dualMode, setDualMode] = (0, import_react3.useState)(false);
-    const [selectedVerse, setSelectedVerse] = (0, import_react3.useState)(null);
-    const [otExpanded, setOtExpanded] = (0, import_react3.useState)(true);
-    const [ntExpanded, setNtExpanded] = (0, import_react3.useState)(false);
-    const [toast, setToast] = (0, import_react3.useState)(null);
-    const [pendingVerseNumber, setPendingVerseNumber] = (0, import_react3.useState)(null);
-    (0, import_react3.useEffect)(() => {
+    const [translations, setTranslations] = (0, import_react4.useState)([]);
+    const [selectedTranslation, setSelectedTranslation] = (0, import_react4.useState)("");
+    const [secondTranslation, setSecondTranslation] = (0, import_react4.useState)("");
+    const [selectedBook, setSelectedBook] = (0, import_react4.useState)("Genesis");
+    const [selectedChapter, setSelectedChapter] = (0, import_react4.useState)(1);
+    const [chapters, setChapters] = (0, import_react4.useState)([]);
+    const [verses, setVerses] = (0, import_react4.useState)([]);
+    const [secondVerses, setSecondVerses] = (0, import_react4.useState)([]);
+    const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
+    const [searchResults, setSearchResults] = (0, import_react4.useState)([]);
+    const [importProgress, setImportProgress] = (0, import_react4.useState)(null);
+    const [onlineSources, setOnlineSources] = (0, import_react4.useState)([]);
+    const [downloadProgress, setDownloadProgress] = (0, import_react4.useState)(null);
+    const [downloadingCode, setDownloadingCode] = (0, import_react4.useState)(null);
+    const [showOnlinePanel, setShowOnlinePanel] = (0, import_react4.useState)(false);
+    const [isSearching, setIsSearching] = (0, import_react4.useState)(false);
+    const [dualMode, setDualMode] = (0, import_react4.useState)(false);
+    const [selectedVerse, setSelectedVerse] = (0, import_react4.useState)(null);
+    const [otExpanded, setOtExpanded] = (0, import_react4.useState)(true);
+    const [ntExpanded, setNtExpanded] = (0, import_react4.useState)(false);
+    const [toast, setToast] = (0, import_react4.useState)(null);
+    const [pendingVerseNumber, setPendingVerseNumber] = (0, import_react4.useState)(null);
+    const chapterRequestRef = import_react4.default.useRef(0);
+    const verseRequestRef = import_react4.default.useRef(0);
+    const secondVerseRequestRef = import_react4.default.useRef(0);
+    const refreshTranslations = async () => {
+      const translationsList = await window.worship.bibles.listTranslations();
+      const nextTranslations = uniqueTranslations(translationsList || []);
+      setTranslations(nextTranslations);
+      if (!nextTranslations.length) {
+        setSelectedTranslation("");
+        setSecondTranslation("");
+        return nextTranslations;
+      }
+      setSelectedTranslation((current) => nextTranslations.some((item) => item.code === current) ? current : nextTranslations[0].code);
+      setSecondTranslation((current) => {
+        if (nextTranslations.some((item) => item.code === current) && current !== nextTranslations[0].code) return current;
+        return nextTranslations.find((item) => item.code !== nextTranslations[0].code)?.code || "";
+      });
+      return nextTranslations;
+    };
+    (0, import_react4.useEffect)(() => {
       const loadBibleData = async () => {
         try {
-          const translationsList = await window.worship.bibles.listTranslations();
-          if (translationsList && translationsList.length) {
-            setTranslations(translationsList);
-            setSelectedTranslation(translationsList[0]?.code || "");
-            if (translationsList.length > 1) {
-              setSecondTranslation(translationsList[1]?.code || "");
-            }
-          }
+          await refreshTranslations();
           const sources = await window.worship.bibles.getOnlineSources();
           if (sources?.length) {
             setOnlineSources(sources);
@@ -13686,22 +14046,37 @@
       };
       loadBibleData();
     }, []);
-    (0, import_react3.useEffect)(() => {
+    (0, import_react4.useEffect)(() => {
       if (selectedBook) {
-        loadChapters(selectedBook);
+        const translation = translations.find((item) => item.code === selectedTranslation);
+        loadChapters(selectedBook, translation?.id);
       }
-    }, [selectedBook]);
-    (0, import_react3.useEffect)(() => {
+    }, [selectedBook, selectedTranslation, translations]);
+    (0, import_react4.useEffect)(() => {
       if (selectedBook && selectedChapter) {
-        loadVerses();
+        loadVerses(selectedBook, selectedChapter, selectedTranslation);
       }
-    }, [selectedChapter, selectedTranslation]);
-    (0, import_react3.useEffect)(() => {
+    }, [selectedBook, selectedChapter, selectedTranslation, translations]);
+    (0, import_react4.useEffect)(() => {
       if (dualMode && secondTranslation && selectedBook && selectedChapter) {
-        loadSecondVerses();
+        loadSecondVerses(selectedBook, selectedChapter, secondTranslation);
+      } else {
+        setSecondVerses([]);
       }
-    }, [selectedChapter, secondTranslation, dualMode]);
-    (0, import_react3.useEffect)(() => {
+    }, [selectedBook, selectedChapter, secondTranslation, dualMode, translations]);
+    (0, import_react4.useEffect)(() => {
+      if (!translations.length || secondTranslation !== selectedTranslation) return;
+      const alternate = translations.find((item) => item.code !== selectedTranslation);
+      setSecondTranslation(alternate?.code || "");
+      setSecondVerses([]);
+    }, [selectedTranslation, secondTranslation, translations]);
+    (0, import_react4.useEffect)(() => {
+      setSelectedVerse(null);
+      setVerses([]);
+      setSecondVerses([]);
+      setSearchResults([]);
+    }, [selectedTranslation]);
+    (0, import_react4.useEffect)(() => {
       if (!window.worship?.bibles?.onDownloadProgress) return;
       const cleanup = window.worship.bibles.onDownloadProgress((payload) => {
         if (payload.translationCode === downloadingCode) {
@@ -13710,7 +14085,7 @@
       });
       return cleanup;
     }, [downloadingCode]);
-    (0, import_react3.useEffect)(() => {
+    (0, import_react4.useEffect)(() => {
       if (pendingVerseNumber == null || !verses.length) return;
       const verse = verses.find((item) => item.verse === pendingVerseNumber);
       if (verse) {
@@ -13718,7 +14093,7 @@
         setPendingVerseNumber(null);
       }
     }, [pendingVerseNumber, verses]);
-    (0, import_react3.useEffect)(() => {
+    (0, import_react4.useEffect)(() => {
       const onKeyDown = (event) => {
         if (!verses.length) return;
         if (event.key === "ArrowDown") {
@@ -13743,40 +14118,48 @@
       window.addEventListener("keydown", onKeyDown);
       return () => window.removeEventListener("keydown", onKeyDown);
     }, [verses, selectedVerse]);
-    const loadChapters = async (book) => {
+    const loadChapters = async (book, translationId) => {
+      const requestId = chapterRequestRef.current + 1;
+      chapterRequestRef.current = requestId;
       try {
-        const chaptersList = await window.worship.bibles.getChapters(book);
+        const chaptersList = await window.worship.bibles.getChapters(book, translationId);
+        if (requestId !== chapterRequestRef.current) return;
         if (chaptersList && chaptersList.length) {
           setChapters(chaptersList);
-          setSelectedChapter(chaptersList[0]);
+          setSelectedChapter((current) => chaptersList.includes(current) ? current : chaptersList[0]);
         } else {
           setChapters([1]);
           setSelectedChapter(1);
         }
       } catch (error) {
         console.error("Failed to load chapters:", error);
+        if (requestId !== chapterRequestRef.current) return;
         setChapters([1]);
         setSelectedChapter(1);
       }
     };
-    const loadVerses = async () => {
+    const loadVerses = async (book, chapter, translationCode) => {
+      const requestId = verseRequestRef.current + 1;
+      verseRequestRef.current = requestId;
       try {
-        const translation = translations.find((t) => t.code === selectedTranslation);
-        const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id);
-        setVerses(versesList || []);
+        const translation = translations.find((item) => item.code === translationCode);
+        const versesList = await window.worship.bibles.getVerses(book, chapter, translation?.id);
+        if (requestId === verseRequestRef.current) setVerses(versesList || []);
       } catch (error) {
         console.error("Failed to load verses:", error);
-        setVerses([]);
+        if (requestId === verseRequestRef.current) setVerses([]);
       }
     };
-    const loadSecondVerses = async () => {
+    const loadSecondVerses = async (book, chapter, translationCode) => {
+      const requestId = secondVerseRequestRef.current + 1;
+      secondVerseRequestRef.current = requestId;
       try {
-        const translation = translations.find((t) => t.code === secondTranslation);
-        const versesList = await window.worship.bibles.getVerses(selectedBook, selectedChapter, translation?.id);
-        setSecondVerses(versesList || []);
+        const translation = translations.find((item) => item.code === translationCode);
+        const versesList = await window.worship.bibles.getVerses(book, chapter, translation?.id);
+        if (requestId === secondVerseRequestRef.current) setSecondVerses(versesList || []);
       } catch (error) {
         console.error("Failed to load second verses:", error);
-        setSecondVerses([]);
+        if (requestId === secondVerseRequestRef.current) setSecondVerses([]);
       }
     };
     const handleSearch = async () => {
@@ -13828,10 +14211,7 @@
           setToast({ title: "Download failed", detail: result.error });
         } else {
           setToast({ title: "Bible downloaded", detail: `${source.name}: ${result.versesCount} verses` });
-          const translationsList = await window.worship.bibles.listTranslations();
-          if (translationsList && translationsList.length) {
-            setTranslations(translationsList);
-          }
+          await refreshTranslations();
         }
       } catch (e) {
         setToast({ title: "Download failed", detail: e.message });
@@ -13860,10 +14240,7 @@
         if (result?.error) throw new Error(result.error);
         setImportProgress(null);
         setToast({ title: "Bible import completed", detail: `${code} is ready` });
-        const translationsList = await window.worship.bibles.listTranslations();
-        if (translationsList && translationsList.length) {
-          setTranslations(translationsList);
-        }
+        await refreshTranslations();
       } catch (e) {
         console.error(e);
         setImportProgress(null);
@@ -13891,8 +14268,7 @@
         const result = await window.worship.bibles.importFromEasyWorship(code, "en", filePath);
         if (result?.error) throw new Error(result.error);
         setToast({ title: "EasyWorship Bible imported", detail: `${code} is ready` });
-        const translationsList = await window.worship.bibles.listTranslations();
-        if (translationsList && translationsList.length) setTranslations(translationsList);
+        await refreshTranslations();
       } catch (e) {
         setToast({ title: "EWB import failed", detail: e.message });
       } finally {
@@ -13900,18 +14276,61 @@
         if (cleanup) cleanup();
       }
     };
-    const handleVerseSelect = (verse) => {
-      setSelectedVerse(verse);
-      const slideText = `${selectedBook} ${selectedChapter}:${verse.verse}
-
-${verse.text}`;
-      setCurrentSlide(slideText);
+    const handleImportXmlPack = async () => {
+      const filePaths = await window.worship?.bibles?.openXmlFiles?.();
+      if (!filePaths?.length || !window.worship?.bibles?.importXmlFiles) return;
+      let cleanup;
+      if (window.worship?.bibles?.onImportProgress) {
+        cleanup = window.worship.bibles.onImportProgress((payload) => {
+          if (payload?.progress != null) setImportProgress(Number(payload.progress));
+        });
+      }
+      setImportProgress(0);
+      try {
+        const results = await window.worship.bibles.importXmlFiles(filePaths);
+        const imported = (results || []).filter((result) => result && !result.error && !result.skipped);
+        const skipped = (results || []).filter((result) => result?.skipped);
+        const failed = (results || []).filter((result) => result?.error);
+        await refreshTranslations();
+        setToast({
+          title: "Bible translations loaded",
+          detail: `${imported.length} imported${skipped.length ? `, ${skipped.length} duplicate${skipped.length === 1 ? "" : "s"} skipped` : ""}${failed.length ? `, ${failed.length} failed` : ""}`
+        });
+      } catch (error) {
+        setToast({ title: "Bible pack import failed", detail: error.message });
+      } finally {
+        setImportProgress(null);
+        cleanup?.();
+      }
     };
-    const sendToProjector = async () => {
-      if (!selectedVerse) return;
-      const slideText = `${selectedBook} ${selectedChapter}:${selectedVerse.verse}
-
-${selectedVerse.text}`;
+    const getVerseContext = (verse) => ({
+      book: verse?.book || selectedBook,
+      chapter: Number(verse?.chapter || selectedChapter)
+    });
+    const buildVerseSlide = (verse) => {
+      const context = getVerseContext(verse);
+      const mainLabel = selectedTranslation.toUpperCase() || "TEXT";
+      const lines = [
+        `${context.book} ${context.chapter}:${verse.verse}`,
+        `${mainLabel}: ${verse.text}`
+      ];
+      if (dualMode && secondTranslation && secondTranslation !== selectedTranslation) {
+        const secondary = secondVerses.find((item) => item.verse === verse.verse);
+        if (secondary?.text) lines.push(`${secondTranslation.toUpperCase()}: ${secondary.text}`);
+      }
+      return lines.join("\n\n");
+    };
+    const handleVerseSelect = (verse) => {
+      const context = getVerseContext(verse);
+      setSelectedVerse(verse);
+      if (verse?.book) setSelectedBook(context.book);
+      if (verse?.chapter) setSelectedChapter(context.chapter);
+      setCurrentSlide(buildVerseSlide(verse));
+    };
+    const sendVerseToProjector = async (verse) => {
+      if (!verse) return;
+      const context = getVerseContext(verse);
+      const slideText = buildVerseSlide(verse);
       setCurrentSlide(slideText);
       setLiveSlide(slideText);
       let OUTPUT_IDS4 = [1, 2];
@@ -13923,65 +14342,89 @@ ${selectedVerse.text}`;
       } catch {
       }
       OUTPUT_IDS4.forEach((id) => window?.worship?.outputs?.setState?.(id, { slideTitle: slideText }));
-      setToast({ title: "Verse sent live", detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
+      setToast({ title: "Verse sent live", detail: `${context.book} ${context.chapter}:${verse.verse} \xB7 ${selectedTranslation.toUpperCase()}` });
+    };
+    const sendToProjector = async () => {
+      await sendVerseToProjector(selectedVerse);
+    };
+    const handleVerseDoubleClick = (verse) => {
+      handleVerseSelect(verse);
+      void sendVerseToProjector(verse);
     };
     const addToSchedule = async () => {
       if (!selectedVerse) return;
       try {
-        const content = `${selectedBook} ${selectedChapter}:${selectedVerse.verse} - ${selectedVerse.text}`;
+        const context = getVerseContext(selectedVerse);
+        const content = `${context.book} ${context.chapter}:${selectedVerse.verse} - ${selectedVerse.text}`;
         await dbService.schedule.addItem("scripture", content);
         const nextItems = await dbService.schedule.getItems();
         useStore2.setState({ schedule: nextItems });
-        setToast({ title: "Added to schedule", detail: `${selectedBook} ${selectedChapter}:${selectedVerse.verse}` });
+        setToast({ title: "Added to schedule", detail: `${context.book} ${context.chapter}:${selectedVerse.verse}` });
       } catch (error) {
         console.error("Failed to add to schedule:", error);
       }
     };
     const wordCount = selectedVerse ? selectedVerse.text.split(/\s+/).filter(Boolean).length : 0;
-    return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("aside", { className: "panel explorer-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "import-osis-row", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "upload", size: 14 }),
+    return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "workspace-grid workspace-scripture", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("aside", { className: "panel explorer-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "bible-pack-card", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "bible-pack-heading", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "panel-eyebrow", children: "TRANSLATION PACK" }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("strong", { children: "English Bible XML" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "globe", size: 16 })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { children: "Import multiple numbered Bible XML files at once. Translation codes are detected automatically and duplicate versions are skipped." }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "live-button full", onClick: handleImportXmlPack, disabled: importProgress !== null, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "upload", size: 14 }),
+            " ",
+            importProgress !== null ? `Loading XML (${importProgress}%)` : "Load Bible XML set"
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("small", { className: "bible-pack-codes", children: "TPT \xB7 NIV \xB7 GW \xB7 GNT \xB7 EASY \xB7 AMPC \xB7 AMP \xB7 TLB \xB7 NLT" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "import-osis-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "live-button full", onClick: handleImportOsis, disabled: importProgress !== null, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "upload", size: 14 }),
             " ",
             importProgress !== null ? `Importing (${importProgress}%)` : "Import OSIS Bible"
           ] }),
-          importProgress !== null && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 6, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: `${importProgress}%`, height: "100%", backgroundColor: "#3b82f6", transition: "width 0.2s ease-in-out" } }) })
+          importProgress !== null && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 6, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { width: `${importProgress}%`, height: "100%", backgroundColor: "#3b82f6", transition: "width 0.2s ease-in-out" } }) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "soft-button full", onClick: handleImportEasyWorship, disabled: importProgress !== null, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "upload", size: 14 }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "soft-button full", onClick: handleImportEasyWorship, disabled: importProgress !== null, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "upload", size: 14 }),
           " Import EasyWorship EWB"
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "import-osis-row", style: { marginTop: 6 }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
           "button",
           {
             className: "soft-button full",
             onClick: () => setShowOnlinePanel(!showOnlinePanel),
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "globe", size: 14 }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "globe", size: 14 }),
               " ",
               showOnlinePanel ? "Hide Online Bibles" : "Download Bible Online"
             ]
           }
         ) }),
-        showOnlinePanel && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "online-bibles-panel", children: [
-          downloadProgress !== null && downloadingCode && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { marginBottom: 8 }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("small", { style: { color: "var(--text-muted)" }, children: [
+        showOnlinePanel && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "online-bibles-panel", children: [
+          downloadProgress !== null && downloadingCode && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { marginBottom: 8 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("small", { style: { color: "var(--text-muted)" }, children: [
               "Downloading ",
               downloadingCode,
               "... (",
               downloadProgress,
               "%)"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 4, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { width: `${downloadProgress}%`, height: "100%", backgroundColor: "#22c55e", transition: "width 0.2s ease-in-out" } }) })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { width: "100%", height: 6, backgroundColor: "#334155", borderRadius: 3, marginTop: 4, overflow: "hidden" }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { width: `${downloadProgress}%`, height: "100%", backgroundColor: "#22c55e", transition: "width 0.2s ease-in-out" } }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "online-sources-list", children: onlineSources.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { padding: 8, color: "var(--text-muted)", fontSize: "0.75rem" }, children: "No online sources available." }) : onlineSources.map((source, idx) => {
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "online-sources-list", children: onlineSources.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { padding: 8, color: "var(--text-muted)", fontSize: "0.75rem" }, children: "No online sources available." }) : onlineSources.map((source, idx) => {
             const isInstalled = translations.some((t) => t.code === source.code);
             const isDownloading = downloadingCode === source.code;
-            return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: `online-source-row ${source.available === false ? "restricted" : ""}`, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "online-source-info", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: source.name }),
-                /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("small", { children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: `online-source-row ${source.available === false ? "restricted" : ""}`, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "online-source-info", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("strong", { children: source.name }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("small", { children: [
                   source.code,
                   " \xB7 ",
                   source.language,
@@ -13989,7 +14432,7 @@ ${selectedVerse.text}`;
                   source.license || "Direct download"
                 ] })
               ] }),
-              isInstalled ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "installed-badge", children: "Installed" }) : source.available === false ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+              isInstalled ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "installed-badge", children: "Installed" }) : source.available === false ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -13997,7 +14440,7 @@ ${selectedVerse.text}`;
                   title: source.infoUrl || source.url,
                   children: "Source"
                 }
-              ) : /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+              ) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -14009,29 +14452,29 @@ ${selectedVerse.text}`;
             ] }, idx);
           }) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: `chevron ${otExpanded ? "open" : ""}`, children: "\u25B6" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "explorer-section-header", onClick: () => setOtExpanded(!otExpanded), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: `chevron ${otExpanded ? "open" : ""}`, children: "\u25B6" }),
           "Old Testament"
         ] }),
-        otExpanded && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "book-list", children: OT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
+        otExpanded && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "book-list", children: OT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
           setSelectedBook(book);
           setSelectedVerse(null);
           setSearchResults([]);
         }, children: book }, book)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: `chevron ${ntExpanded ? "open" : ""}`, children: "\u25B6" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "explorer-section-header", onClick: () => setNtExpanded(!ntExpanded), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: `chevron ${ntExpanded ? "open" : ""}`, children: "\u25B6" }),
           "New Testament"
         ] }),
-        ntExpanded && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "book-list", children: NT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
+        ntExpanded && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "book-list", children: NT_BOOKS.map((book) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: `book-item ${selectedBook === book ? "active" : ""}`, onClick: () => {
           setSelectedBook(book);
           setSelectedVerse(null);
           setSearchResults([]);
         }, children: book }, book)) })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("section", { className: "panel scripture-content-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "scripture-search-bar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "search-icon", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "search", size: 16 }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("section", { className: "panel scripture-content-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "scripture-search-bar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "search-icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "search", size: 16 }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
             "input",
             {
               className: "scripture-search-input",
@@ -14041,165 +14484,213 @@ ${selectedVerse.text}`;
               placeholder: `${selectedBook} 1:1`
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("select", { className: "translation-selector", value: selectedTranslation, onChange: (e) => setSelectedTranslation(e.target.value), children: translations.map((t) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { style: { display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", color: "var(--text-muted)", cursor: "pointer" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+            "select",
+            {
+              className: "translation-selector",
+              value: selectedTranslation,
+              onChange: (e) => {
+                setSelectedTranslation(e.target.value);
+                setSelectedVerse(null);
+                setVerses([]);
+                setSecondVerses([]);
+                setSearchResults([]);
+              },
+              "aria-label": "Bible translation",
+              children: [
+                !translations.length && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: "", children: "No versions loaded" }),
+                translations.map((t) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("option", { value: t.code, children: [
+                  t.code.toUpperCase(),
+                  " \xB7 ",
+                  t.name
+                ] }, t.code))
+              ]
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("label", { style: { display: "flex", alignItems: "center", gap: 4, fontSize: "0.72rem", color: "var(--text-muted)", cursor: "pointer" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("input", { type: "checkbox", checked: dualMode, onChange: (e) => setDualMode(e.target.checked), style: { borderRadius: 4 } }),
             "Dual"
           ] }),
-          dualMode && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => setSecondTranslation(e.target.value), children: translations.map((t) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("option", { value: t.code, children: t.code.toUpperCase() }, t.code)) })
+          dualMode && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("select", { className: "translation-selector", value: secondTranslation, onChange: (e) => {
+            setSecondTranslation(e.target.value);
+            setSecondVerses([]);
+          }, "aria-label": "Second Bible translation", children: translations.filter((item) => item.code !== selectedTranslation).map((t) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("option", { value: t.code, children: [
+            t.code.toUpperCase(),
+            " \xB7 ",
+            t.name
+          ] }, t.code)) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { className: "scripture-book-title", children: selectedBook }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "chapter-chip-grid", children: chapters.map((ch) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? "active" : ""}`, onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h2", { className: "scripture-book-title", children: selectedBook }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("p", { className: "scripture-book-subtitle", children: "Select a chapter to begin" }),
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "chapter-chip-grid", children: chapters.map((ch) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: `chapter-chip ${selectedChapter === ch ? "active" : ""}`, onClick: () => {
           setSelectedChapter(ch);
           setSelectedVerse(null);
           setSearchResults([]);
         }, children: ch }, ch)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "verse-reader", children: [
-          verses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "verse-chapter-label", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { className: "verse-chapter-pill", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "verse-reader", children: [
+          verses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "verse-chapter-label", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("span", { className: "verse-chapter-pill", children: [
               "Chapter ",
               selectedChapter
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "verse-chapter-pill", children: selectedTranslation.toUpperCase() })
           ] }),
-          searchResults.length > 0 ? searchResults.map((result, idx) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: `verse-row ${selectedVerse === result ? "selected" : ""}`, onClick: () => handleVerseSelect(result), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "verse-number", children: result.verse }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { fontSize: "0.72rem", color: "var(--primary)", marginBottom: 4 }, children: [
-                result.book,
-                " ",
-                result.chapter,
-                ":",
-                result.verse
-              ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "verse-text", children: result.text })
-            ] })
-          ] }, idx)) : verses.length > 0 ? verses.map((verse, index) => /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: `verse-row ${selectedVerse?.verse === verse.verse ? "selected" : ""}`, onClick: () => handleVerseSelect(verse), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "verse-number", children: verse.verse }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { flex: 1 }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "verse-text", children: verse.text }),
-              dualMode && secondVerses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find((v) => v.verse === verse.verse)?.text })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "verse-row-hotkeys", children: selectedVerse?.verse === verse.verse ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "soft-button", onClick: (event) => {
-              event.stopPropagation();
-              sendToProjector();
-            }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "send", size: 13 }),
-              " Live"
-            ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "soft-button", onClick: (event) => {
-              event.stopPropagation();
-              handleVerseSelect(verse);
-              if (index + 1 < verses.length) handleVerseSelect(verses[index + 1]);
-            }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "chevron", size: 13 }),
-              " Next"
-            ] }) })
-          ] }, verse.verse)) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "0.85rem" }, children: "Select a book and chapter to view verses" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "0.72rem", marginTop: 4 }, children: "Or search for specific text" })
+          searchResults.length > 0 ? searchResults.map((result, idx) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+            "div",
+            {
+              className: `verse-row ${selectedVerse === result ? "selected" : ""}`,
+              onClick: () => handleVerseSelect(result),
+              onDoubleClick: () => handleVerseDoubleClick(result),
+              title: "Click to preview \xB7 double-click to send live",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "verse-number", children: result.verse }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { fontSize: "0.72rem", color: "var(--primary)", marginBottom: 4 }, children: [
+                    result.book,
+                    " ",
+                    result.chapter,
+                    ":",
+                    result.verse
+                  ] }),
+                  /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "verse-text", children: result.text })
+                ] })
+              ]
+            },
+            idx
+          )) : verses.length > 0 ? verses.map((verse, index) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+            "div",
+            {
+              className: `verse-row ${selectedVerse?.verse === verse.verse ? "selected" : ""}`,
+              onClick: () => handleVerseSelect(verse),
+              onDoubleClick: () => handleVerseDoubleClick(verse),
+              title: "Click to preview \xB7 double-click to send live",
+              children: [
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "verse-number", children: verse.verse }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { flex: 1 }, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "verse-text", children: verse.text }),
+                  dualMode && secondVerses.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "verse-text-secondary", children: secondVerses.find((v) => v.verse === verse.verse)?.text })
+                ] }),
+                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "verse-row-hotkeys", children: selectedVerse?.verse === verse.verse ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "soft-button", onClick: (event) => {
+                  event.stopPropagation();
+                  sendToProjector();
+                }, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "send", size: 13 }),
+                  " Live"
+                ] }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "soft-button", onClick: (event) => {
+                  event.stopPropagation();
+                  if (index + 1 < verses.length) handleVerseSelect(verses[index + 1]);
+                }, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "chevron", size: 13 }),
+                  " Next"
+                ] }) })
+              ]
+            },
+            verse.verse
+          )) : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "0.85rem" }, children: "Select a book and chapter to view verses" }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "0.72rem", marginTop: 4 }, children: "Or search for specific text" })
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("aside", { className: "panel scripture-inspector", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h3", { className: "inspector-title", children: "Inspector" }),
-          liveSlide && liveSlide.includes(selectedBook) && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-live-pill", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "dot" }),
+      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("aside", { className: "panel scripture-inspector", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h3", { className: "inspector-title", children: "Inspector" }),
+          liveSlide && liveSlide.includes(selectedBook) && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-live-pill", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "dot" }),
             " LIVE NOW"
           ] })
         ] }),
-        selectedVerse ? /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "verse-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "verse-card-label", children: "Currently Selected" }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "verse-card-ref", children: [
+        selectedVerse ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(import_jsx_runtime4.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "verse-card", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "verse-card-label", children: "Currently Selected" }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "verse-card-ref", children: [
               selectedBook,
               " ",
               selectedChapter,
               ":",
               selectedVerse.verse
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "verse-card-text", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "verse-card-text", children: [
               '"',
               selectedVerse.text,
               '"'
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-button-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: () => {
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-button-row", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "ghost-button", onClick: () => {
               }, children: "Edit Theme" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { className: "ghost-button", onClick: () => {
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: "ghost-button", onClick: () => {
               }, children: "Share" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "send-projector-btn", onClick: sendToProjector, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "send", size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "send-projector-btn", onClick: sendToProjector, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "send", size: 15 }),
               " Send to Projector"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("button", { className: "ghost-button", onClick: addToSchedule, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(AppIcon, { name: "queue", size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "ghost-button", onClick: addToSchedule, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "queue", size: 15 }),
               " Add to Schedule"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "inspector-meta-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Word Count" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: wordCount })
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-meta-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Word Count" }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: wordCount })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Style" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: "Lyric Bold" })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Style" }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: "Lyric Bold" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Motion" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: "Static" })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Motion" }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: "Static" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-label", children: "Translation" }),
-              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "meta-card-value", children: selectedTranslation.toUpperCase() })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Translation" }),
+              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: selectedTranslation.toUpperCase() })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "projection-preview", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "preview-text", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "projection-preview", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "preview-text", children: [
               selectedVerse.text.slice(0, 80),
               selectedVerse.text.length > 80 ? "..." : ""
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "preview-label", children: "Preview" })
+            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "preview-label", children: "Preview" })
           ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4D6}" }),
           "Select a verse to see details and send to projector"
         ] }),
-        toast && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { style: { padding: "8px 14px 14px" }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "ui-inline-notice", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: toast.title }),
-          toast.detail ? /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("small", { children: toast.detail }) : null
+        toast && /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { padding: "8px 14px 14px" }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "ui-inline-notice", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("strong", { children: toast.title }),
+          toast.detail ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("small", { children: toast.detail }) : null
         ] }) })
       ] })
     ] });
   };
 
   // src/renderer/app/components/MediaLibrary.tsx
-  var import_react4 = __toESM(require_react());
-  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
+  var import_react5 = __toESM(require_react());
+  var import_jsx_runtime5 = __toESM(require_jsx_runtime());
   var MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
     const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
     const setLiveSlide = useStore2((state) => state.setLiveSlide);
     const setTheme = useStore2((state) => state.setTheme);
     const theme = useStore2((state) => state.theme);
-    const [mediaAssets, setMediaAssets] = (0, import_react4.useState)([]);
-    const [folders, setFolders] = (0, import_react4.useState)([]);
-    const [selectedAsset, setSelectedAsset] = (0, import_react4.useState)(null);
-    const [isImporting, setIsImporting] = (0, import_react4.useState)(false);
-    const [activeFilter, setActiveFilter] = (0, import_react4.useState)("all");
-    const [currentFolderId, setCurrentFolderId] = (0, import_react4.useState)(null);
-    const [viewMode, setViewMode] = (0, import_react4.useState)("grid");
-    const [sortMode, setSortMode] = (0, import_react4.useState)("recent");
-    const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
-    const [videoLoop, setVideoLoop] = (0, import_react4.useState)(true);
-    const [videoMuted, setVideoMuted] = (0, import_react4.useState)(true);
-    const [videoPlaybackRate, setVideoPlaybackRate] = (0, import_react4.useState)(1);
-    (0, import_react4.useEffect)(() => {
+    const [mediaAssets, setMediaAssets] = (0, import_react5.useState)([]);
+    const [folders, setFolders] = (0, import_react5.useState)([]);
+    const [selectedAsset, setSelectedAsset] = (0, import_react5.useState)(null);
+    const [isImporting, setIsImporting] = (0, import_react5.useState)(false);
+    const [activeFilter, setActiveFilter] = (0, import_react5.useState)("all");
+    const [currentFolderId, setCurrentFolderId] = (0, import_react5.useState)(null);
+    const [viewMode, setViewMode] = (0, import_react5.useState)("grid");
+    const [sortMode, setSortMode] = (0, import_react5.useState)("recent");
+    const [searchQuery, setSearchQuery] = (0, import_react5.useState)("");
+    const [videoLoop, setVideoLoop] = (0, import_react5.useState)(true);
+    const [videoMuted, setVideoMuted] = (0, import_react5.useState)(true);
+    const [videoPlaybackRate, setVideoPlaybackRate] = (0, import_react5.useState)(1);
+    (0, import_react5.useEffect)(() => {
       loadMediaAssets();
       loadFolders();
     }, [activeFilter, currentFolderId]);
@@ -14326,10 +14817,10 @@ ${selectedVerse.text}`;
       { key: "background", label: "Backgrounds", icon: "palette" },
       { key: "loop", label: "Loops", icon: "sync" }
     ];
-    return /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "workspace-grid workspace-media", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("aside", { className: "panel media-filters-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "media-section-label", children: "Media Assets" }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "media-type-list", children: FILTER_ITEMS.map((item) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+    return /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "workspace-grid workspace-media", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("aside", { className: "panel media-filters-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-section-label", children: "Media Assets" }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-type-list", children: FILTER_ITEMS.map((item) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
           "button",
           {
             className: `media-type-item ${activeFilter === item.key ? "active" : ""}`,
@@ -14338,51 +14829,51 @@ ${selectedVerse.text}`;
               setCurrentFolderId(null);
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: item.icon, size: 15 }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: item.icon, size: 15 }) }),
               item.label
             ]
           },
           item.key
         )) }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-section-label", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-section-label", children: [
           "Folders",
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { onClick: handleCreateFolder, title: "New Folder", children: "+" })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { onClick: handleCreateFolder, title: "New Folder", children: "+" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "folder-tree", children: [
-          currentFolderId !== null && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "folder-item", onClick: () => setCurrentFolderId(null), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "folder-icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "chevron", size: 14, className: "back-chevron" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "folder-tree", children: [
+          currentFolderId !== null && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "folder-item", onClick: () => setCurrentFolderId(null), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "folder-icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "chevron", size: 14, className: "back-chevron" }) }),
             "Back to Root"
           ] }),
-          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: `folder-item ${currentFolderId === folder.id ? "active" : ""}`, onClick: () => setCurrentFolderId(folder.id), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "folder-icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "folder", size: 14 }) }),
+          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: `folder-item ${currentFolderId === folder.id ? "active" : ""}`, onClick: () => setCurrentFolderId(folder.id), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "folder-icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "folder", size: 14 }) }),
             folder.name
           ] }, folder.id))
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-panel-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "live-button full", onClick: handleImport, disabled: isImporting, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "upload", size: 14 }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-panel-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "live-button full", onClick: handleImport, disabled: isImporting, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "upload", size: 14 }),
             " ",
             isImporting ? "Importing..." : "Import Media"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "ghost-button", onClick: handleCreateFolder, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "folder", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "ghost-button", onClick: handleCreateFolder, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "folder", size: 14 }),
             " New Folder"
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-bottom-links", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "media-bottom-link", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "trash", size: 14 }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-bottom-links", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "media-bottom-link", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "trash", size: 14 }),
             " Trash"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "media-bottom-link", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "folder", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "media-bottom-link", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "folder", size: 14 }),
             " Archive"
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("section", { className: "panel media-content-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-main-toolbar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("section", { className: "panel media-content-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-main-toolbar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "input",
             {
               className: "search-input",
@@ -14391,28 +14882,28 @@ ${selectedVerse.text}`;
               onChange: (e) => setSearchQuery(e.target.value)
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "view-toggle-group", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: `view-toggle-btn ${viewMode === "grid" ? "active" : ""}`, onClick: () => setViewMode("grid"), children: "\u229E" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("button", { className: `view-toggle-btn ${viewMode === "list" ? "active" : ""}`, onClick: () => setViewMode("list"), children: "\u2630" })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "view-toggle-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: `view-toggle-btn ${viewMode === "grid" ? "active" : ""}`, onClick: () => setViewMode("grid"), children: "\u229E" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: `view-toggle-btn ${viewMode === "list" ? "active" : ""}`, onClick: () => setViewMode("list"), children: "\u2630" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("select", { className: "sort-select", value: sortMode, onChange: (e) => setSortMode(e.target.value), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: "recent", children: "Sort: Recent" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: "name", children: "Sort: Name" })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("select", { className: "sort-select", value: sortMode, onChange: (e) => setSortMode(e.target.value), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: "recent", children: "Sort: Recent" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: "name", children: "Sort: Name" })
           ] })
         ] }),
-        viewMode === "grid" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-content-grid", children: [
-          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "folder-card", onClick: () => setCurrentFolderId(folder.id), children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "folder-icon-lg", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "folder", size: 25 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "folder-name", children: folder.name })
+        viewMode === "grid" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-content-grid", children: [
+          currentFolders.map((folder) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "folder-card", onClick: () => setCurrentFolderId(folder.id), children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "folder-icon-lg", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "folder", size: 25 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "folder-name", children: folder.name })
           ] }, `f-${folder.id}`)),
-          filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(
+          filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(
             "div",
             {
               className: `asset-card ${selectedAsset?.id === asset.id ? "selected" : ""}`,
               onClick: () => handleSelect(asset),
               onDoubleClick: () => handleSendToPreview(),
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "asset-card-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "asset-card-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
                   "img",
                   {
                     src: `file://${asset.path}`,
@@ -14421,45 +14912,45 @@ ${selectedVerse.text}`;
                       e.currentTarget.style.display = "none";
                     }
                   }
-                ) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "video-icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "play", size: 22 }) }) }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "asset-card-name", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "type-icon", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: asset.type === "image" ? "media" : "play", size: 13 }) }),
+                ) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "video-icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "play", size: 22 }) }) }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "asset-card-name", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "type-icon", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: asset.type === "image" ? "media" : "play", size: 13 }) }),
                   (asset.name || "").length > 20 ? (asset.name || "").slice(0, 18) + "..." : asset.name
                 ] })
               ]
             },
             asset.id
           )),
-          filteredAssets.length === 0 && currentFolders.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { gridColumn: "1 / -1", textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "2.5rem", marginBottom: 10, opacity: 0.5 }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: activeFilter === "video" ? "play" : "media", size: 30 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "0.85rem", marginBottom: 4 }, children: "No assets yet" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "0.72rem" }, children: 'Click "Import Media" to add files' })
+          filteredAssets.length === 0 && currentFolders.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { style: { gridColumn: "1 / -1", textAlign: "center", padding: 40, color: "var(--text-muted)" }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { fontSize: "2.5rem", marginBottom: 10, opacity: 0.5 }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: activeFilter === "video" ? "play" : "media", size: 30 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { fontSize: "0.85rem", marginBottom: 4 }, children: "No assets yet" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { fontSize: "0.72rem" }, children: 'Click "Import Media" to add files' })
           ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "media-content-list", children: filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: `media-list-item ${selectedAsset?.id === asset.id ? "selected" : ""}`, onClick: () => handleSelect(asset), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "media-list-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("img", { src: `file://${asset.path}`, alt: asset.name, onError: (e) => {
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-content-list", children: filteredAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: `media-list-item ${selectedAsset?.id === asset.id ? "selected" : ""}`, onClick: () => handleSelect(asset), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-list-thumb", children: asset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("img", { src: `file://${asset.path}`, alt: asset.name, onError: (e) => {
             e.currentTarget.style.display = "none";
-          } }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }, children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "play", size: 18 }) }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-list-info", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "media-list-name", children: asset.name }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "media-list-meta", children: [
+          } }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", fontSize: "1rem" }, children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "play", size: 18 }) }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-list-info", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "media-list-name", children: asset.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "media-list-meta", children: [
               asset.type,
               " \u2022 ",
               asset.path.split("\\").pop()?.split(".").pop()?.toUpperCase()
             ] })
           ] })
         ] }, asset.id)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "status-bar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "status-dot" }),
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "status-bar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "status-dot" }),
           "System Live",
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { style: { opacity: 0.6 }, children: "|" }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { style: { opacity: 0.6 }, children: "|" }),
           filteredAssets.length,
           " assets"
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("aside", { className: "panel media-inspector", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "inspector-header", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("h3", { className: "inspector-title", children: "Inspector" }) }),
-        selectedAsset ? /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)(import_jsx_runtime4.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "asset-preview", children: selectedAsset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("aside", { className: "panel media-inspector", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "inspector-header", children: /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("h3", { className: "inspector-title", children: "Inspector" }) }),
+        selectedAsset ? /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)(import_jsx_runtime5.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "asset-preview", children: selectedAsset.type === "image" ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "img",
             {
               src: `file://${selectedAsset.path}`,
@@ -14468,7 +14959,7 @@ ${selectedVerse.text}`;
                 e.currentTarget.style.display = "none";
               }
             }
-          ) : /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(
+          ) : /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(
             "video",
             {
               src: `file://${selectedAsset.path}`,
@@ -14479,83 +14970,83 @@ ${selectedVerse.text}`;
               style: { width: "100%", height: "100%", objectFit: "cover" }
             }
           ) }),
-          selectedAsset.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "asset-meta-grid", style: { marginBottom: 12 }, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Loop" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("label", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("input", { type: "checkbox", checked: videoLoop, onChange: (e) => setVideoLoop(e.target.checked) }),
+          selectedAsset.type === "video" && /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "asset-meta-grid", style: { marginBottom: 12 }, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Loop" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: videoLoop, onChange: (e) => setVideoLoop(e.target.checked) }),
                 " On"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Muted" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("label", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("input", { type: "checkbox", checked: videoMuted, onChange: (e) => setVideoMuted(e.target.checked) }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Muted" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("label", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("input", { type: "checkbox", checked: videoMuted, onChange: (e) => setVideoMuted(e.target.checked) }),
                 " On"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Speed" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("select", { value: videoPlaybackRate, onChange: (e) => setVideoPlaybackRate(Number(e.target.value)), children: [
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: 0.5, children: "0.5x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: 0.75, children: "0.75x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: 1, children: "1.0x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: 1.25, children: "1.25x" }),
-                /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("option", { value: 1.5, children: "1.5x" })
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Speed" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("select", { value: videoPlaybackRate, onChange: (e) => setVideoPlaybackRate(Number(e.target.value)), children: [
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: 0.5, children: "0.5x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: 0.75, children: "0.75x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: 1, children: "1.0x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: 1.25, children: "1.25x" }),
+                /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("option", { value: 1.5, children: "1.5x" })
               ] })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "asset-identity", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "asset-identity-label", children: "Asset Identity" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "asset-identity-name", children: selectedAsset.name })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "asset-identity", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "asset-identity-label", children: "Asset Identity" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "asset-identity-name", children: selectedAsset.name })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "asset-tags", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "chip", children: selectedAsset.type === "image" ? "Image" : "Video" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "chip", children: "Local" }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("span", { className: "chip", children: "+ Tag" })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "asset-tags", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "chip", children: selectedAsset.type === "image" ? "Image" : "Video" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "chip", children: "Local" }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("span", { className: "chip", children: "+ Tag" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "asset-meta-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Type" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: selectedAsset.type === "image" ? "JPEG Image" : "Video File" })
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "asset-meta-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Type" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-value", children: selectedAsset.type === "image" ? "JPEG Image" : "Video File" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Resolution" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: "\u2014" })
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Resolution" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-value", children: "\u2014" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Created" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: "\u2014" })
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Created" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-value", children: "\u2014" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "meta-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-label", children: "Size" }),
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { className: "meta-card-value", children: "\u2014" })
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "meta-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-label", children: "Size" }),
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "meta-card-value", children: "\u2014" })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { className: "inspector-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "soft-button full", onClick: handleSendToPreview, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "eye", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "inspector-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "soft-button full", onClick: handleSendToPreview, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "eye", size: 14 }),
               " Send to Preview"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "send-projector-btn", onClick: handleSendToLive, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "send", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "send-projector-btn", onClick: handleSendToLive, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "send", size: 14 }),
               " Send to Live"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "ghost-button", onClick: handleUseAsBackground, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "palette", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "ghost-button", onClick: handleUseAsBackground, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "palette", size: 14 }),
               " Set as Background"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "ghost-button", onClick: handleAddToSchedule, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "queue", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "ghost-button", onClick: handleAddToSchedule, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "queue", size: 14 }),
               " Add to Schedule"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("button", { className: "ghost-button", onClick: () => handleDelete(selectedAsset), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime4.jsx)(AppIcon, { name: "trash", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("button", { className: "ghost-button", onClick: () => handleDelete(selectedAsset), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime5.jsx)(AppIcon, { name: "trash", size: 14 }),
               " Delete Asset"
             ] })
           ] })
-        ] }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4F8}" }),
+        ] }) : /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { style: { padding: 24, textAlign: "center", color: "var(--text-muted)", fontSize: "0.82rem" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { style: { fontSize: "2rem", marginBottom: 8 }, children: "\u{1F4F8}" }),
           "Select an asset to see details"
         ] })
       ] })
@@ -14563,17 +15054,17 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/Notifications.tsx
-  var import_jsx_runtime5 = __toESM(require_jsx_runtime());
-  var Notifications = ({ items, onDismiss }) => /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("div", { className: "toast-stack", "aria-live": "polite", "aria-label": "Notifications", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: `toast toast-${item.tone || "info"}`, children: [
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsxs)("div", { className: "toast-content", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("strong", { children: item.title }),
-      item.detail ? /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("small", { children: item.detail }) : null
+  var import_jsx_runtime6 = __toESM(require_jsx_runtime());
+  var Notifications = ({ items, onDismiss }) => /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "toast-stack", "aria-live": "polite", "aria-label": "Notifications", children: items.map((item) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: `toast toast-${item.tone || "info"}`, children: [
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toast-content", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: item.title }),
+      item.detail ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: item.detail }) : null
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime5.jsx)("button", { className: "toast-close", onClick: () => onDismiss(item.id), title: "Dismiss notification", children: "x" })
+    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("button", { className: "toast-close", onClick: () => onDismiss(item.id), title: "Dismiss notification", children: "x" })
   ] }, item.id)) });
 
   // src/renderer/app/components/ConsoleWorkspace.tsx
-  var import_jsx_runtime6 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime7 = __toESM(require_jsx_runtime());
   var OUTPUT_IDS = [1, 2];
   var formatType = (type) => type.replace(/[-_]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
   var ConsoleWorkspace = ({
@@ -14603,33 +15094,30 @@ ${selectedVerse.text}`;
       backgroundColor: theme.bg,
       backgroundImage: theme.backgroundImage ? `url(${theme.backgroundImage})` : void 0,
       backgroundSize: "cover",
-      color: theme.color,
-      fontSize: theme.fontSize,
-      fontFamily: theme.fontFamily || "Manrope",
-      fontWeight: theme.fontWeight || 700
+      color: theme.color
     };
     const queueItems = schedule.slice(0, 4);
     const queueFallback = !queueItems.length && currentSlide ? [{ id: -1, type: "Current slide", content: currentSlide }] : queueItems;
     const output1 = outputConfigs.find((output) => output.id === 1);
     const output2 = outputConfigs.find((output) => output.id === 2);
-    return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
+    return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
       "div",
       {
         className: "workspace-grid workspace-console",
         style: { gridTemplateColumns: `${paneSizes.consoleLeft}px minmax(0, 1fr)` },
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "schedule-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "schedule-panel-heading", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "panel-eyebrow", children: "SERVICE PLAN" }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h2", { children: "Order of Service" })
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "schedule-panel", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "schedule-panel-heading", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "SERVICE PLAN" }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "Order of Service" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "schedule-count", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "schedule-count", children: [
                 schedule.length,
                 " items"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "schedule-list", children: schedule.length ? schedule.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "schedule-list", children: schedule.length ? schedule.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
               "div",
               {
                 draggable: true,
@@ -14641,205 +15129,235 @@ ${selectedVerse.text}`;
                 onClick: () => onScheduleItemClick(item.content),
                 className: `schedule-item ${index === 0 ? "active" : ""}`,
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "schedule-drag-handle", "aria-hidden": "true", children: "\u22EE\u22EE" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "schedule-index", children: String(index + 1).padStart(2, "0") }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "schedule-item-copy", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: item.content || "Untitled item" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("small", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "schedule-drag-handle", "aria-hidden": "true", children: "\u22EE\u22EE" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "schedule-index", children: String(index + 1).padStart(2, "0") }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "schedule-item-copy", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: richTextToPlainText(item.content || "Untitled item") }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { children: [
                       formatType(item.type),
                       " ",
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: "\u2022" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "\u2022" }),
                       " ",
                       index === 0 ? "Current" : index === 1 ? "Next" : "Upcoming"
                     ] })
                   ] }),
-                  index === 0 ? /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(StatusBadge, { tone: "success", children: "CURRENT" }) : null
+                  index === 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(StatusBadge, { tone: "success", children: "CURRENT" }) : null
                 ]
               },
               item.id
-            )) : /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "empty-schedule", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "queue", size: 24 }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: "No service items yet" }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: "Add the first item to build today's running order." })
+            )) : /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "empty-schedule", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "queue", size: 24 }),
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: "No service items yet" }),
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "Add the first item to build today's running order." })
             ] }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "soft-button full schedule-add-button", onClick: onAddScheduleItem, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "plus", size: 15 }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "soft-button full schedule-add-button", onClick: onAddScheduleItem, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "plus", size: 15 }),
               " Add service item"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "schedule-footer-note", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "connected-dot" }),
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "schedule-footer-note", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "connected-dot" }),
               " Drag to reorder \xB7 Double-click a slide to send it live"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("section", { className: "console-stage", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "console-stage-heading", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "panel-eyebrow", children: "LIVE PRODUCTION" }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h1", { children: "Presentation console" })
+          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("section", { className: "console-stage", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "console-stage-heading", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "LIVE PRODUCTION" }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h1", { children: "Presentation console" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "stage-heading-meta", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "monitor", size: 14 }),
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "stage-heading-meta", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "monitor", size: 14 }),
                   " Output 1 \xB7 ",
                   output1?.resolution || "1920x1080",
                   " \xB7 ",
                   formatType(output1?.role || "extended")
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "clock", size: 14 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "clock", size: 14 }),
                   " Ready"
                 ] })
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-grid", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "monitor preview-monitor", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-header", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-label-group", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "monitor-status-dot preview" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: "Preview" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: "Next on air" })
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-grid", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "monitor preview-monitor", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-header", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-label-group", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "monitor-status-dot preview" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: "Preview" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: "Next on air" })
                     ] })
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-actions", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "monitor-output-label", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-actions", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "monitor-output-label", children: [
                       "OUTPUT 1 \xB7 ",
                       formatType(output1?.role || "extended")
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "text-button", onClick: onGoToEditor, children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "text-button", onClick: onGoToEditor, children: [
                       "Edit ",
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "external", size: 13 })
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "external", size: 13 })
                     ] })
                   ] })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "slide-frame", style: previewStyle, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-overlay" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "frame-badge preview-badge", children: "PREVIEW" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-content", children: currentSlide || "Select a slide to preview" })
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "slide-frame", style: previewStyle, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "slide-overlay" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "frame-badge preview-badge", children: "PREVIEW" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+                    FitText,
+                    {
+                      value: currentSlide || "Select a slide to preview",
+                      className: "slide-fit",
+                      baseFontSize: theme.fontSize,
+                      fontFamily: theme.fontFamily || "Manrope",
+                      fontWeight: theme.fontWeight || 700,
+                      textAlign: theme.textAlign || "center",
+                      verticalAlign: theme.verticalAlign || "center",
+                      textBoxWidth: theme.textBoxWidth ?? 90,
+                      textBoxHeight: theme.textBoxHeight ?? 90,
+                      style: previewStyle,
+                      "aria-label": "Preview slide content"
+                    }
+                  )
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: `monitor live ${isOnAir ? "is-on-air" : ""}`, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-header", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-label-group", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "monitor-status-dot live" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: "Live Output" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: "What the room sees" })
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: `monitor live ${isOnAir ? "is-on-air" : ""}`, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-header", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-label-group", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "monitor-status-dot live" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: "Live Output" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: "What the room sees" })
                     ] })
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "monitor-actions", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "monitor-output-label", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "monitor-actions", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "monitor-output-label", children: [
                       "OUTPUT 2 \xB7 ",
                       formatType(output2?.role || "extended")
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(StatusBadge, { tone: "live", children: isOnAir ? "ON AIR" : "STANDBY" })
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(StatusBadge, { tone: "live", children: isOnAir ? "ON AIR" : "STANDBY" })
                   ] })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "slide-frame", style: previewStyle, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-overlay live" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "frame-badge live-badge", children: isOnAir ? "LIVE" : "STANDBY" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "slide-content", children: liveSlide || "Nothing live yet" })
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "slide-frame", style: previewStyle, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "slide-overlay live" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "frame-badge live-badge", children: isOnAir ? "LIVE" : "STANDBY" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+                    FitText,
+                    {
+                      value: liveSlide || "Nothing live yet",
+                      className: "slide-fit",
+                      baseFontSize: theme.fontSize,
+                      fontFamily: theme.fontFamily || "Manrope",
+                      fontWeight: theme.fontWeight || 700,
+                      textAlign: theme.textAlign || "center",
+                      verticalAlign: theme.verticalAlign || "center",
+                      textBoxWidth: theme.textBoxWidth ?? 90,
+                      textBoxHeight: theme.textBoxHeight ?? 90,
+                      style: previewStyle,
+                      "aria-label": "Live slide content"
+                    }
+                  )
                 ] })
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "queue-panel", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "queue-panel-heading", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "panel-eyebrow", children: "UP NEXT" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("h2", { children: "Next in Queue" })
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "queue-panel", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "queue-panel-heading", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "UP NEXT" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "Next in Queue" })
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "queue-hint", children: "Select a card to load it into Preview" })
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "queue-hint", children: "Select a card to load it into Preview" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "queue-cards", children: [
-                queueFallback.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "queue-cards", children: [
+                queueFallback.map((item, index) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
                   "button",
                   {
                     className: `queue-card ${index === 0 ? "active" : ""}`,
                     onClick: () => onScheduleItemClick(item.content),
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "queue-card-number", children: index + 1 }),
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "queue-card-copy", children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: formatType(item.type) }),
-                        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: item.content || "Empty slide" })
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "queue-card-number", children: index + 1 }),
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "queue-card-copy", children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: formatType(item.type) }),
+                        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: richTextToPlainText(item.content || "Empty slide") })
                       ] }),
-                      index === 0 ? /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "queue-selected", children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "check", size: 13 }),
+                      index === 0 ? /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "queue-selected", children: [
+                        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "check", size: 13 }),
                         " SELECTED"
-                      ] }) : /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "chevron", size: 15, className: "queue-card-chevron" })
+                      ] }) : /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "chevron", size: 15, className: "queue-card-chevron" })
                     ]
                   },
                   item.id
                 )),
-                !queueFallback.length && /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "queue-empty", children: "The queue will appear here as you add service items." })
+                !queueFallback.length && /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "queue-empty", children: "The queue will appear here as you add service items." })
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "live-control-bar", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "live-control-heading", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: `control-state-dot ${isOnAir ? "live" : ""}` }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("strong", { children: presentationPaused ? "Presentation paused" : isOnAir ? "Live session active" : "Ready to present" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("small", { children: "Operator controls" })
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "live-control-bar", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "live-control-heading", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: `control-state-dot ${isOnAir ? "live" : ""}` }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("strong", { children: presentationPaused ? "Presentation paused" : isOnAir ? "Live session active" : "Ready to present" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("small", { children: "Operator controls" })
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "live-control-actions", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "control-button go-live", onClick: onGoLive, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "send", size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "live-control-actions", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "control-button go-live", onClick: onGoLive, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "send", size: 15 }),
                   " Go Live"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "control-button", onClick: onClear, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "clear", size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "control-button", onClick: onClear, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "clear", size: 15 }),
                   " Clear"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "control-button", onClick: onLogo, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "logo", size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "control-button", onClick: onLogo, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "logo", size: 15 }),
                   " Logo"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "control-button", onClick: onBlack, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "black", size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "control-button", onClick: onBlack, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "black", size: 15 }),
                   " Black Screen"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: `control-button ${presentationPaused ? "selected" : ""}`, onClick: onTogglePause, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "pause", size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: `control-button ${presentationPaused ? "selected" : ""}`, onClick: onTogglePause, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "pause", size: 15 }),
                   " ",
                   presentationPaused ? "Resume" : "Pause"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "control-button end-live", onClick: onEndLive, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "stop", size: 15 }),
+                /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "control-button end-live", onClick: onEndLive, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "stop", size: 15 }),
                   " End Live"
                 ] })
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)(Panel, { className: "output-preview-panel", style: { minHeight: paneSizes.consoleBottom }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(SectionHeader, { title: "Output Preview Matrix", meta: "Secondary windows" }),
-              /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("div", { className: "output-preview-grid", children: OUTPUT_IDS.map((id) => {
+            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "output-preview-panel", style: { minHeight: paneSizes.consoleBottom }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(SectionHeader, { title: "Output Preview Matrix", meta: "Secondary windows" }),
+              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "output-preview-grid", children: OUTPUT_IDS.map((id) => {
                 const state = outputStates[id] || {};
                 const label = state.mode === "black" ? "BLACK" : state.mode === "logo" ? "Church Logo" : state.slideTitle || "Idle";
-                return /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-tile", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-tile-heading", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("strong", { children: [
+                return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "output-tile", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "output-tile-heading", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("strong", { children: [
                       "Output ",
                       id
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("span", { className: "output-tile-status", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { className: "connected-dot" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "output-tile-status", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "connected-dot" }),
                       " Connected"
                     ] })
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "output-box", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsx)("span", { children: label }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("small", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "output-box", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: label }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("small", { children: [
                       outputConfigs.find((output) => output.id === id)?.resolution || "1920x1080",
                       " \xB7 ",
                       formatType(outputConfigs.find((output) => output.id === id)?.role || "extended")
                     ] })
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("div", { className: "toolbar-inline output-tile-actions", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "show"), children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "eye", size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "toolbar-inline output-tile-actions", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "show"), children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "eye", size: 13 }),
                       " Show"
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime6.jsxs)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "toggle-fullscreen"), children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime6.jsx)(AppIcon, { name: "external", size: 13 }),
+                    /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "soft-button", onClick: () => window?.worship?.outputs?.windowControl?.(id, "toggle-fullscreen"), children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "external", size: 13 }),
                       " Full View"
                     ] })
                   ] })
@@ -14853,7 +15371,7 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/LibraryWorkspace.tsx
-  var import_jsx_runtime7 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime8 = __toESM(require_jsx_runtime());
   var LibraryWorkspace = ({
     songs,
     filteredSongs,
@@ -14871,75 +15389,75 @@ ${selectedVerse.text}`;
     onRenameSong,
     onDeleteSong
   }) => {
-    return /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "workspace-grid workspace-library", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "library-filters", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-sidebar-heading", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "BROWSE CONTENT" }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "Content Library" })
+    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "workspace-grid workspace-library", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(Panel, { className: "library-filters", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-sidebar-heading", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "panel-eyebrow", children: "BROWSE CONTENT" }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "Content Library" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "filter-list", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item active", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "filter-item-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "library", size: 15 }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "filter-list", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "filter-item active", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "filter-item-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "library", size: 15 }),
               " Songs"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: songs.length })
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: songs.length })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "filter-item-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "scripture", size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "filter-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "filter-item-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "scripture", size: 15 }),
               " Bibles"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "2" })
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "2" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "filter-item-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "media", size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "filter-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "filter-item-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "media", size: 15 }),
               " Media"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "\u2014" })
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "\u2014" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "filter-item-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "play", size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "filter-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "filter-item-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "play", size: 15 }),
               " Videos"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: mediaAssets.filter((item) => item.type === "video").length })
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: mediaAssets.filter((item) => item.type === "video").length })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "filter-item", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("span", { className: "filter-item-label", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "palette", size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "filter-item", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "filter-item-label", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "palette", size: 15 }),
               " Backgrounds"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: mediaAssets.filter((item) => item.type === "image").length })
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: mediaAssets.filter((item) => item.type === "image").length })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "library-filter-divider" }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "library-sidebar-heading compact", children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "TAGS" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: "chip-group", children: ["Worship", "Uplifting", "Sermon", "Announcements", "Instrumental", "Easter"].map((tag) => /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(Chip, { children: tag }, tag)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-sidebar-note", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "info", size: 14 }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "library-filter-divider" }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "library-sidebar-heading compact", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "panel-eyebrow", children: "TAGS" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "chip-group", children: ["Worship", "Uplifting", "Sermon", "Announcements", "Instrumental", "Easter"].map((tag) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(Chip, { children: tag }, tag)) }),
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-sidebar-note", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "info", size: 14 }),
           " Use tags and search together to find service-ready content."
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(Panel, { className: "library-grid-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-toolbar", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-title-block", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { className: "panel-eyebrow", children: "SONGS / ALL SONGS" }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("h2", { children: "Song Library" }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("p", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(Panel, { className: "library-grid-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-toolbar", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-title-block", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "panel-eyebrow", children: "SONGS / ALL SONGS" }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "Song Library" }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("p", { children: [
               filteredSongs.length,
               " arrangements ",
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("span", { children: "\u2022" }),
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "\u2022" }),
               " ",
               songs.length,
               " total"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "toolbar-inline", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("label", { className: "input-with-icon", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "search", size: 15 }),
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "toolbar-inline", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { className: "input-with-icon", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "search", size: 15 }),
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
                 "input",
                 {
                   value: songSearchQuery,
@@ -14950,11 +15468,11 @@ ${selectedVerse.text}`;
                 }
               )
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "soft-button", onClick: onImportSongs, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "upload", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "soft-button", onClick: onImportSongs, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "upload", size: 14 }),
               " Import Songs"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
               "select",
               {
                 className: "input",
@@ -14962,39 +15480,39 @@ ${selectedVerse.text}`;
                 value: librarySort,
                 onChange: (event) => onSortChange(event.target.value),
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("option", { value: "name", children: "Sort: Name" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("option", { value: "sections", children: "Sort: Sections" })
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "name", children: "Sort: Name" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "sections", children: "Sort: Sections" })
                 ]
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "view-toggle-group", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "view-toggle-group", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
                 "button",
                 {
                   className: `view-toggle-btn ${libraryViewMode === "grid" ? "active" : ""}`,
                   onClick: () => onViewModeChange("grid"),
                   title: "Grid view",
-                  children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "grid", size: 15 })
+                  children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "grid", size: 15 })
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
                 "button",
                 {
                   className: `view-toggle-btn ${libraryViewMode === "list" ? "active" : ""}`,
                   onClick: () => onViewModeChange("list"),
                   title: "List view",
-                  children: /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "list", size: 15 })
+                  children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "list", size: 15 })
                 }
               )
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("button", { className: "live-button", onClick: onAddSong, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "plus", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "live-button", onClick: onAddSong, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "plus", size: 14 }),
               " Add Song"
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime7.jsx)("div", { className: libraryViewMode === "grid" ? "bento-grid" : "library-list", children: filteredSongs.map((song) => /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-song-entry", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: libraryViewMode === "grid" ? "bento-grid" : "library-list", children: filteredSongs.map((song) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-song-entry", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
             MediaCard,
             {
               title: song.title || "Untitled Song",
@@ -15003,27 +15521,27 @@ ${selectedVerse.text}`;
               onClick: () => onSelectSong(song.id)
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)("div", { className: "library-song-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
+          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "library-song-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
               "button",
               {
                 className: "soft-button",
                 onClick: () => onRenameSong(song),
                 title: "Rename song",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "editor", size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "editor", size: 13 }),
                   "Rename"
                 ]
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime7.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
               "button",
               {
                 className: "soft-button danger-ghost",
                 onClick: () => onDeleteSong(song),
                 title: "Delete song",
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime7.jsx)(AppIcon, { name: "trash", size: 13 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "trash", size: 13 }),
                   "Delete"
                 ]
               }
@@ -15035,7 +15553,7 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/EditorWorkspace.tsx
-  var import_jsx_runtime8 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime9 = __toESM(require_jsx_runtime());
   var SECTION_TYPES = [
     "Intro",
     "Verse",
@@ -15095,24 +15613,24 @@ ${selectedVerse.text}`;
       color: theme.color,
       filter: (theme.blur ?? 0) > 0 ? `blur(${theme.blur}px)` : void 0
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+    return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
       "div",
       {
         className: "workspace-grid workspace-editor",
         style: { gridTemplateColumns: `${paneSizes.editorLeft}px minmax(0, 1fr) ${paneSizes.editorRight}px` },
         children: [
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("aside", { className: "panel sequence-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "panel-header editor-sequence-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "panel-eyebrow", children: "ARRANGEMENT" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "Slide Sequence" })
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel sequence-panel", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header editor-sequence-header", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "panel-eyebrow", children: "ARRANGEMENT" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h2", { children: "Slide Sequence" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "text-button", onClick: onAddSection, children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "plus", size: 13 }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "text-button", onClick: onAddSection, children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "plus", size: 13 }),
                 " Add"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "sequence-list", children: (selectedSong?.sections || []).map((section, index) => /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "sequence-list", children: (selectedSong?.sections || []).map((section, index) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
               "button",
               {
                 draggable: true,
@@ -15128,12 +15646,12 @@ ${selectedVerse.text}`;
                 onClick: () => onPickSection(section.id),
                 onDoubleClick: () => onPickSection(section.id, true),
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("strong", { children: section.type }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("small", { children: stripChordMarkup2(section.text).slice(0, 84) || "Empty section" })
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: section.type }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: stripChordMarkup2(section.text).slice(0, 84) || "Empty section" })
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "button",
                     {
                       className: "seq-delete-btn",
@@ -15142,7 +15660,7 @@ ${selectedVerse.text}`;
                         e.stopPropagation();
                         onDeleteSection(section.id);
                       },
-                      children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "trash", size: 13 })
+                      children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "trash", size: 13 })
                     }
                   )
                 ]
@@ -15150,9 +15668,9 @@ ${selectedVerse.text}`;
               section.id
             )) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("section", { className: "panel stage-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "panel-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel stage-panel", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                 "input",
                 {
                   className: "input",
@@ -15169,19 +15687,19 @@ ${selectedVerse.text}`;
                   placeholder: "Song title"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "toolbar-inline", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v - 1), children: "\u266D Flat" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps(() => 0), children: "Reset" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v + 1), children: "\u266F Sharp" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "soft-button", onClick: () => onSetShowChords((v) => !v), children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "type", size: 13 }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "toolbar-inline", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v - 1), children: "\u266D Flat" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps(() => 0), children: "Reset" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: () => onSetTransposeSteps((v) => v + 1), children: "\u266F Sharp" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "soft-button", onClick: () => onSetShowChords((v) => !v), children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "type", size: 13 }),
                   " ",
                   showChords ? "Hide Chords" : "Show Chords"
                 ] })
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "stage-canvas", style: { position: "relative", color: theme.color }, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "stage-canvas", style: { position: "relative", color: theme.color }, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                 "div",
                 {
                   style: {
@@ -15193,84 +15711,78 @@ ${selectedVerse.text}`;
                   }
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "slide-overlay live" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                "div",
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "slide-overlay live" }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+                FitText,
                 {
-                  style: {
-                    position: "absolute",
-                    inset: 0,
-                    zIndex: 1,
-                    display: "flex",
-                    alignItems: (theme.verticalAlign || "center") === "top" ? "flex-start" : (theme.verticalAlign || "center") === "bottom" ? "flex-end" : "center",
-                    justifyContent: "center",
-                    padding: "40px 60px"
-                  },
-                  children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
-                    "h1",
-                    {
-                      style: {
-                        textAlign: theme.textAlign || "center",
-                        fontFamily: theme.fontFamily || "Manrope",
-                        fontWeight: theme.fontWeight || 700,
-                        width: `${theme.textBoxWidth ?? 90}%`,
-                        minHeight: `${theme.textBoxHeight ?? 70}%`,
-                        display: "flex",
-                        alignItems: (theme.verticalAlign || "center") === "top" ? "flex-start" : (theme.verticalAlign || "center") === "bottom" ? "flex-end" : "center",
-                        justifyContent: (theme.textAlign || "center") === "left" ? "flex-start" : (theme.textAlign || "center") === "right" ? "flex-end" : "center"
-                      },
-                      children: currentSlide || "Select a section"
-                    }
-                  )
+                  value: currentSlide || "Select a section",
+                  className: "editor-fit",
+                  baseFontSize: theme.fontSize,
+                  fontFamily: theme.fontFamily || "Manrope",
+                  fontWeight: theme.fontWeight || 700,
+                  textAlign: theme.textAlign || "center",
+                  verticalAlign: theme.verticalAlign || "center",
+                  textBoxWidth: theme.textBoxWidth ?? 90,
+                  textBoxHeight: theme.textBoxHeight ?? 70,
+                  style: { position: "absolute", inset: 0, zIndex: 1, padding: "40px 60px", color: theme.color },
+                  "aria-label": "Song slide preview"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "live-pill stage", children: "Live View" })
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "live-pill stage", children: "Live View" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "stage-toolbar", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { className: "stage-label", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "stage-toolbar", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "stage-label", children: [
                 "Tt ",
                 selectedSong?.sections.find((s) => s.id === selectedSectionId)?.type || "VERSE",
                 " ",
                 selectedSectionId ? (selectedSong?.sections.findIndex((s) => s.id === selectedSectionId) ?? 0) + 1 : 1
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "toolbar-divider" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "undo-redo-btn", onClick: onUndo, disabled: undoStack.length === 0, title: "Undo", children: "\u21A9" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "undo-redo-btn", onClick: onRedo, disabled: redoStack.length === 0, title: "Redo", children: "\u21AA" })
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "toolbar-divider" }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "undo-redo-btn", onClick: onUndo, disabled: undoStack.length === 0, title: "Undo", children: "\u21A9" }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "undo-redo-btn", onClick: onRedo, disabled: redoStack.length === 0, title: "Redo", children: "\u21AA" })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("aside", { className: "panel inspector-panel", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "panel-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { className: "panel-eyebrow", children: "INSPECTOR" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("h2", { children: "Editor" })
+          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel inspector-panel", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "panel-eyebrow", children: "INSPECTOR" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h2", { children: "Editor" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "settings", size: 16 })
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "settings", size: 16 })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "inspector-content", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Type" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("select", { className: "input", value: editorType, onChange: (event) => onEditorTypeChange(event.target.value), children: SECTION_TYPES.map((item) => /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: item, children: item }, item)) }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Section Text" }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("textarea", { className: "input textarea", value: editorText, onChange: (event) => onEditorTextChange(event.target.value) }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("details", { className: "collapsible-section", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("summary", { children: "Background & Style" }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "collapsible-inner", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "bg-tab-group", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: `bg-tab ${bgManagerTab === "media" ? "active" : ""}`, onClick: () => onSetBgManagerTab("media"), children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "media", size: 13 }),
+            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "inspector-content", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Section Type" }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("select", { className: "input", value: editorType, onChange: (event) => onEditorTypeChange(event.target.value), children: SECTION_TYPES.map((item) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: item, children: item }, item)) }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Section Text" }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+                RichTextEditor,
+                {
+                  value: editorText,
+                  onChange: onEditorTextChange,
+                  placeholder: "Type lyrics, then format them for the screen...",
+                  "aria-label": "Section rich text"
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("details", { className: "collapsible-section", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("summary", { children: "Background & Style" }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "collapsible-inner", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "bg-tab-group", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: `bg-tab ${bgManagerTab === "media" ? "active" : ""}`, onClick: () => onSetBgManagerTab("media"), children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "media", size: 13 }),
                       " Media"
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: `bg-tab ${bgManagerTab === "gradient" ? "active" : ""}`, onClick: () => onSetBgManagerTab("gradient"), children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "spark", size: 13 }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: `bg-tab ${bgManagerTab === "gradient" ? "active" : ""}`, onClick: () => onSetBgManagerTab("gradient"), children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "spark", size: 13 }),
                       " Gradient"
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: `bg-tab ${bgManagerTab === "color" ? "active" : ""}`, onClick: () => onSetBgManagerTab("color"), children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "palette", size: 13 }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: `bg-tab ${bgManagerTab === "color" ? "active" : ""}`, onClick: () => onSetBgManagerTab("color"), children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "palette", size: 13 }),
                       " Color"
                     ] })
                   ] }),
-                  bgManagerTab === "media" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Active Media" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  bgManagerTab === "media" && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Active Media" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "img",
                       {
                         src: theme.backgroundImage.startsWith("file://") || theme.backgroundImage.startsWith("http") ? theme.backgroundImage : `file://${theme.backgroundImage}`,
@@ -15279,9 +15791,9 @@ ${selectedVerse.text}`;
                           e.currentTarget.style.display = "none";
                         }
                       }
-                    ) : /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", fontSize: "0.78rem" }, children: "No media selected" }) }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Image" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    ) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "var(--text-muted)", fontSize: "0.78rem" }, children: "No media selected" }) }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Background Image" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "input",
                       {
                         className: "input",
@@ -15290,14 +15802,14 @@ ${selectedVerse.text}`;
                         placeholder: "file://... or https://..."
                       }
                     ),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Quick Picker" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("button", { className: "quick-picker-add", onClick: () => {
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Quick Picker" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "quick-picker-add", onClick: () => {
                     }, children: "+" }) })
                   ] }),
-                  bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Gradient Colors" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "gradient-picker-row", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Gradient Colors" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "gradient-picker-row", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                         "input",
                         {
                           type: "color",
@@ -15308,8 +15820,8 @@ ${selectedVerse.text}`;
                           }
                         }
                       ),
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("div", { className: "gradient-preview", style: { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` } }),
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "gradient-preview", style: { background: `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` } }),
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                         "input",
                         {
                           type: "color",
@@ -15322,9 +15834,9 @@ ${selectedVerse.text}`;
                       )
                     ] })
                   ] }),
-                  bgManagerTab === "color" && /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(import_jsx_runtime8.Fragment, { children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Background Color" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  bgManagerTab === "color" && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Background Color" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "input",
                       {
                         type: "color",
@@ -15333,15 +15845,15 @@ ${selectedVerse.text}`;
                       }
                     )
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Opacity" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-row", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-label", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Opacity" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
                         theme.opacity ?? 100,
                         "%"
                       ] })
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "input",
                       {
                         type: "range",
@@ -15352,15 +15864,15 @@ ${selectedVerse.text}`;
                       }
                     )
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-row", children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "slider-label", children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("span", { children: "Blur" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("span", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-row", children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-label", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Blur" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
                         theme.blur ?? 0,
                         "px"
                       ] })
                     ] }),
-                    /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "input",
                       {
                         type: "range",
@@ -15371,12 +15883,12 @@ ${selectedVerse.text}`;
                       }
                     )
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { children: [
                     "Font Size (",
                     theme.fontSize,
                     "px)"
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "input",
                     {
                       type: "range",
@@ -15386,12 +15898,12 @@ ${selectedVerse.text}`;
                       onChange: (event) => onSetTheme({ ...theme, fontSize: Number(event.target.value) })
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { children: [
                     "Content Width (",
                     theme.textBoxWidth ?? 90,
                     "%)"
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "input",
                     {
                       type: "range",
@@ -15401,12 +15913,12 @@ ${selectedVerse.text}`;
                       onChange: (event) => onSetTheme({ ...theme, textBoxWidth: Number(event.target.value) })
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { children: [
                     "Content Height (",
                     theme.textBoxHeight ?? 70,
                     "%)"
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "input",
                     {
                       type: "range",
@@ -15416,26 +15928,26 @@ ${selectedVerse.text}`;
                       onChange: (event) => onSetTheme({ ...theme, textBoxHeight: Number(event.target.value) })
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Font Family" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Font Family" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
                     "select",
                     {
                       className: "input",
                       value: theme.fontFamily || "Manrope",
                       onChange: (event) => onSetTheme({ ...theme, fontFamily: event.target.value }),
                       children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Manrope", children: "Manrope" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Inter", children: "Inter" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "Segoe UI", children: "Segoe UI" })
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "Manrope", children: "Manrope" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "Inter", children: "Inter" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "Segoe UI", children: "Segoe UI" })
                       ]
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("label", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { children: [
                     "Font Weight (",
                     theme.fontWeight || 700,
                     ")"
                   ] }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "input",
                     {
                       type: "range",
@@ -15446,36 +15958,36 @@ ${selectedVerse.text}`;
                       onChange: (event) => onSetTheme({ ...theme, fontWeight: Number(event.target.value) })
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Alignment" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Text Alignment" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
                     "select",
                     {
                       className: "input",
                       value: theme.textAlign || "center",
                       onChange: (event) => onSetTheme({ ...theme, textAlign: event.target.value }),
                       children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "left", children: "Left" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "right", children: "Right" })
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "left", children: "Left" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "center", children: "Center" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "right", children: "Right" })
                       ]
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Vertical Position" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Vertical Position" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
                     "select",
                     {
                       className: "input",
                       value: theme.verticalAlign || "center",
                       onChange: (event) => onSetTheme({ ...theme, verticalAlign: event.target.value }),
                       children: [
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "top", children: "Top Half" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "center", children: "Center" }),
-                        /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("option", { value: "bottom", children: "Bottom Half" })
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "top", children: "Top Half" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "center", children: "Center" }),
+                        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "bottom", children: "Bottom Half" })
                       ]
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)("label", { children: "Text Color" }),
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Text Color" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                     "input",
                     {
                       type: "color",
@@ -15485,17 +15997,17 @@ ${selectedVerse.text}`;
                   )
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("div", { className: "button-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "soft-button full", onClick: onSaveSectionEdits, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "save", size: 14 }),
+              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "button-row", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "soft-button full", onClick: onSaveSectionEdits, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "save", size: 14 }),
                   " Save Section"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "live-button full", onClick: onGoLive, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "send", size: 14 }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "live-button full", onClick: onGoLive, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "send", size: 14 }),
                   " Send Live"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime8.jsxs)("button", { className: "template-button", onClick: onSaveTemplate, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime8.jsx)(AppIcon, { name: "palette", size: 14 }),
+                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "template-button", onClick: onSaveTemplate, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "palette", size: 14 }),
                   " Save as Template"
                 ] })
               ] })
@@ -15507,8 +16019,8 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/SettingsWorkspace.tsx
-  var import_react5 = __toESM(require_react());
-  var import_jsx_runtime9 = __toESM(require_jsx_runtime());
+  var import_react6 = __toESM(require_react());
+  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
   var LAYERS = ["background", "media", "slide_content", "props_overlays", "announcements", "lower_thirds", "live_video", "alerts"];
   var LAYER_META = {
     background: { icon: "\u25FC", label: "background" },
@@ -15556,7 +16068,7 @@ ${selectedVerse.text}`;
     onNotify,
     onRefreshOutputWindows
   }) => {
-    const [activeSettingsSection, setActiveSettingsSection] = import_react5.default.useState("display");
+    const [activeSettingsSection, setActiveSettingsSection] = import_react6.default.useState("display");
     const handleCreateOutput = async (displayId, fullScreen = false) => {
       if (window.worship?.outputs?.createWindow) {
         await window.worship.outputs.createWindow(displayId, fullScreen);
@@ -15603,52 +16115,52 @@ ${selectedVerse.text}`;
       const target = document.getElementById(`settings-${section}`);
       target?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "workspace-grid workspace-settings", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel settings-navigation", "aria-label": "Settings sections", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-navigation-header", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "panel-eyebrow", children: "CONFIGURATION" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h2", { children: "Settings" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { children: "Manage your presentation environment." })
+    return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "workspace-grid workspace-settings", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("aside", { className: "panel settings-navigation", "aria-label": "Settings sections", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-navigation-header", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "panel-eyebrow", children: "CONFIGURATION" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Settings" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { children: "Manage your presentation environment." })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("nav", { className: "settings-nav-list", children: settingsNav.map((item) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: `settings-nav-item ${activeSettingsSection === item.id ? "active" : ""}`, onClick: () => scrollToSettings(item.id), children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: item.icon, size: 15 }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: item.label }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "chevron", size: 13, className: "settings-nav-chevron" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("nav", { className: "settings-nav-list", children: settingsNav.map((item) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("button", { className: `settings-nav-item ${activeSettingsSection === item.id ? "active" : ""}`, onClick: () => scrollToSettings(item.id), children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: item.icon, size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: item.label }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: "chevron", size: 13, className: "settings-nav-chevron" })
         ] }, item.id)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-nav-footer", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "connected-dot" }),
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-nav-footer", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "connected-dot" }),
           " Settings are saved locally"
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-main-content", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header", id: "settings-display", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h1", { className: "settings-title", children: "Display Settings" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("p", { className: "settings-subtitle", children: "Configure output canvas and screen geometry" })
+      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-main-content", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-header", id: "settings-display", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h1", { className: "settings-title", children: "Display Settings" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("p", { className: "settings-subtitle", children: "Configure output canvas and screen geometry" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-header-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "soft-button", onClick: onResetDisplay, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "undo", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-header-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("button", { className: "soft-button", onClick: onResetDisplay, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: "undo", size: 14 }),
               " Reset to Default"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("button", { className: "live-button", onClick: onApplyDisplayChanges, children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "check", size: 14 }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("button", { className: "live-button", onClick: onApplyDisplayChanges, children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: "check", size: 14 }),
               " Apply Changes"
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
               "button",
               {
                 className: "soft-button",
                 onClick: () => handleCreateForDisplays(displays.filter((display) => !display.isPrimary).map((display) => display.id)),
                 children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "send", size: 14 }),
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: "send", size: 14 }),
                   " Go Live on All Secondary"
                 ]
               }
             )
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("section", { className: "panel output-routing-cards settings-card-group", id: "settings-outputs", children: outputConfigs.map((output) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("section", { className: "panel output-routing-cards settings-card-group", id: "settings-outputs", children: outputConfigs.map((output) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
           "div",
           {
             className: `output-route-card settings-output-card ${output.active ? "active" : ""}`,
@@ -15657,19 +16169,19 @@ ${selectedVerse.text}`;
               outputConfigs.forEach((item) => onUpdateOutputConfig(item.id, { active: item.id === output.id }));
             },
             children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-route-heading", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(AppIcon, { name: "monitor", size: 14 }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "output-route-heading", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("strong", { children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(AppIcon, { name: "monitor", size: 14 }),
                   " Output ",
                   output.id
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("small", { children: [
                   output.role,
                   " \xB7 ",
                   output.resolution
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
                 "select",
                 {
                   className: "input settings-select",
@@ -15680,14 +16192,14 @@ ${selectedVerse.text}`;
                     onNotify("Output role changed", `Output ${output.id} is now ${role}`, "info");
                   },
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "primary", children: "Primary" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "extended", children: "Extended" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "stage", children: "Stage" })
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "primary", children: "Primary" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "extended", children: "Extended" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "stage", children: "Stage" })
                   ]
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "toolbar-inline settings-window-actions", children: [
-                ["minimize", "maximize", "restore"].map((action) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "toolbar-inline settings-window-actions", children: [
+                ["minimize", "maximize", "restore"].map((action) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                   "button",
                   {
                     className: "soft-button",
@@ -15699,7 +16211,7 @@ ${selectedVerse.text}`;
                   },
                   action
                 )),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                   "button",
                   {
                     className: "soft-button",
@@ -15710,7 +16222,7 @@ ${selectedVerse.text}`;
                     children: "Full View"
                   }
                 ),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                   "button",
                   {
                     className: "soft-button",
@@ -15726,45 +16238,45 @@ ${selectedVerse.text}`;
           },
           output.id
         )) }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-card-group settings-displays-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Detected Displays" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-card-group settings-displays-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Detected Displays" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("small", { children: [
               displays.length,
               " display(s) found"
             ] })
           ] }),
-          displays.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { style: { padding: "12px 0", color: "var(--text-muted)", fontSize: "0.82rem" }, children: "No displays detected. Make sure your monitors are connected." }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "displays-grid", children: displays.map((display) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: `display-card ${display.isPrimary ? "primary" : ""}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-header", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: display.label }),
-              display.isPrimary && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "display-badge", children: "Primary" }),
-              display.internal && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "display-badge", children: "Built-in" })
+          displays.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { style: { padding: "12px 0", color: "var(--text-muted)", fontSize: "0.82rem" }, children: "No displays detected. Make sure your monitors are connected." }) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "displays-grid", children: displays.map((display) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: `display-card ${display.isPrimary ? "primary" : ""}`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "display-card-header", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: display.label }),
+              display.isPrimary && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "display-badge", children: "Primary" }),
+              display.internal && /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "display-badge", children: "Built-in" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-info", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "display-card-info", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
                 display.size.width,
                 "\xD7",
                 display.size.height
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
                 display.displayFrequency,
                 "Hz"
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
                 "Scale: ",
                 display.scaleFactor,
                 "x"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-assign", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Assigned outputs:" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "display-output-list", children: activeOutputWindows.filter((ow) => ow.displayId === display.id).length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { style: { color: "var(--text-muted)", fontSize: "0.75rem" }, children: "None" }) : activeOutputWindows.filter((ow) => ow.displayId === display.id).map((ow) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "output-assign-chip", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "display-card-assign", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Assigned outputs:" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "display-output-list", children: activeOutputWindows.filter((ow) => ow.displayId === display.id).length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { style: { color: "var(--text-muted)", fontSize: "0.75rem" }, children: "None" }) : activeOutputWindows.filter((ow) => ow.displayId === display.id).map((ow) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "output-assign-chip", children: [
                 "Output ",
                 ow.id
               ] }, ow.id)) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "display-card-actions", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "display-card-actions", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -15772,7 +16284,7 @@ ${selectedVerse.text}`;
                   children: "Go Live Here"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -15783,30 +16295,30 @@ ${selectedVerse.text}`;
             ] })
           ] }, display.id)) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-card-group settings-output-windows-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Output Windows" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-card-group settings-output-windows-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Output Windows" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("small", { children: [
               activeOutputWindows.length,
               " active"
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "output-window-list", children: activeOutputWindows.map((ow) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-info", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "output-window-list", children: activeOutputWindows.map((ow) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "output-window-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "output-window-info", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("strong", { children: [
                 "Output ",
                 ow.id
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "output-window-display", children: displays.find((d) => d.id === ow.displayId)?.label || `Display ${ow.displayId}` })
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "output-window-display", children: displays.find((d) => d.id === ow.displayId)?.label || `Display ${ow.displayId}` })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "select",
               {
                 className: "input",
                 value: ow.displayId,
                 onChange: (e) => handleAssignOutput(ow.id, Number(e.target.value)),
                 style: { minWidth: 180 },
-                children: displays.map((d) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("option", { value: d.id, children: [
+                children: displays.map((d) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("option", { value: d.id, children: [
                   d.label,
                   " (",
                   d.size.width,
@@ -15816,8 +16328,8 @@ ${selectedVerse.text}`;
                 ] }, d.id))
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "toolbar-inline", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "toolbar-inline", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -15828,7 +16340,7 @@ ${selectedVerse.text}`;
                   children: "Show"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                 "button",
                 {
                   className: "soft-button",
@@ -15836,7 +16348,7 @@ ${selectedVerse.text}`;
                   children: "Fullscreen"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
                 "select",
                 {
                   className: "input output-resize-select",
@@ -15850,19 +16362,19 @@ ${selectedVerse.text}`;
                     e.currentTarget.value = "";
                   },
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "", children: "Resize" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1280x720", children: "1280x720" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1600x900", children: "1600x900" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "1920x1080", children: "1920x1080" })
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "", children: "Resize" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "1280x720", children: "1280x720" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "1600x900", children: "1600x900" }),
+                    /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "1920x1080", children: "1920x1080" })
                   ]
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button danger", onClick: () => handleDestroyOutput(ow.id), children: "Close" })
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "soft-button danger", onClick: () => handleDestroyOutput(ow.id), children: "Close" })
             ] })
           ] }, ow.id)) }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-window-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: () => handleCreateOutput(void 0), children: "+ Add Output Window" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "output-window-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "soft-button", onClick: () => handleCreateOutput(void 0), children: "+ Add Output Window" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "button",
               {
                 className: "soft-button",
@@ -15872,13 +16384,13 @@ ${selectedVerse.text}`;
             )
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-logo-panel settings-card-group", id: "settings-branding", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Logo Mode Image" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Shown when LOGO button is pressed" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-logo-panel settings-card-group", id: "settings-branding", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Logo Mode Image" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Shown when LOGO button is pressed" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "logo-picker-row settings-logo-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "logo-preview", children: logoImage ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "logo-picker-row settings-logo-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "logo-preview", children: logoImage ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "img",
               {
                 src: logoImage.startsWith("file://") || logoImage.startsWith("http") ? logoImage : `file://${logoImage}`,
@@ -15887,9 +16399,9 @@ ${selectedVerse.text}`;
                   e.currentTarget.style.display = "none";
                 }
               }
-            ) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "logo-placeholder", children: "No logo set" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-inline-stack", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+            ) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "logo-placeholder", children: "No logo set" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-inline-stack", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                 "input",
                 {
                   className: "input",
@@ -15898,31 +16410,31 @@ ${selectedVerse.text}`;
                   placeholder: "file://\u2026 or https://\u2026"
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onPickLogoFile, children: "Browse\u2026" })
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "soft-button", onClick: onPickLogoFile, children: "Browse\u2026" })
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-looks-panel settings-card-group", id: "settings-appearance", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Per-Output Looks" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "8-layer compositor" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-looks-panel settings-card-group", id: "settings-appearance", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Per-Output Looks" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "8-layer compositor" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "settings-looks-grid", children: OUTPUT_IDS2.map((id) => {
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "settings-looks-grid", children: OUTPUT_IDS2.map((id) => {
             const look = looks[id] || { background: "#111111", template: "default", layers: ["slide_content"] };
-            return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-card", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "output-route-heading settings-look-heading", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("strong", { children: [
+            return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-look-card", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "output-route-heading settings-look-heading", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("strong", { children: [
                   "Output ",
                   id
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: (look.template || "default").replace("_", " ") })
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: (look.template || "default").replace("_", " ") })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "settings-look-label", children: "Background" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { className: "settings-look-label", children: "Template" })
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-look-row", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "settings-look-label", children: "Background" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { className: "settings-look-label", children: "Template" })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-look-row", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-look-row", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                   "input",
                   {
                     type: "color",
@@ -15931,25 +16443,25 @@ ${selectedVerse.text}`;
                     onChange: (event) => onUpdateLook(id, { background: event.target.value })
                   }
                 ),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
                   "select",
                   {
                     className: "input",
                     value: look.template || "default",
                     onChange: (event) => onUpdateLook(id, { template: event.target.value }),
                     children: [
-                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "default", children: "Default" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "lower_thirds", children: "Lower Thirds" }),
-                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "full", children: "Full" })
+                      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "default", children: "Default" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "lower_thirds", children: "Lower Thirds" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "full", children: "Full" })
                     ]
                   }
                 )
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "settings-layer-grid", children: LAYERS.map((layer) => {
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "settings-layer-grid", children: LAYERS.map((layer) => {
                 const enabled = (look.layers || []).includes(layer);
                 const meta = LAYER_META[layer] || { icon: "&bull;", label: layer.replace("_", " ") };
-                return /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { className: `settings-layer-chip ${enabled ? "active" : ""}`, title: meta.label, children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+                return /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("label", { className: `settings-layer-chip ${enabled ? "active" : ""}`, title: meta.label, children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
                     "input",
                     {
                       type: "checkbox",
@@ -15960,20 +16472,20 @@ ${selectedVerse.text}`;
                       }
                     }
                   ),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "settings-layer-icon", children: meta.icon }),
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: meta.label })
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "settings-layer-icon", children: meta.icon }),
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: meta.label })
                 ] }, layer);
               }) })
             ] }, id);
           }) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-sync-panel settings-card-group", id: "settings-general", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Sync" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { className: syncConnected ? "text-success" : "text-muted", children: syncConnected ? "Connected" : "Disconnected" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-sync-panel settings-card-group", id: "settings-general", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Sync" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { className: syncConnected ? "text-success" : "text-muted", children: syncConnected ? "Connected" : "Disconnected" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "settings-sync-inline", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "settings-sync-inline", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "input",
               {
                 className: "input",
@@ -15982,37 +16494,37 @@ ${selectedVerse.text}`;
                 placeholder: "ws://host:9090"
               }
             ),
-            !syncConnected ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onConnectSync, children: "Connect" }) : /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "soft-button", onClick: onDisconnectSync, children: "Disconnect" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: `settings-sync-status ${syncConnected ? "online" : "offline"}`, children: syncConnected ? "ONLINE" : "OFFLINE" })
+            !syncConnected ? /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "soft-button", onClick: onConnectSync, children: "Connect" }) : /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "soft-button", onClick: onDisconnectSync, children: "Disconnect" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: `settings-sync-status ${syncConnected ? "online" : "offline"}`, children: syncConnected ? "ONLINE" : "OFFLINE" })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel settings-hotkeys-panel settings-card-group", id: "settings-hotkeys", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "panel-eyebrow", children: "OPERATOR SPEED" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "Hotkeys" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel settings-hotkeys-panel settings-card-group", id: "settings-hotkeys", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "panel-eyebrow", children: "OPERATOR SPEED" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Hotkeys" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Built-in shortcuts" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Built-in shortcuts" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hotkey-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hotkey-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("kbd", { children: "Enter" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Send current preview live" })
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hotkey-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hotkey-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "Enter" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "Send current preview live" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hotkey-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("kbd", { children: "Ctrl K" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Open command palette" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hotkey-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "Ctrl K" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "Open command palette" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hotkey-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("kbd", { children: "Double-click" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Load a slide and send it live" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hotkey-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("kbd", { children: "Double-click" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "Load a slide and send it live" })
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel canvas-layout-section settings-card-group", id: "settings-canvas", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "canvas-layout-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-layout-title", children: "Canvas Layout" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "ratio-chip-group", children: ["16:9", "4:3", "21:9", "FREE"].map((ratio) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel canvas-layout-section settings-card-group", id: "settings-canvas", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "canvas-layout-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "canvas-layout-title", children: "Canvas Layout" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "ratio-chip-group", children: ["16:9", "4:3", "21:9", "FREE"].map((ratio) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "button",
               {
                 className: `ratio-chip ${aspectRatio === ratio ? "active" : ""}`,
@@ -16022,38 +16534,38 @@ ${selectedVerse.text}`;
               ratio
             )) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "canvas-visualizer", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "canvas-visualizer", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)(
             "div",
             {
               className: "canvas-display-rect",
               style: { aspectRatio: aspectRatio === "4:3" ? "4/3" : aspectRatio === "21:9" ? "21/9" : "16/9" },
               children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "canvas-active-pill", children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "dot", style: { width: 6, height: 6, borderRadius: "50%", background: "var(--tertiary)" } }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "canvas-active-pill", children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "dot", style: { width: 6, height: 6, borderRadius: "50%", background: "var(--tertiary)" } }),
                   " ACTIVE OUTPUT"
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "canvas-display-label", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "canvas-display-label", children: [
                   "Output ",
                   activeOutputId
                 ] }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-display-res", children: outputResolution.replace("x", " \xD7 ") }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tl" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tc" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle tr" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle ml" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle mr" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle bl" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle bc" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "canvas-handle br" })
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-display-res", children: outputResolution.replace("x", " \xD7 ") }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle tl" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle tc" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle tr" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle ml" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle mr" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle bl" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle bc" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "canvas-handle br" })
               ]
             }
           ) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("aside", { className: "panel dimensions-panel", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimensions-title", children: "Dimensions" }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Resolution" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("aside", { className: "panel dimensions-panel", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "dimensions-title", children: "Dimensions" }),
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "dimension-field", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { children: "Resolution" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "input",
               {
                 value: outputResolution,
@@ -16064,48 +16576,48 @@ ${selectedVerse.text}`;
               }
             ) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "dimension-field", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Aspect Ratio" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("select", { value: aspectRatio, onChange: (e) => onSetAspectRatio(e.target.value), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "16:9", children: "16:9 Widescreen" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "4:3", children: "4:3 Standard" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "21:9", children: "21:9 Ultrawide" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("option", { value: "FREE", children: "Free" })
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "dimension-field", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { children: "Aspect Ratio" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "dimension-input-row", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("select", { value: aspectRatio, onChange: (e) => onSetAspectRatio(e.target.value), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "16:9", children: "16:9 Widescreen" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "4:3", children: "4:3 Standard" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "21:9", children: "21:9 Ultrawide" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("option", { value: "FREE", children: "Free" })
             ] }) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "overscan-slider", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-row", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "slider-label", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Overscan" }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "overscan-slider", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "slider-row", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "slider-label", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "Overscan" }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { children: [
                   overscanPercent,
                   "%"
                 ] })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("input", { type: "range", min: 0, max: 20, value: overscanPercent, onChange: (e) => onSetOverscanPercent(Number(e.target.value)) })
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("input", { type: "range", min: 0, max: 20, value: overscanPercent, onChange: (e) => onSetOverscanPercent(Number(e.target.value)) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "overscan-labels", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "0%" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "20%" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "overscan-labels", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "0%" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: "20%" })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "hardware-card-title", children: "Output Hardware" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-card-content", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "hardware-icon", children: "\u{1F5A5}" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "hardware-info", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("strong", { children: outputHardware }),
-                /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "SDI Out 1 \u2022 60fps \u2022 10-bit" })
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hardware-card", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "hardware-card-title", children: "Output Hardware" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hardware-card-content", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "hardware-icon", children: "\u{1F5A5}" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "hardware-info", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: outputHardware }),
+                /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "SDI Out 1 \u2022 60fps \u2022 10-bit" })
               ] })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "preset-section", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Theme Presets" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "preset-grid", children: themePresets.slice(0, 6).map((preset) => /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "preset-chip", onClick: () => onApplyPreset(preset), children: preset.name }, preset.name)) })
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "preset-section", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { children: "Theme Presets" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "preset-grid", children: themePresets.slice(0, 6).map((preset) => /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("button", { className: "preset-chip", onClick: () => onApplyPreset(preset), children: preset.name }, preset.name)) })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "ndi-section", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "NDI Output" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "ndi-section", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("label", { children: "NDI Output" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)(
               "button",
               {
                 className: `soft-button full ${ndiEnabled ? "active" : ""}`,
@@ -16115,40 +16627,40 @@ ${selectedVerse.text}`;
             )
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("section", { className: "panel about-panel settings-card-group", id: "settings-about", style: { gridColumn: "1 / -1" }, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "panel-header", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("h3", { children: "About WorshipPresenter" }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("small", { children: "Application Information" })
+        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel about-panel settings-card-group", id: "settings-about", style: { gridColumn: "1 / -1" }, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "About WorshipPresenter" }),
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Application Information" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "about-content", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-grid", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Application" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
+          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("div", { className: "about-content", children: /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-grid", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Application" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Version" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: appVersion || "1.0.0" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Version" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: appVersion || "1.0.0" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Platform" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: navigator.platform || "Unknown" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Platform" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: navigator.platform || "Unknown" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Display Configuration" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("span", { className: "about-value", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Display Configuration" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("span", { className: "about-value", children: [
                 displays.length,
                 " display(s) \xB7 ",
                 activeOutputWindows.length,
                 " output(s)"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Brand" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "Worship Presenter" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Brand" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: "Worship Presenter" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "about-info-item", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-label", children: "Build" }),
-              /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { className: "about-value", children: "Electron installer via npm run dist:win" })
+            /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Build" }),
+              /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: "Electron installer via npm run dist:win" })
             ] })
           ] }) })
         ] })
@@ -16157,7 +16669,7 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/HelpWorkspace.tsx
-  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
   var bibleSources = [
     ["KJV", "Direct download in the app"],
     ["WEB", "Direct download in the app"],
@@ -16170,93 +16682,93 @@ ${selectedVerse.text}`;
     ["ESV", "Use the Crossway ESV API or import an authorized OSIS file"],
     ["Good News Translation", "Use API.Bible/DBL licensing or import an authorized OSIS file"]
   ];
-  var HelpWorkspace = ({ appVersion, displayCount, outputCount }) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "workspace-grid workspace-help", children: [
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("section", { className: "panel help-panel", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "How To" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Operator guide" })
+  var HelpWorkspace = ({ appVersion, displayCount, outputCount }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "workspace-grid workspace-help", children: [
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("section", { className: "panel help-panel", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "panel-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h3", { children: "How To" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: "Operator guide" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-content", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Use A Projector Or External Display" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Connect the projector, monitor, or TV to the computer." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Settings and check Detected Displays." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Choose Go Live Here for one screen, or Go Live on All Secondary for every external screen." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Show if an output was hidden, Fullscreen for presentation mode, or Resize for a windowed preview." })
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-content", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { children: "Use A Projector Or External Display" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Connect the projector, monitor, or TV to the computer." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Open Settings and check Detected Displays." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Choose Go Live Here for one screen, or Go Live on All Secondary for every external screen." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Use Show if an output was hidden, Fullscreen for presentation mode, or Resize for a windowed preview." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Download Or Import Bibles" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Scripture, then Download Bible Online." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Download for direct public-domain/public-use sources." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "For restricted translations, use Source as a reminder that a publisher/API license is required." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Import OSIS Bible when you already have an authorized OSIS XML file." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Import EasyWorship EWB for readable EasyWorship Bible files. Protected or encrypted publisher files may still need an OSIS export or licensed API." })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { children: "Download Or Import Bibles" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Open Scripture, then Download Bible Online." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Use Download for direct public-domain/public-use sources." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "For restricted translations, use Source as a reminder that a publisher/API license is required." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Use Import OSIS Bible when you already have an authorized OSIS XML file." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Use Import EasyWorship EWB for readable EasyWorship Bible files. Protected or encrypted publisher files may still need an OSIS export or licensed API." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Position And Resize Words" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Open Song Editor, then Background & Style." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Set Vertical Position to Top Half, Center, or Bottom Half." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Use Content Width and Content Height to resize the lyric or scripture text area." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Send Live to push the same positioning to projectors and output windows." })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { children: "Position And Resize Words" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Open Song Editor, then Background & Style." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Set Vertical Position to Top Half, Center, or Bottom Half." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Use Content Width and Content Height to resize the lyric or scripture text area." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Send Live to push the same positioning to projectors and output windows." })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-section", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h2", { children: "Build An Installer" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("ol", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Set the release number in package.json." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Run npm run build to compile the app." }),
-            /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("li", { children: "Run npm run dist:win to create the Windows installer in release." })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-section", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h2", { children: "Build An Installer" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("ol", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Set the release number in package.json." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Run npm run build to compile the app." }),
+            /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("li", { children: "Run npm run dist:win to create the Windows installer in release." })
           ] })
         ] })
       ] })
     ] }),
-    /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("aside", { className: "panel help-side-panel", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "panel-header", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "About" }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("small", { children: "Version" })
+    /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("aside", { className: "panel help-side-panel", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "panel-header", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h3", { children: "About" }),
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("small", { children: "Version" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-grid help-about-grid", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Application" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "about-info-grid help-about-grid", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-label", children: "Application" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-value", children: "WorshipPresenter" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Version" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: appVersion || "1.1.0" })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-label", children: "Version" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-value", children: appVersion || "1.1.0" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Displays" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: displayCount })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-label", children: "Displays" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-value", children: displayCount })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "about-info-item", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-label", children: "Outputs" }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { className: "about-value", children: outputCount })
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "about-info-item", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-label", children: "Outputs" }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "about-value", children: outputCount })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-source-list", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("h3", { children: "Bible Sources" }),
-        bibleSources.map(([name, detail]) => /* @__PURE__ */ (0, import_jsx_runtime10.jsxs)("div", { className: "help-source-row", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("strong", { children: name }),
-          /* @__PURE__ */ (0, import_jsx_runtime10.jsx)("span", { children: detail })
+      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-source-list", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("h3", { children: "Bible Sources" }),
+        bibleSources.map(([name, detail]) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "help-source-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("strong", { children: name }),
+          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { children: detail })
         ] }, name))
       ] })
     ] })
   ] });
 
   // src/renderer/app/components/CommandPalette.tsx
-  var import_react6 = __toESM(require_react());
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+  var import_react7 = __toESM(require_react());
+  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
   var CommandPalette = ({ commands, onClose }) => {
-    const [query, setQuery] = import_react6.default.useState("");
-    const [selected, setSelected] = import_react6.default.useState(0);
-    const inputRef = import_react6.default.useRef(null);
-    const listRef = import_react6.default.useRef(null);
-    const filtered = import_react6.default.useMemo(() => {
+    const [query, setQuery] = import_react7.default.useState("");
+    const [selected, setSelected] = import_react7.default.useState(0);
+    const inputRef = import_react7.default.useRef(null);
+    const listRef = import_react7.default.useRef(null);
+    const filtered = import_react7.default.useMemo(() => {
       const q = query.toLowerCase().trim();
       if (!q) return commands;
       return commands.filter((cmd) => {
@@ -16264,13 +16776,13 @@ ${selectedVerse.text}`;
         return hay.includes(q);
       });
     }, [commands, query]);
-    import_react6.default.useEffect(() => {
+    import_react7.default.useEffect(() => {
       setSelected(0);
     }, [query]);
-    import_react6.default.useEffect(() => {
+    import_react7.default.useEffect(() => {
       inputRef.current?.focus();
     }, []);
-    import_react6.default.useEffect(() => {
+    import_react7.default.useEffect(() => {
       const el = listRef.current?.querySelector(`[data-idx="${selected}"]`);
       el?.scrollIntoView({ block: "nearest" });
     }, [selected]);
@@ -16292,7 +16804,7 @@ ${selectedVerse.text}`;
         onClose();
       }
     };
-    const grouped = import_react6.default.useMemo(() => {
+    const grouped = import_react7.default.useMemo(() => {
       const map = /* @__PURE__ */ new Map();
       filtered.forEach((cmd, idx) => {
         const cat = cmd.category ?? "General";
@@ -16301,10 +16813,10 @@ ${selectedVerse.text}`;
       });
       return map;
     }, [filtered]);
-    return /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "palette-backdrop", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-panel", onClick: (e) => e.stopPropagation(), onKeyDown: handleKeyDown, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-search-row", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-search-icon", children: "\u2318" }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)(
+    return /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "palette-backdrop", onClick: onClose, children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-panel", onClick: (e) => e.stopPropagation(), onKeyDown: handleKeyDown, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-search-row", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "palette-search-icon", children: "\u2318" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
           "input",
           {
             ref: inputRef,
@@ -16316,17 +16828,17 @@ ${selectedVerse.text}`;
             spellCheck: false
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { className: "palette-esc-hint", onClick: onClose, children: "ESC" })
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { className: "palette-esc-hint", onClick: onClose, children: "ESC" })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-list", ref: listRef, children: [
-        filtered.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-empty", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-list", ref: listRef, children: [
+        filtered.length === 0 && /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-empty", children: [
           'No commands match "',
           query,
           '"'
         ] }),
-        Array.from(grouped.entries()).map(([cat, items]) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("div", { className: "palette-category", children: cat }),
-          items.map(({ cmd, idx }) => /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
+        Array.from(grouped.entries()).map(([cat, items]) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "palette-category", children: cat }),
+          items.map(({ cmd, idx }) => /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(
             "button",
             {
               "data-idx": idx,
@@ -16334,26 +16846,26 @@ ${selectedVerse.text}`;
               onMouseEnter: () => setSelected(idx),
               onClick: () => execute(cmd),
               children: [
-                cmd.icon && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-icon", children: cmd.icon }),
-                /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-label", children: cmd.label }),
-                cmd.description && /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("span", { className: "palette-item-desc", children: cmd.description })
+                cmd.icon && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "palette-item-icon", children: cmd.icon }),
+                /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "palette-item-label", children: cmd.label }),
+                cmd.description && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("span", { className: "palette-item-desc", children: cmd.description })
               ]
             },
             cmd.id
           ))
         ] }, cat))
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("div", { className: "palette-footer", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "\u2191\u2193" }),
+      /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "palette-footer", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { children: "\u2191\u2193" }),
           " navigate"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "\u21B5" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { children: "\u21B5" }),
           " run"
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)("span", { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime11.jsx)("kbd", { children: "Esc" }),
+        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("kbd", { children: "Esc" }),
           " close"
         ] })
       ] })
@@ -16361,26 +16873,26 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/components/Dialog.tsx
-  var import_react7 = __toESM(require_react());
-  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
-  var DialogContext = import_react7.default.createContext(null);
+  var import_react8 = __toESM(require_react());
+  var import_jsx_runtime13 = __toESM(require_jsx_runtime());
+  var DialogContext = import_react8.default.createContext(null);
   var useDialog = () => {
-    const ctx = import_react7.default.useContext(DialogContext);
+    const ctx = import_react8.default.useContext(DialogContext);
     if (!ctx) throw new Error("useDialog must be used inside <DialogProvider>");
     return ctx;
   };
   var DialogProvider = ({ children }) => {
-    const [config, setConfig] = import_react7.default.useState(null);
-    const [inputValue, setInputValue] = import_react7.default.useState("");
-    const inputRef = import_react7.default.useRef(null);
-    const show = import_react7.default.useCallback(
+    const [config, setConfig] = import_react8.default.useState(null);
+    const [inputValue, setInputValue] = import_react8.default.useState("");
+    const inputRef = import_react8.default.useRef(null);
+    const show = import_react8.default.useCallback(
       (cfg) => new Promise((resolve) => {
         setInputValue(cfg.defaultValue ?? "");
         setConfig({ ...cfg, resolve });
       }),
       []
     );
-    import_react7.default.useEffect(() => {
+    import_react8.default.useEffect(() => {
       if (config && config.type === "prompt") {
         setTimeout(() => inputRef.current?.focus(), 60);
       }
@@ -16396,12 +16908,12 @@ ${selectedVerse.text}`;
         dismiss(config?.type === "prompt" ? inputValue : true);
       }
     };
-    return /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)(DialogContext.Provider, { value: { show }, children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(DialogContext.Provider, { value: { show }, children: [
       children,
-      config && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-backdrop", role: "dialog", "aria-modal": "true", onKeyDown: handleKeyDown, tabIndex: -1, children: /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dialog-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-title", children: config.title }),
-        config.message && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)("div", { className: "dialog-message", children: config.message }),
-        config.type === "prompt" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+      config && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "dialog-backdrop", role: "dialog", "aria-modal": "true", onKeyDown: handleKeyDown, tabIndex: -1, children: /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "dialog-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "dialog-title", children: config.title }),
+        config.message && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "dialog-message", children: config.message }),
+        config.type === "prompt" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
           "input",
           {
             ref: inputRef,
@@ -16418,8 +16930,8 @@ ${selectedVerse.text}`;
             autoFocus: true
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime12.jsxs)("div", { className: "dialog-actions", children: [
-          config.type !== "alert" && /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "dialog-actions", children: [
+          config.type !== "alert" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             "button",
             {
               className: "soft-button",
@@ -16427,7 +16939,7 @@ ${selectedVerse.text}`;
               children: config.cancelLabel ?? "Cancel"
             }
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime12.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
             "button",
             {
               className: `soft-button ${config.tone === "danger" ? "danger" : "primary"}`,
@@ -16441,7 +16953,7 @@ ${selectedVerse.text}`;
   };
 
   // src/renderer/app/index.tsx
-  var import_jsx_runtime13 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime14 = __toESM(require_jsx_runtime());
   var OUTPUT_IDS3 = [1, 2];
   var NOTE_INDEX = {
     C: 0,
@@ -16489,7 +17001,7 @@ ${selectedVerse.text}`;
       return 0;
     }
   };
-  var stripChordMarkup = (text) => text.replace(/\[([^\]]+)\]/g, "").replace(/\s+/g, " ").trim();
+  var stripChordMarkup = (text) => richTextToPlainText(text).replace(/\[([^\]]+)\]/g, "").replace(/\s+/g, " ").trim();
   var transposeChord = (chord, steps) => {
     const match = chord.match(/^([A-G])([#b]?)(.*)$/);
     if (!match) return chord;
@@ -16533,41 +17045,41 @@ ${selectedVerse.text}`;
     const updateOutputConfig = useStore2((state) => state.updateOutputConfig);
     const displays = useStore2((state) => state.displays);
     const setDisplays = useStore2((state) => state.setDisplays);
-    const [workspace, setWorkspace] = import_react8.default.useState("console");
-    const [clockValue, setClockValue] = import_react8.default.useState(/* @__PURE__ */ new Date());
-    const [dragIndex, setDragIndex] = import_react8.default.useState(null);
-    const [selectedSongId, setSelectedSongId] = import_react8.default.useState(songs[0]?.id ?? 0);
-    const [selectedSectionId, setSelectedSectionId] = import_react8.default.useState(null);
-    const [showChords, setShowChords] = import_react8.default.useState(true);
-    const [transposeSteps, setTransposeSteps] = import_react8.default.useState(0);
-    const [songSearchQuery, setSongSearchQuery] = import_react8.default.useState("");
-    const [editorText, setEditorText] = import_react8.default.useState("");
-    const [editorType, setEditorType] = import_react8.default.useState("Verse");
-    const [songTitleDraft, setSongTitleDraft] = import_react8.default.useState("");
-    const [ndiEnabled, setNdiEnabled] = import_react8.default.useState(false);
-    const [outputStates, setOutputStates] = import_react8.default.useState({});
-    const [isOnAir, setIsOnAir] = import_react8.default.useState(false);
-    const [presentationPaused, setPresentationPaused] = import_react8.default.useState(false);
-    const [mediaType, setMediaType] = import_react8.default.useState("image");
-    const [mediaAssets, setMediaAssets] = import_react8.default.useState([]);
-    const [mediaSearchQuery, setMediaSearchQuery] = import_react8.default.useState("");
-    const [mediaSort, setMediaSort] = import_react8.default.useState("recent");
-    const [mediaViewMode, setMediaViewMode] = import_react8.default.useState("grid");
-    const [selectedMediaId, setSelectedMediaId] = import_react8.default.useState(null);
-    const [isImportingMedia, setIsImportingMedia] = import_react8.default.useState(false);
-    const [bgManagerTab, setBgManagerTab] = import_react8.default.useState("media");
-    const [editorDragIndex, setEditorDragIndex] = import_react8.default.useState(null);
-    const [gradientStart, setGradientStart] = import_react8.default.useState("#1a1a2e");
-    const [gradientEnd, setGradientEnd] = import_react8.default.useState("#0f4c75");
-    const [activeOutputId, setActiveOutputId] = import_react8.default.useState(1);
-    const [aspectRatio, setAspectRatio] = import_react8.default.useState("16:9");
-    const [overscanPercent, setOverscanPercent] = import_react8.default.useState(5);
-    const [outputResolution, setOutputResolution] = import_react8.default.useState("1920x1080");
-    const [outputHardware] = import_react8.default.useState("Built-in Display");
-    const [librarySort, setLibrarySort] = import_react8.default.useState("name");
-    const [libraryViewMode, setLibraryViewMode] = import_react8.default.useState("grid");
-    const [toasts, setToasts] = import_react8.default.useState([]);
-    const [paneSizes, setPaneSizes] = import_react8.default.useState(() => {
+    const [workspace, setWorkspace] = import_react9.default.useState("console");
+    const [clockValue, setClockValue] = import_react9.default.useState(/* @__PURE__ */ new Date());
+    const [dragIndex, setDragIndex] = import_react9.default.useState(null);
+    const [selectedSongId, setSelectedSongId] = import_react9.default.useState(songs[0]?.id ?? 0);
+    const [selectedSectionId, setSelectedSectionId] = import_react9.default.useState(null);
+    const [showChords, setShowChords] = import_react9.default.useState(true);
+    const [transposeSteps, setTransposeSteps] = import_react9.default.useState(0);
+    const [songSearchQuery, setSongSearchQuery] = import_react9.default.useState("");
+    const [editorText, setEditorText] = import_react9.default.useState("");
+    const [editorType, setEditorType] = import_react9.default.useState("Verse");
+    const [songTitleDraft, setSongTitleDraft] = import_react9.default.useState("");
+    const [ndiEnabled, setNdiEnabled] = import_react9.default.useState(false);
+    const [outputStates, setOutputStates] = import_react9.default.useState({});
+    const [isOnAir, setIsOnAir] = import_react9.default.useState(false);
+    const [presentationPaused, setPresentationPaused] = import_react9.default.useState(false);
+    const [mediaType, setMediaType] = import_react9.default.useState("image");
+    const [mediaAssets, setMediaAssets] = import_react9.default.useState([]);
+    const [mediaSearchQuery, setMediaSearchQuery] = import_react9.default.useState("");
+    const [mediaSort, setMediaSort] = import_react9.default.useState("recent");
+    const [mediaViewMode, setMediaViewMode] = import_react9.default.useState("grid");
+    const [selectedMediaId, setSelectedMediaId] = import_react9.default.useState(null);
+    const [isImportingMedia, setIsImportingMedia] = import_react9.default.useState(false);
+    const [bgManagerTab, setBgManagerTab] = import_react9.default.useState("media");
+    const [editorDragIndex, setEditorDragIndex] = import_react9.default.useState(null);
+    const [gradientStart, setGradientStart] = import_react9.default.useState("#1a1a2e");
+    const [gradientEnd, setGradientEnd] = import_react9.default.useState("#0f4c75");
+    const [activeOutputId, setActiveOutputId] = import_react9.default.useState(1);
+    const [aspectRatio, setAspectRatio] = import_react9.default.useState("16:9");
+    const [overscanPercent, setOverscanPercent] = import_react9.default.useState(5);
+    const [outputResolution, setOutputResolution] = import_react9.default.useState("1920x1080");
+    const [outputHardware] = import_react9.default.useState("Built-in Display");
+    const [librarySort, setLibrarySort] = import_react9.default.useState("name");
+    const [libraryViewMode, setLibraryViewMode] = import_react9.default.useState("grid");
+    const [toasts, setToasts] = import_react9.default.useState([]);
+    const [paneSizes, setPaneSizes] = import_react9.default.useState(() => {
       try {
         const raw = localStorage.getItem("operator-pane-sizes");
         if (!raw) return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 };
@@ -16582,20 +17094,20 @@ ${selectedVerse.text}`;
         return { consoleLeft: 320, consoleBottom: 210, editorLeft: 310, editorRight: 330 };
       }
     });
-    const [syncUrl, setSyncUrl] = import_react8.default.useState("ws://localhost:9090");
-    const [syncConnected, setSyncConnected] = import_react8.default.useState(false);
-    const [syncSocket, setSyncSocket] = import_react8.default.useState(null);
-    const [showPalette, setShowPalette] = import_react8.default.useState(false);
-    const [logoImage, setLogoImage] = import_react8.default.useState(() => {
+    const [syncUrl, setSyncUrl] = import_react9.default.useState("ws://localhost:9090");
+    const [syncConnected, setSyncConnected] = import_react9.default.useState(false);
+    const [syncSocket, setSyncSocket] = import_react9.default.useState(null);
+    const [showPalette, setShowPalette] = import_react9.default.useState(false);
+    const [logoImage, setLogoImage] = import_react9.default.useState(() => {
       try {
         return localStorage.getItem("worship-logo-image") || "";
       } catch {
         return "";
       }
     });
-    const [appVersion, setAppVersion] = import_react8.default.useState("");
-    const [appLoading, setAppLoading] = import_react8.default.useState(true);
-    const [activeOutputWindows, setActiveOutputWindows] = import_react8.default.useState(() => {
+    const [appVersion, setAppVersion] = import_react9.default.useState("");
+    const [appLoading, setAppLoading] = import_react9.default.useState(true);
+    const [activeOutputWindows, setActiveOutputWindows] = import_react9.default.useState(() => {
       if (typeof window !== "undefined" && window.worship?.outputs?.list) {
         window.worship.outputs.list().then((list) => setActiveOutputWindows(list || [])).catch(() => {
         });
@@ -16607,16 +17119,16 @@ ${selectedVerse.text}`;
     const filteredSongs = songs.filter(
       (song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())
     ).sort((a, b) => librarySort === "name" ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       const timer = setInterval(() => setClockValue(/* @__PURE__ */ new Date()), 1e3);
       return () => clearInterval(timer);
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       if (!songs.find((s) => s.id === selectedSongId) && songs[0]) setSelectedSongId(songs[0].id);
     }, [isOutput, selectedSongId, songs]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (!selectedSection) {
         setEditorText("");
         return;
@@ -16624,10 +17136,16 @@ ${selectedVerse.text}`;
       setEditorText(selectedSection.text || "");
       setEditorType(selectedSection.type || "Verse");
     }, [selectedSection?.id, selectedSection?.text, selectedSection?.type]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
+      const firstSectionId = selectedSong?.sections[0]?.id ?? null;
+      if (selectedSectionId === null || !selectedSong?.sections.some((section) => section.id === selectedSectionId)) {
+        setSelectedSectionId(firstSectionId);
+      }
+    }, [selectedSong?.id, selectedSong?.sections, selectedSectionId]);
+    import_react9.default.useEffect(() => {
       setSongTitleDraft(selectedSong?.title || "");
     }, [selectedSong?.id, selectedSong?.title]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       if (!window?.worship?.outputs?.onOutputState) return;
       window.worship.outputs.onOutputState((payload) => {
@@ -16635,11 +17153,11 @@ ${selectedVerse.text}`;
         setOutputStates((prev) => ({ ...prev, [payload.outputId]: payload.state || {} }));
       });
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       window?.worship?.ndi?.status?.().then((status) => setNdiEnabled(Boolean(status?.enabled))).catch(() => setNdiEnabled(false));
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       const loadData = async () => {
         try {
@@ -16660,7 +17178,7 @@ ${selectedVerse.text}`;
       };
       loadData();
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       const isEditableTarget = (target) => {
         const node = target;
@@ -16685,17 +17203,17 @@ ${selectedVerse.text}`;
       window.addEventListener("keydown", handleKeyDown);
       return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOutput, selectedSectionId, currentSlide, selectedSection, editorText, editorType, presentationPaused]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       localStorage.setItem("operator-pane-sizes", JSON.stringify(paneSizes));
     }, [isOutput, paneSizes]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       try {
         localStorage.setItem("worship-logo-image", logoImage);
       } catch {
       }
     }, [logoImage]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       const loadDisplays = async () => {
         try {
@@ -16717,14 +17235,14 @@ ${selectedVerse.text}`;
       };
       loadDisplays();
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput || !window.worship?.displays?.onChanged) return;
       const cleanup = window.worship.displays.onChanged((d) => {
         if (d?.length) setDisplays(d);
       });
       return cleanup;
     }, [isOutput]);
-    import_react8.default.useEffect(() => {
+    import_react9.default.useEffect(() => {
       if (isOutput) return;
       const refresh = async () => {
         try {
@@ -16737,11 +17255,19 @@ ${selectedVerse.text}`;
       };
       refresh();
     }, [displays, isOutput]);
-    if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(OutputView, { outId, logoImage });
+    if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(OutputView, { outId, logoImage });
     const sendLiveState = (slideTitle) => {
       const targetOutputIds = activeOutputWindows.length ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean) : OUTPUT_IDS3;
+      const slideHtml = hasRichTextMarkup(slideTitle) ? getRichTextHtml(slideTitle) : void 0;
+      const state = {
+        slideTitle: richTextToPlainText(slideTitle),
+        ...slideHtml ? { slideHtml } : {},
+        mediaPath: "",
+        mediaType: void 0,
+        theme
+      };
       targetOutputIds.forEach(
-        (id) => window?.worship?.outputs?.setState?.(id, { slideTitle, mediaPath: "", mediaType: void 0, theme })
+        (id) => window?.worship?.outputs?.setState?.(id, state)
       );
     };
     const notify = (title, detail, tone = "info") => {
@@ -16925,7 +17451,8 @@ ${selectedVerse.text}`;
       { id: "logo", label: "Logo Mode", description: "Show church logo on outputs", icon: "\u{1F3DB}", category: "Output", action: onLogo },
       { id: "clear", label: "Clear Override", description: "Restore normal output", icon: "\u2728", category: "Output", action: onClear },
       { id: "add-song", label: "Add New Song", icon: "\u2795", category: "Library", action: async () => {
-        await addSong();
+        const id = await addSong();
+        if (id) setSelectedSongId(id);
         setWorkspace("editor");
       } },
       { id: "import-songs", label: "Import Songs", icon: "\u{1F4E5}", category: "Library", action: importSongs },
@@ -16936,57 +17463,57 @@ ${selectedVerse.text}`;
       { id: "toggle-ndi", label: ndiEnabled ? "Disable NDI" : "Enable NDI", icon: "\u{1F4E1}", category: "Settings", action: toggleNdi },
       { id: "sync-connect", label: syncConnected ? "Disconnect Sync" : "Connect Sync", icon: "\u{1F517}", category: "Settings", action: syncConnected ? disconnectSync : connectSync }
     ];
-    const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("header", { className: "topbar ribbon", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "ribbon-row ribbon-main", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "topbar-context", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "topbar-eyebrow", children: "WORSHIP PRESENTER / WORKSPACE" }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "screen-title", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("strong", { children: PAGE_META[workspace].title }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("small", { children: PAGE_META[workspace].subtitle })
+    const renderRibbon = () => /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("header", { className: "topbar ribbon", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "ribbon-row ribbon-main", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "topbar-context", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "topbar-eyebrow", children: "WORSHIP PRESENTER / WORKSPACE" }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "screen-title", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("strong", { children: PAGE_META[workspace].title }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("small", { children: PAGE_META[workspace].subtitle })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "topbar-center-status", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: `topbar-live-state ${isOnAir ? "on-air" : ""}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "topbar-live-dot" }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "topbar-center-status", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: `topbar-live-state ${isOnAir ? "on-air" : ""}`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "topbar-live-dot" }),
             isOnAir ? "ON AIR" : "STANDBY"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: "topbar-output-summary", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: `connected-dot ${activeOutputWindows.length ? "" : "offline"}` }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: "topbar-output-summary", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: `connected-dot ${activeOutputWindows.length ? "" : "offline"}` }),
             activeOutputWindows.length ? `${activeOutputWindows.length} output${activeOutputWindows.length === 1 ? "" : "s"} connected` : "No output windows"
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "topbar-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Search" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("kbd", { children: "Ctrl K" })
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "topbar-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "palette-trigger", onClick: () => setShowPalette(true), title: "Command Palette (Ctrl+K)", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Search" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("kbd", { children: "Ctrl K" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "action-button dark", onClick: onBlack, title: "Black screen", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "black", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "action-button dark", onClick: onBlack, title: "Black screen", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "black", size: 14 }),
             " BLACK"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "action-button", onClick: onLogo, title: "Logo mode", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "logo", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "action-button", onClick: onLogo, title: "Logo mode", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "logo", size: 14 }),
             " LOGO"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "action-button", onClick: onClear, title: "Clear output override", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "clear", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "action-button", onClick: onClear, title: "Clear output override", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "clear", size: 14 }),
             " CLEAR"
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "action-button live", onClick: goLive, title: "Send preview live", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "send", size: 14 }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "action-button live", onClick: goLive, title: "Send preview live", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "send", size: 14 }),
             " SEND LIVE"
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: "command-bar-label", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "spark", size: 13 }),
+      /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "ribbon-row ribbon-tools", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: "command-bar-label", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "spark", size: 13 }),
           " Operator controls"
         ] }),
-        (workspace === "console" || workspace === "editor") && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Left Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+        (workspace === "console" || workspace === "editor") && /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)(import_jsx_runtime14.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Left Pane" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
               "input",
               {
                 type: "range",
@@ -17003,9 +17530,9 @@ ${selectedVerse.text}`;
               }
             )
           ] }),
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Output Area" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Output Area" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
               "input",
               {
                 type: "range",
@@ -17016,9 +17543,9 @@ ${selectedVerse.text}`;
               }
             )
           ] }),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("label", { className: "ribbon-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Inspector Pane" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("label", { className: "ribbon-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Inspector Pane" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
               "input",
               {
                 type: "range",
@@ -17030,57 +17557,57 @@ ${selectedVerse.text}`;
             )
           ] })
         ] }),
-        workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)(import_jsx_runtime13.Fragment, { children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })
+        workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)(import_jsx_runtime14.Fragment, { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("button", { className: "soft-button", onClick: () => selectedSong && addSongSection(selectedSong.id), children: "Add Section" }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("button", { className: "soft-button", onClick: saveSectionEdits, children: "Save Section" })
         ] }),
-        workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." })
+        workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "ribbon-note", children: "Tip: click asset for inspector, double-click to preview, then push live when ready." })
       ] })
     ] });
-    return /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-shell", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("aside", { className: "app-sidebar", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "brand-block", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "brand-lockup", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "brand-mark", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "spark", size: 18, strokeWidth: 2.2 }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("h1", { children: "Worship Presenter" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("p", { children: [
+    return /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "app-shell", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("aside", { className: "app-sidebar", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "brand-block", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "brand-lockup", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "brand-mark", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "spark", size: 18, strokeWidth: 2.2 }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("h1", { children: "Worship Presenter" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("p", { children: [
               "Present ",
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "\u2022" }),
+              /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "\u2022" }),
               " Worship ",
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "\u2022" }),
+              /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "\u2022" }),
               " Inspire"
             ] })
           ] })
         ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sidebar-section-label", children: "WORKSPACE" }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("nav", { className: "sidebar-nav", "aria-label": "Primary navigation", children: NAV_ITEMS.map((item) => /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: `nav-button ${workspace === item.id ? "active" : ""}`, onClick: () => setWorkspace(item.id), "aria-current": workspace === item.id ? "page" : void 0, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "nav-icon", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: item.icon, size: 17 }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: item.label })
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sidebar-section-label", children: "WORKSPACE" }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("nav", { className: "sidebar-nav", "aria-label": "Primary navigation", children: NAV_ITEMS.map((item) => /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: `nav-button ${workspace === item.id ? "active" : ""}`, onClick: () => setWorkspace(item.id), "aria-current": workspace === item.id ? "page" : void 0, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "nav-icon", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: item.icon, size: 17 }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: item.label })
         ] }, item.id)) }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "sidebar-footer", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "sidebar-section-label", children: "SUPPORT" }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: `nav-button ${workspace === "help" ? "active" : ""}`, onClick: () => setWorkspace("help"), "aria-current": workspace === "help" ? "page" : void 0, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "nav-icon", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "help", size: 17 }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Help & shortcuts" })
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "sidebar-footer", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "sidebar-section-label", children: "SUPPORT" }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: `nav-button ${workspace === "help" ? "active" : ""}`, onClick: () => setWorkspace("help"), "aria-current": workspace === "help" ? "page" : void 0, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "nav-icon", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "help", size: 17 }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Help & shortcuts" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "sidebar-operator-card", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: "operator-avatar", children: "WP" }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("span", { className: "operator-copy", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("strong", { children: "Operator" }),
-              /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("small", { children: isOnAir ? "Live session" : "Ready to present" })
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "sidebar-operator-card", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: "operator-avatar", children: "WP" }),
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("span", { className: "operator-copy", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("strong", { children: "Operator" }),
+              /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("small", { children: isOnAir ? "Live session" : "Ready to present" })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { className: `operator-status ${isOnAir ? "live" : ""}` })
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { className: `operator-status ${isOnAir ? "live" : ""}` })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("button", { className: "live-button sidebar-go-live", onClick: goLive, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppIcon, { name: "send", size: 15 }),
+          /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("button", { className: "live-button sidebar-go-live", onClick: goLive, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppIcon, { name: "send", size: 15 }),
             " Go Live"
           ] })
         ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-main", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "app-main", children: [
         renderRibbon(),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("main", { className: "workspace", children: [
-          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("main", { className: "workspace", children: [
+          workspace === "console" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             ConsoleWorkspace,
             {
               schedule,
@@ -17115,7 +17642,7 @@ ${selectedVerse.text}`;
               onEndLive: endLive
             }
           ),
-          workspace === "library" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "library" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             LibraryWorkspace,
             {
               songs,
@@ -17132,8 +17659,9 @@ ${selectedVerse.text}`;
                 setSelectedSongId(id);
                 setWorkspace("editor");
               },
-              onAddSong: () => {
-                addSong();
+              onAddSong: async () => {
+                const id = await addSong();
+                if (id) setSelectedSongId(id);
                 setWorkspace("editor");
               },
               onImportSongs: importSongs,
@@ -17160,7 +17688,7 @@ ${selectedVerse.text}`;
               }
             }
           ),
-          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "editor" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             EditorWorkspace,
             {
               selectedSong,
@@ -17215,8 +17743,8 @@ ${selectedVerse.text}`;
               onNotify: notify
             }
           ),
-          workspace === "scripture" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(BiblePicker, {}),
-          workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "scripture" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(BiblePicker, {}),
+          workspace === "media" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             MediaLibrary,
             {
               mediaType,
@@ -17226,7 +17754,7 @@ ${selectedVerse.text}`;
               onNotify: notify
             }
           ),
-          workspace === "settings" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "settings" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             SettingsWorkspace,
             {
               theme,
@@ -17277,7 +17805,7 @@ ${selectedVerse.text}`;
               }
             }
           ),
-          workspace === "help" && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(
+          workspace === "help" && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(
             HelpWorkspace,
             {
               appVersion,
@@ -17286,20 +17814,20 @@ ${selectedVerse.text}`;
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(Notifications, { items: toasts, onDismiss: (id) => setToasts((prev) => prev.filter((item) => item.id !== id)) })
       ] }),
-      appLoading && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "app-loader-overlay", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsxs)("div", { className: "app-loader-card", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("strong", { children: "Loading WorshipPresenter" }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("span", { children: "Preparing songs, media, Bibles, and displays..." }),
-        /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", { className: "app-loader-bar", children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)("div", {}) })
+      appLoading && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "app-loader-overlay", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)("div", { className: "app-loader-card", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("strong", { children: "Loading WorshipPresenter" }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("span", { children: "Preparing songs, media, Bibles, and displays..." }),
+        /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", { className: "app-loader-bar", children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)("div", {}) })
       ] }) }),
-      showPalette && /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) })
+      showPalette && /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(CommandPalette, { commands: paletteCommands, onClose: () => setShowPalette(false) })
     ] });
   };
-  var App = () => /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(DialogProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime13.jsx)(AppInner, {}) });
+  var App = () => /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(DialogProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(AppInner, {}) });
   var mountPoint = document.getElementById("root");
   var root = mountPoint ? (0, import_client.createRoot)(mountPoint) : null;
-  if (root) root.render(/* @__PURE__ */ (0, import_jsx_runtime13.jsx)(App, {}));
+  if (root) root.render(/* @__PURE__ */ (0, import_jsx_runtime14.jsx)(App, {}));
 })();
 /*! Bundled license information:
 
