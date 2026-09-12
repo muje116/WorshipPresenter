@@ -6,7 +6,7 @@ const react_1 = require("react");
 const store_1 = require("../store");
 const db_1 = require("../services/db");
 const ui_1 = require("./ui");
-const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
+const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onMediaAssetsChanged, onNotify }) => {
     const setCurrentSlide = (0, store_1.useStore)((state) => state.setCurrentSlide);
     const setLiveSlide = (0, store_1.useStore)((state) => state.setLiveSlide);
     const setTheme = (0, store_1.useStore)((state) => state.setTheme);
@@ -29,7 +29,11 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
     }, [activeFilter, currentFolderId]);
     const loadMediaAssets = async () => {
         try {
-            const typeFilter = activeFilter === 'all' ? undefined : activeFilter;
+            const typeFilter = activeFilter === 'all'
+                ? undefined
+                : activeFilter === 'image' || activeFilter === 'background'
+                    ? 'image'
+                    : 'video';
             const results = await db_1.dbService.media.getAssets(currentFolderId, typeFilter);
             const normalized = (results || []).map((asset) => ({
                 ...asset,
@@ -54,7 +58,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
     const handleImport = async () => {
         setIsImporting(true);
         try {
-            const type = activeFilter === 'video' ? 'video' : 'image';
+            const type = activeFilter === 'video' || activeFilter === 'loop' ? 'video' : 'image';
             const extensions = type === 'image'
                 ? ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
                 : ['mp4', 'mov', 'mkv', 'webm', 'avi'];
@@ -70,6 +74,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
                     await db_1.dbService.media.createAsset(filePath, type, fileName, type === 'video' ? 0 : null, currentFolderId);
                 }
                 await loadMediaAssets();
+                await onMediaAssetsChanged?.();
                 onNotify?.('Media imported', `${filePaths.length} item(s) added`, 'success');
             }
         }
@@ -98,6 +103,7 @@ const MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview,
         try {
             await db_1.dbService.media.deleteAsset(asset.id);
             await loadMediaAssets();
+            await onMediaAssetsChanged?.();
             if (selectedAsset?.id === asset.id) {
                 setSelectedAsset(null);
             }

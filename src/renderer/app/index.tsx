@@ -31,6 +31,14 @@ type Workspace = 'console' | 'library' | 'editor' | 'scripture' | 'media' | 'set
 type PaneSizes = { consoleLeft: number; consoleBottom: number; editorLeft: number; editorRight: number }
 type MediaAsset = { id: number; path: string; type: 'image' | 'video' | string; name?: string; duration?: number }
 
+const normalizeMediaAsset = (asset: any): MediaAsset => ({
+  id: Number(asset?.id || 0),
+  path: String(asset?.path || ''),
+  type: String(asset?.type || 'image'),
+  name: asset?.name || String(asset?.path || '').split('\\').pop()?.split('/').pop() || 'Untitled',
+  duration: asset?.duration,
+})
+
 const NAV_ITEMS: Array<{ id: Exclude<Workspace, 'help'>; label: string; icon: IconName }> = [
   { id: 'console', label: 'Console', icon: 'console' },
   { id: 'library', label: 'Library', icon: 'library' },
@@ -178,15 +186,30 @@ const AppInner: React.FC = () => {
     return []
   })
 
+  const refreshMediaAssets = React.useCallback(async () => {
+    try {
+      const assets = await dbService.media.getAssets()
+      setMediaAssets((assets || []).map(normalizeMediaAsset).filter((asset) => asset.path))
+    } catch (error) {
+      console.error('Failed to load media assets:', error)
+      setMediaAssets([])
+    }
+  }, [])
+
   // Derived
   const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0]
   const selectedSection = selectedSong?.sections.find((s) => s.id === selectedSectionId) || selectedSong?.sections[0]
+  const songSearchTerms = songSearchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filteredSongs = songs
-    .filter((song) =>
-      !songSearchQuery ||
-      song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) ||
-      song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())
-    )
+    .filter((song) => {
+      if (!songSearchTerms.length) return true
+      const searchableText = [
+        song.title,
+        song.artist,
+        ...(song.sections || []).map((section) => richTextToPlainText(section.text || '')),
+      ].filter(Boolean).join(' ').toLowerCase()
+      return songSearchTerms.every((term) => searchableText.includes(term))
+    })
     .sort((a, b) => (librarySort === 'name' ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length))
 
   // ── Effects ────────────────────────────────────────────────────────────────
@@ -348,6 +371,11 @@ const AppInner: React.FC = () => {
     }
     refresh()
   }, [displays, isOutput])
+
+  React.useEffect(() => {
+    if (isOutput) return
+    void refreshMediaAssets()
+  }, [isOutput, refreshMediaAssets])
 
   if (isOutput) return <OutputView outId={outId} logoImage={logoImage} />
 
@@ -533,6 +561,28 @@ const AppInner: React.FC = () => {
     )
     setIsOnAir(true)
     notify('Media sent live', asset.name || 'Live outputs updated', 'success')
+  }
+
+  const addBackgroundAssets = async () => {
+    try {
+      const filePaths: string[] = await window.worship.dialog.openFiles({
+        title: 'Add Background Images',
+        filters: [{ name: 'Background Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'] }],
+        multiSelections: true,
+      })
+      if (!filePaths.length) return
+
+      for (const filePath of filePaths) {
+        const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || 'Background'
+        await dbService.media.createAsset(filePath, 'image', fileName, null, null)
+      }
+      await refreshMediaAssets()
+      setTheme({ ...theme, backgroundImage: filePaths[0], gradient: '' })
+      notify('Backgrounds added', `${filePaths.length} image${filePaths.length === 1 ? '' : 's'} ready to use`, 'success')
+    } catch (error) {
+      console.error('Failed to add background images:', error)
+      notify('Background import failed', 'Could not add the selected images', 'warn')
+    }
   }
 
   const pickLogoFile = async () => {
@@ -778,6 +828,7 @@ const AppInner: React.FC = () => {
               bgManagerTab={bgManagerTab}
               editorDragIndex={editorDragIndex}
               paneSizes={paneSizes}
+              mediaAssets={mediaAssets}
               onEditorTextChange={setEditorText}
               onEditorTypeChange={setEditorType}
               onSongTitleDraftChange={setSongTitleDraft}
@@ -801,6 +852,11 @@ const AppInner: React.FC = () => {
               onSetBgManagerTab={setBgManagerTab}
               onSetGradientStart={setGradientStart}
               onSetGradientEnd={setGradientEnd}
+              onPickBackground={(asset) => {
+                setTheme({ ...theme, backgroundImage: asset.path, gradient: '' })
+                notify('Background selected', asset.name || 'Editor background updated', 'success')
+              }}
+              onAddBackground={addBackgroundAssets}
               onSaveSectionEdits={saveSectionEdits}
               onGoLive={goLive}
               onSaveTemplate={async () => {
@@ -822,6 +878,7 @@ const AppInner: React.FC = () => {
               onMediaSelect={() => undefined}
               onSendToPreview={sendMediaToPreview}
               onSendToLive={sendMediaToLive}
+              onMediaAssetsChanged={refreshMediaAssets}
               onNotify={notify}
             />
           )}

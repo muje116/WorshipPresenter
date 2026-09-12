@@ -11,6 +11,7 @@ const SECTION_TYPES = [
 
 type Section = { id: number; type: string; text: string }
 type Song = { id: number; title: string; artist?: string; sections: Section[] }
+type MediaAsset = { id: number; path: string; type: string; name?: string }
 type Theme = {
   bg: string; color: string; backgroundImage?: string; fontSize: number
   opacity?: number; blur?: number; gradient?: string; fontFamily?: string
@@ -36,6 +37,7 @@ type Props = {
   bgManagerTab: 'media' | 'gradient' | 'color'
   editorDragIndex: number | null
   paneSizes: { editorLeft: number; editorRight: number }
+  mediaAssets: MediaAsset[]
   onEditorTextChange: (text: string) => void
   onEditorTypeChange: (type: string) => void
   onSongTitleDraftChange: (title: string) => void
@@ -51,6 +53,8 @@ type Props = {
   onSetBgManagerTab: (tab: 'media' | 'gradient' | 'color') => void
   onSetGradientStart: (c: string) => void
   onSetGradientEnd: (c: string) => void
+  onPickBackground: (asset: MediaAsset) => void
+  onAddBackground: () => void | Promise<void>
   onSaveSectionEdits: () => void
   onGoLive: () => void
   onSaveTemplate: () => void
@@ -77,6 +81,7 @@ export const EditorWorkspace: React.FC<Props> = ({
   bgManagerTab,
   editorDragIndex,
   paneSizes,
+  mediaAssets,
   onEditorTextChange,
   onEditorTypeChange,
   onSongTitleDraftChange,
@@ -92,6 +97,8 @@ export const EditorWorkspace: React.FC<Props> = ({
   onSetBgManagerTab,
   onSetGradientStart,
   onSetGradientEnd,
+  onPickBackground,
+  onAddBackground,
   onSaveSectionEdits,
   onGoLive,
   onSaveTemplate,
@@ -100,6 +107,14 @@ export const EditorWorkspace: React.FC<Props> = ({
   stripChordMarkup,
   onNotify,
 }) => {
+  const backgroundAssets = mediaAssets.filter((asset) => asset.type === 'image' && asset.path)
+  const toFileUrl = (value: string) => {
+    if (value.startsWith('file://') || value.startsWith('http://') || value.startsWith('https://')) return value
+    return /^[a-z]:[\\/]/i.test(value)
+      ? `file:///${value.replace(/\\/g, '/')}`
+      : `file://${value}`
+  }
+
   const bgStyle: React.CSSProperties = {
     backgroundColor: theme.bg,
     backgroundImage: theme.gradient
@@ -252,9 +267,7 @@ export const EditorWorkspace: React.FC<Props> = ({
                   <div className="active-media-preview">
                     {theme.backgroundImage ? (
                       <img
-                        src={theme.backgroundImage.startsWith('file://') || theme.backgroundImage.startsWith('http')
-                          ? theme.backgroundImage
-                          : `file://${theme.backgroundImage}`}
+                        src={toFileUrl(theme.backgroundImage)}
                         alt="Background"
                         onError={(e) => { e.currentTarget.style.display = 'none' }}
                       />
@@ -271,10 +284,28 @@ export const EditorWorkspace: React.FC<Props> = ({
                     onChange={(event) => onSetTheme({ ...theme, backgroundImage: event.target.value, gradient: '' })}
                     placeholder="file://... or https://..."
                   />
-                  <label>Quick Picker</label>
+                  <label className="background-picker-label">
+                    <span>Quick Picker</span>
+                    <small>{backgroundAssets.length} image{backgroundAssets.length === 1 ? '' : 's'}</small>
+                  </label>
                   <div className="quick-picker-grid">
-                    <button className="quick-picker-add" onClick={() => {/* future: open file picker */}}>+</button>
+                    {backgroundAssets.map((asset) => (
+                      <button
+                        key={asset.id}
+                        type="button"
+                        className={`quick-picker-item ${!theme.gradient && theme.backgroundImage === asset.path ? 'active' : ''}`}
+                        onClick={() => onPickBackground(asset)}
+                        title={`Use ${asset.name || 'background'}`}
+                      >
+                        <img src={toFileUrl(asset.path)} alt={asset.name || 'Background'} />
+                        <span>{asset.name || 'Background'}</span>
+                      </button>
+                    ))}
+                    <button className="quick-picker-add" type="button" onClick={onAddBackground} aria-label="Add background" title="Add background image">+</button>
                   </div>
+                  {!backgroundAssets.length && (
+                    <div className="background-picker-empty">No image backgrounds yet. Add one here or import it from Media.</div>
+                  )}
                 </>
               )}
 

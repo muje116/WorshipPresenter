@@ -86,9 +86,9 @@ export const LibraryWorkspace: React.FC<Props> = ({
               <input
                 value={songSearchQuery}
                 onChange={(event) => onSearchChange(event.target.value)}
-                placeholder="Search songs..."
+                placeholder="Search songs or lyrics..."
                 className="input"
-                aria-label="Search songs"
+                aria-label="Search songs or lyrics"
               />
             </label>
             <button className="soft-button" onClick={onImportSongs}>

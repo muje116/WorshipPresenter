@@ -26,12 +26,13 @@ interface MediaLibraryProps {
   onMediaSelect: (asset: MediaAsset) => void
   onSendToPreview?: (asset: MediaAsset) => void
   onSendToLive?: (asset: MediaAsset, playback?: { loop: boolean; muted: boolean; playbackRate: number }) => void
+  onMediaAssetsChanged?: () => void | Promise<void>
   onNotify?: (title: string, detail?: string, tone?: 'info' | 'success' | 'warn') => void
 }
 
 type MediaFilter = 'all' | 'image' | 'video' | 'background' | 'loop'
 
-export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
+export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onMediaAssetsChanged, onNotify }) => {
   const setCurrentSlide = useStore((state) => state.setCurrentSlide)
   const setLiveSlide = useStore((state) => state.setLiveSlide)
   const setTheme = useStore((state) => state.setTheme)
@@ -57,7 +58,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
 
   const loadMediaAssets = async () => {
     try {
-      const typeFilter = activeFilter === 'all' ? undefined : activeFilter
+      const typeFilter = activeFilter === 'all'
+        ? undefined
+        : activeFilter === 'image' || activeFilter === 'background'
+          ? 'image'
+          : 'video'
       const results = await dbService.media.getAssets(currentFolderId, typeFilter)
       const normalized = (results || []).map((asset: any) => ({
         ...asset,
@@ -82,7 +87,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
   const handleImport = async () => {
     setIsImporting(true)
     try {
-      const type = activeFilter === 'video' ? 'video' : 'image'
+      const type = activeFilter === 'video' || activeFilter === 'loop' ? 'video' : 'image'
       const extensions = type === 'image'
         ? ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
         : ['mp4', 'mov', 'mkv', 'webm', 'avi']
@@ -106,6 +111,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
           )
         }
         await loadMediaAssets()
+        await onMediaAssetsChanged?.()
         onNotify?.('Media imported', `${filePaths.length} item(s) added`, 'success')
       }
     } catch (error) {
@@ -132,6 +138,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({ mediaType: _initialT
     try {
       await dbService.media.deleteAsset(asset.id)
       await loadMediaAssets()
+      await onMediaAssetsChanged?.()
       if (selectedAsset?.id === asset.id) {
         setSelectedAsset(null)
       }

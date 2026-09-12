@@ -28,6 +28,13 @@ const NOTE_INDEX = {
     'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11,
 };
 const NOTE_NAMES = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
+const normalizeMediaAsset = (asset) => ({
+    id: Number(asset?.id || 0),
+    path: String(asset?.path || ''),
+    type: String(asset?.type || 'image'),
+    name: asset?.name || String(asset?.path || '').split('\\').pop()?.split('/').pop() || 'Untitled',
+    duration: asset?.duration,
+});
 const NAV_ITEMS = [
     { id: 'console', label: 'Console', icon: 'console' },
     { id: 'library', label: 'Library', icon: 'library' },
@@ -177,13 +184,31 @@ const AppInner = () => {
         }
         return [];
     });
+    const refreshMediaAssets = react_1.default.useCallback(async () => {
+        try {
+            const assets = await db_1.dbService.media.getAssets();
+            setMediaAssets((assets || []).map(normalizeMediaAsset).filter((asset) => asset.path));
+        }
+        catch (error) {
+            console.error('Failed to load media assets:', error);
+            setMediaAssets([]);
+        }
+    }, []);
     // Derived
     const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
     const selectedSection = selectedSong?.sections.find((s) => s.id === selectedSectionId) || selectedSong?.sections[0];
+    const songSearchTerms = songSearchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const filteredSongs = songs
-        .filter((song) => !songSearchQuery ||
-        song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) ||
-        song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase()))
+        .filter((song) => {
+        if (!songSearchTerms.length)
+            return true;
+        const searchableText = [
+            song.title,
+            song.artist,
+            ...(song.sections || []).map((section) => (0, RichText_1.richTextToPlainText)(section.text || '')),
+        ].filter(Boolean).join(' ').toLowerCase();
+        return songSearchTerms.every((term) => searchableText.includes(term));
+    })
         .sort((a, b) => (librarySort === 'name' ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length));
     // ── Effects ────────────────────────────────────────────────────────────────
     react_1.default.useEffect(() => {
@@ -352,6 +377,11 @@ const AppInner = () => {
         };
         refresh();
     }, [displays, isOutput]);
+    react_1.default.useEffect(() => {
+        if (isOutput)
+            return;
+        void refreshMediaAssets();
+    }, [isOutput, refreshMediaAssets]);
     if (isOutput)
         return (0, jsx_runtime_1.jsx)(OutputView_1.OutputView, { outId: outId, logoImage: logoImage });
     // ── Helpers ────────────────────────────────────────────────────────────────
@@ -530,6 +560,28 @@ const AppInner = () => {
         setIsOnAir(true);
         notify('Media sent live', asset.name || 'Live outputs updated', 'success');
     };
+    const addBackgroundAssets = async () => {
+        try {
+            const filePaths = await window.worship.dialog.openFiles({
+                title: 'Add Background Images',
+                filters: [{ name: 'Background Images', extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'] }],
+                multiSelections: true,
+            });
+            if (!filePaths.length)
+                return;
+            for (const filePath of filePaths) {
+                const fileName = filePath.split('\\').pop() || filePath.split('/').pop() || 'Background';
+                await db_1.dbService.media.createAsset(filePath, 'image', fileName, null, null);
+            }
+            await refreshMediaAssets();
+            setTheme({ ...theme, backgroundImage: filePaths[0], gradient: '' });
+            notify('Backgrounds added', `${filePaths.length} image${filePaths.length === 1 ? '' : 's'} ready to use`, 'success');
+        }
+        catch (error) {
+            console.error('Failed to add background images:', error);
+            notify('Background import failed', 'Could not add the selected images', 'warn');
+        }
+    };
     const pickLogoFile = async () => {
         try {
             const files = await window.worship.dialog.openFiles({
@@ -592,7 +644,7 @@ const AppInner = () => {
                                         await deleteSong(song.id);
                                         notify('Song deleted', song.title, 'warn');
                                     }
-                                } })), workspace === 'editor' && ((0, jsx_runtime_1.jsx)(EditorWorkspace_1.EditorWorkspace, { selectedSong: selectedSong, selectedSectionId: selectedSectionId, currentSlide: currentSlide, theme: theme, editorText: editorText, editorType: editorType, showChords: showChords, transposeSteps: transposeSteps, undoStack: undoStack, redoStack: redoStack, songTitleDraft: songTitleDraft, gradientStart: gradientStart, gradientEnd: gradientEnd, bgManagerTab: bgManagerTab, editorDragIndex: editorDragIndex, paneSizes: paneSizes, onEditorTextChange: setEditorText, onEditorTypeChange: setEditorType, onSongTitleDraftChange: setSongTitleDraft, onCommitSongTitle: commitSongTitle, onPickSection: pickSection, onAddSection: () => selectedSong && addSongSection(selectedSong.id), onDeleteSection: async (sectionId) => {
+                                } })), workspace === 'editor' && ((0, jsx_runtime_1.jsx)(EditorWorkspace_1.EditorWorkspace, { selectedSong: selectedSong, selectedSectionId: selectedSectionId, currentSlide: currentSlide, theme: theme, editorText: editorText, editorType: editorType, showChords: showChords, transposeSteps: transposeSteps, undoStack: undoStack, redoStack: redoStack, songTitleDraft: songTitleDraft, gradientStart: gradientStart, gradientEnd: gradientEnd, bgManagerTab: bgManagerTab, editorDragIndex: editorDragIndex, paneSizes: paneSizes, mediaAssets: mediaAssets, onEditorTextChange: setEditorText, onEditorTypeChange: setEditorType, onSongTitleDraftChange: setSongTitleDraft, onCommitSongTitle: commitSongTitle, onPickSection: pickSection, onAddSection: () => selectedSong && addSongSection(selectedSong.id), onDeleteSection: async (sectionId) => {
                                     const confirmed = await showDialog({
                                         type: 'confirm', tone: 'danger',
                                         title: 'Delete Section?',
@@ -601,11 +653,14 @@ const AppInner = () => {
                                     });
                                     if (confirmed && selectedSong)
                                         await deleteSongSection(selectedSong.id, sectionId);
-                                }, onMoveSongSection: (from, to) => selectedSong && moveSongSection(selectedSong.id, from, to), onSetEditorDragIndex: setEditorDragIndex, onSetTransposeSteps: (fn) => setTransposeSteps(fn), onSetShowChords: (fn) => setShowChords(fn), onSetTheme: setTheme, onSetBgManagerTab: setBgManagerTab, onSetGradientStart: setGradientStart, onSetGradientEnd: setGradientEnd, onSaveSectionEdits: saveSectionEdits, onGoLive: goLive, onSaveTemplate: async () => {
+                                }, onMoveSongSection: (from, to) => selectedSong && moveSongSection(selectedSong.id, from, to), onSetEditorDragIndex: setEditorDragIndex, onSetTransposeSteps: (fn) => setTransposeSteps(fn), onSetShowChords: (fn) => setShowChords(fn), onSetTheme: setTheme, onSetBgManagerTab: setBgManagerTab, onSetGradientStart: setGradientStart, onSetGradientEnd: setGradientEnd, onPickBackground: (asset) => {
+                                    setTheme({ ...theme, backgroundImage: asset.path, gradient: '' });
+                                    notify('Background selected', asset.name || 'Editor background updated', 'success');
+                                }, onAddBackground: addBackgroundAssets, onSaveSectionEdits: saveSectionEdits, onGoLive: goLive, onSaveTemplate: async () => {
                                     const name = await showDialog({ type: 'prompt', title: 'Save Template', defaultValue: 'My Template', confirmLabel: 'Save' });
                                     if (typeof name === 'string' && name.trim())
                                         saveTemplate(name.trim());
-                                }, onUndo: undo, onRedo: redo, stripChordMarkup: stripChordMarkup, onNotify: notify })), workspace === 'scripture' && (0, jsx_runtime_1.jsx)(BiblePicker_1.BiblePicker, {}), workspace === 'media' && ((0, jsx_runtime_1.jsx)(MediaLibrary_1.MediaLibrary, { mediaType: mediaType, onMediaSelect: () => undefined, onSendToPreview: sendMediaToPreview, onSendToLive: sendMediaToLive, onNotify: notify })), workspace === 'settings' && ((0, jsx_runtime_1.jsx)(SettingsWorkspace_1.SettingsWorkspace, { theme: theme, outputConfigs: outputConfigs, looks: looks, ndiEnabled: ndiEnabled, syncConnected: syncConnected, syncUrl: syncUrl, aspectRatio: aspectRatio, overscanPercent: overscanPercent, outputResolution: outputResolution, outputHardware: outputHardware, activeOutputId: activeOutputId, themePresets: store_1.THEME_PRESETS, logoImage: logoImage, displays: displays, appVersion: appVersion, activeOutputWindows: activeOutputWindows, onSyncUrlChange: setSyncUrl, onConnectSync: connectSync, onDisconnectSync: disconnectSync, onSetAspectRatio: setAspectRatio, onSetOverscanPercent: setOverscanPercent, onSetOutputResolution: setOutputResolution, onSetActiveOutputId: setActiveOutputId, onUpdateOutputConfig: updateOutputConfig, onUpdateLook: updateLook, onToggleNdi: toggleNdi, onApplyPreset: applyPreset, onResetDisplay: () => {
+                                }, onUndo: undo, onRedo: redo, stripChordMarkup: stripChordMarkup, onNotify: notify })), workspace === 'scripture' && (0, jsx_runtime_1.jsx)(BiblePicker_1.BiblePicker, {}), workspace === 'media' && ((0, jsx_runtime_1.jsx)(MediaLibrary_1.MediaLibrary, { mediaType: mediaType, onMediaSelect: () => undefined, onSendToPreview: sendMediaToPreview, onSendToLive: sendMediaToLive, onMediaAssetsChanged: refreshMediaAssets, onNotify: notify })), workspace === 'settings' && ((0, jsx_runtime_1.jsx)(SettingsWorkspace_1.SettingsWorkspace, { theme: theme, outputConfigs: outputConfigs, looks: looks, ndiEnabled: ndiEnabled, syncConnected: syncConnected, syncUrl: syncUrl, aspectRatio: aspectRatio, overscanPercent: overscanPercent, outputResolution: outputResolution, outputHardware: outputHardware, activeOutputId: activeOutputId, themePresets: store_1.THEME_PRESETS, logoImage: logoImage, displays: displays, appVersion: appVersion, activeOutputWindows: activeOutputWindows, onSyncUrlChange: setSyncUrl, onConnectSync: connectSync, onDisconnectSync: disconnectSync, onSetAspectRatio: setAspectRatio, onSetOverscanPercent: setOverscanPercent, onSetOutputResolution: setOutputResolution, onSetActiveOutputId: setActiveOutputId, onUpdateOutputConfig: updateOutputConfig, onUpdateLook: updateLook, onToggleNdi: toggleNdi, onApplyPreset: applyPreset, onResetDisplay: () => {
                                     setAspectRatio('16:9');
                                     setOverscanPercent(5);
                                     setOutputResolution('1920x1080');

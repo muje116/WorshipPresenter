@@ -762,44 +762,72 @@ function registerBibleHandlers() {
         const { query, translationId } = args;
         if (!query || !query.trim())
             return [];
+        const terms = query
+            .trim()
+            .replace(/["']/g, '')
+            .split(/\s+/)
+            .map((term) => term.trim())
+            .filter(Boolean);
+        if (!terms.length)
+            return [];
+        const ftsTerms = terms
+            .map((term) => term.replace(/[^a-z0-9_]/gi, ''))
+            .filter(Boolean);
         try {
-            const matchQuery = query.trim().replace(/["']/g, '');
-            let sql = `
-        SELECT v.book, v.chapter, v.verse, v.text 
-        FROM verses v
-        JOIN verses_fts f ON v.id = f.rowid
-        WHERE f.text MATCH ?
-        ORDER BY v.book, v.chapter, v.verse 
-        LIMIT 100
-      `;
-            const params = [`"${matchQuery}"`];
-            if (translationId) {
-                sql = `
-          SELECT v.book, v.chapter, v.verse, v.text 
+            if (ftsTerms.length) {
+                const matchQuery = ftsTerms.map((term) => `${term}*`).join(' AND ');
+                let sql = `
+          SELECT v.book, v.chapter, v.verse, v.text
           FROM verses v
           JOIN verses_fts f ON v.id = f.rowid
-          WHERE v.bible_id = ? AND f.text MATCH ?
-          ORDER BY v.book, v.chapter, v.verse 
+          WHERE f.text MATCH ?
+          ORDER BY v.book, v.chapter, v.verse
+          LIMIT 100
+        `;
+                const params = [matchQuery];
+                if (translationId) {
+                    sql = `
+            SELECT v.book, v.chapter, v.verse, v.text
+            FROM verses v
+            JOIN verses_fts f ON v.id = f.rowid
+            WHERE v.bible_id = ? AND f.text MATCH ?
+            ORDER BY v.book, v.chapter, v.verse
+            LIMIT 100
+          `;
+                    params.unshift(translationId);
+                }
+                const ftsResults = db_1.db.prepare(sql).all(...params);
+                if (ftsResults.length)
+                    return ftsResults;
+            }
+        }
+        catch (e) {
+            console.error('Bible search FTS5 failed, falling back to partial text search:', e);
+        }
+        try {
+            const likeConditions = terms.map(() => 'LOWER(v.text) LIKE ?').join(' AND ');
+            let sql = `
+        SELECT v.book, v.chapter, v.verse, v.text
+        FROM verses v
+        WHERE ${likeConditions}
+        ORDER BY v.book, v.chapter, v.verse
+        LIMIT 100
+      `;
+            const params = terms.map((term) => `%${term.toLowerCase()}%`);
+            if (translationId) {
+                sql = `
+          SELECT v.book, v.chapter, v.verse, v.text
+          FROM verses v
+          WHERE v.bible_id = ? AND ${likeConditions}
+          ORDER BY v.book, v.chapter, v.verse
           LIMIT 100
         `;
                 params.unshift(translationId);
             }
             return db_1.db.prepare(sql).all(...params);
         }
-        catch (e) {
-            console.error('Bible search FTS5 failed, falling back to LIKE:', e);
-            try {
-                let sql = 'SELECT book, chapter, verse, text FROM verses WHERE text LIKE ? ORDER BY book, chapter, verse LIMIT 100';
-                const params = [`%${query}%`];
-                if (translationId) {
-                    sql = 'SELECT v.book, v.chapter, v.verse, v.text FROM verses v WHERE v.bible_id = ? AND v.text LIKE ? ORDER BY v.book, v.chapter, v.verse LIMIT 100';
-                    params.unshift(translationId);
-                }
-                return db_1.db.prepare(sql).all(...params);
-            }
-            catch {
-                return [];
-            }
+        catch {
+            return [];
         }
     });
 }

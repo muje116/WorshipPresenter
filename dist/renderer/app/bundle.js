@@ -14673,7 +14673,7 @@
   // src/renderer/app/components/MediaLibrary.tsx
   var import_react5 = __toESM(require_react());
   var import_jsx_runtime5 = __toESM(require_jsx_runtime());
-  var MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onNotify }) => {
+  var MediaLibrary = ({ mediaType: _initialType, onMediaSelect, onSendToPreview, onSendToLive, onMediaAssetsChanged, onNotify }) => {
     const setCurrentSlide = useStore2((state) => state.setCurrentSlide);
     const setLiveSlide = useStore2((state) => state.setLiveSlide);
     const setTheme = useStore2((state) => state.setTheme);
@@ -14696,7 +14696,7 @@
     }, [activeFilter, currentFolderId]);
     const loadMediaAssets = async () => {
       try {
-        const typeFilter = activeFilter === "all" ? void 0 : activeFilter;
+        const typeFilter = activeFilter === "all" ? void 0 : activeFilter === "image" || activeFilter === "background" ? "image" : "video";
         const results = await dbService.media.getAssets(currentFolderId, typeFilter);
         const normalized = (results || []).map((asset) => ({
           ...asset,
@@ -14719,7 +14719,7 @@
     const handleImport = async () => {
       setIsImporting(true);
       try {
-        const type = activeFilter === "video" ? "video" : "image";
+        const type = activeFilter === "video" || activeFilter === "loop" ? "video" : "image";
         const extensions = type === "image" ? ["png", "jpg", "jpeg", "gif", "webp", "svg"] : ["mp4", "mov", "mkv", "webm", "avi"];
         const title = type === "image" ? "Import Images" : "Import Videos";
         const filePaths = await window.worship.dialog.openFiles({
@@ -14739,6 +14739,7 @@
             );
           }
           await loadMediaAssets();
+          await onMediaAssetsChanged?.();
           onNotify?.("Media imported", `${filePaths.length} item(s) added`, "success");
         }
       } catch (error) {
@@ -14763,6 +14764,7 @@
       try {
         await dbService.media.deleteAsset(asset.id);
         await loadMediaAssets();
+        await onMediaAssetsChanged?.();
         if (selectedAsset?.id === asset.id) {
           setSelectedAsset(null);
         }
@@ -15462,9 +15464,9 @@
                 {
                   value: songSearchQuery,
                   onChange: (event) => onSearchChange(event.target.value),
-                  placeholder: "Search songs...",
+                  placeholder: "Search songs or lyrics...",
                   className: "input",
-                  "aria-label": "Search songs"
+                  "aria-label": "Search songs or lyrics"
                 }
               )
             ] }),
@@ -15583,6 +15585,7 @@
     bgManagerTab,
     editorDragIndex,
     paneSizes,
+    mediaAssets,
     onEditorTextChange,
     onEditorTypeChange,
     onSongTitleDraftChange,
@@ -15598,6 +15601,8 @@
     onSetBgManagerTab,
     onSetGradientStart,
     onSetGradientEnd,
+    onPickBackground,
+    onAddBackground,
     onSaveSectionEdits,
     onGoLive,
     onSaveTemplate,
@@ -15606,6 +15611,11 @@
     stripChordMarkup: stripChordMarkup2,
     onNotify
   }) => {
+    const backgroundAssets = mediaAssets.filter((asset) => asset.type === "image" && asset.path);
+    const toFileUrl2 = (value) => {
+      if (value.startsWith("file://") || value.startsWith("http://") || value.startsWith("https://")) return value;
+      return /^[a-z]:[\\/]/i.test(value) ? `file:///${value.replace(/\\/g, "/")}` : `file://${value}`;
+    };
     const bgStyle = {
       backgroundColor: theme.bg,
       backgroundImage: theme.gradient ? `linear-gradient(135deg, ${gradientStart}, ${gradientEnd})` : theme.backgroundImage ? `url(${theme.backgroundImage})` : void 0,
@@ -15785,7 +15795,7 @@
                     /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "active-media-preview", children: theme.backgroundImage ? /* @__PURE__ */ (0, import_jsx_runtime9.jsx)(
                       "img",
                       {
-                        src: theme.backgroundImage.startsWith("file://") || theme.backgroundImage.startsWith("http") ? theme.backgroundImage : `file://${theme.backgroundImage}`,
+                        src: toFileUrl2(theme.backgroundImage),
                         alt: "Background",
                         onError: (e) => {
                           e.currentTarget.style.display = "none";
@@ -15802,9 +15812,32 @@
                         placeholder: "file://... or https://..."
                       }
                     ),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Quick Picker" }),
-                    /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "quick-picker-grid", children: /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "quick-picker-add", onClick: () => {
-                    }, children: "+" }) })
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("label", { className: "background-picker-label", children: [
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: "Quick Picker" }),
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("small", { children: [
+                        backgroundAssets.length,
+                        " image",
+                        backgroundAssets.length === 1 ? "" : "s"
+                      ] })
+                    ] }),
+                    /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)("div", { className: "quick-picker-grid", children: [
+                      backgroundAssets.map((asset) => /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(
+                        "button",
+                        {
+                          type: "button",
+                          className: `quick-picker-item ${!theme.gradient && theme.backgroundImage === asset.path ? "active" : ""}`,
+                          onClick: () => onPickBackground(asset),
+                          title: `Use ${asset.name || "background"}`,
+                          children: [
+                            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("img", { src: toFileUrl2(asset.path), alt: asset.name || "Background" }),
+                            /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("span", { children: asset.name || "Background" })
+                          ]
+                        },
+                        asset.id
+                      )),
+                      /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("button", { className: "quick-picker-add", type: "button", onClick: onAddBackground, "aria-label": "Add background", title: "Add background image", children: "+" })
+                    ] }),
+                    !backgroundAssets.length && /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("div", { className: "background-picker-empty", children: "No image backgrounds yet. Add one here or import it from Media." })
                   ] }),
                   bgManagerTab === "gradient" && /* @__PURE__ */ (0, import_jsx_runtime9.jsxs)(import_jsx_runtime9.Fragment, { children: [
                     /* @__PURE__ */ (0, import_jsx_runtime9.jsx)("label", { children: "Gradient Colors" }),
@@ -16975,6 +17008,13 @@
     B: 11
   };
   var NOTE_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"];
+  var normalizeMediaAsset = (asset) => ({
+    id: Number(asset?.id || 0),
+    path: String(asset?.path || ""),
+    type: String(asset?.type || "image"),
+    name: asset?.name || String(asset?.path || "").split("\\").pop()?.split("/").pop() || "Untitled",
+    duration: asset?.duration
+  });
   var NAV_ITEMS = [
     { id: "console", label: "Console", icon: "console" },
     { id: "library", label: "Library", icon: "library" },
@@ -17114,11 +17154,27 @@
       }
       return [];
     });
+    const refreshMediaAssets = import_react9.default.useCallback(async () => {
+      try {
+        const assets = await dbService.media.getAssets();
+        setMediaAssets((assets || []).map(normalizeMediaAsset).filter((asset) => asset.path));
+      } catch (error) {
+        console.error("Failed to load media assets:", error);
+        setMediaAssets([]);
+      }
+    }, []);
     const selectedSong = songs.find((song) => song.id === selectedSongId) || songs[0];
     const selectedSection = selectedSong?.sections.find((s) => s.id === selectedSectionId) || selectedSong?.sections[0];
-    const filteredSongs = songs.filter(
-      (song) => !songSearchQuery || song.title.toLowerCase().includes(songSearchQuery.toLowerCase()) || song.artist?.toLowerCase().includes(songSearchQuery.toLowerCase())
-    ).sort((a, b) => librarySort === "name" ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length);
+    const songSearchTerms = songSearchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const filteredSongs = songs.filter((song) => {
+      if (!songSearchTerms.length) return true;
+      const searchableText = [
+        song.title,
+        song.artist,
+        ...(song.sections || []).map((section) => richTextToPlainText(section.text || ""))
+      ].filter(Boolean).join(" ").toLowerCase();
+      return songSearchTerms.every((term) => searchableText.includes(term));
+    }).sort((a, b) => librarySort === "name" ? a.title.localeCompare(b.title) : b.sections.length - a.sections.length);
     import_react9.default.useEffect(() => {
       if (isOutput) return;
       const timer = setInterval(() => setClockValue(/* @__PURE__ */ new Date()), 1e3);
@@ -17255,6 +17311,10 @@
       };
       refresh();
     }, [displays, isOutput]);
+    import_react9.default.useEffect(() => {
+      if (isOutput) return;
+      void refreshMediaAssets();
+    }, [isOutput, refreshMediaAssets]);
     if (isOutput) return /* @__PURE__ */ (0, import_jsx_runtime14.jsx)(OutputView, { outId, logoImage });
     const sendLiveState = (slideTitle) => {
       const targetOutputIds = activeOutputWindows.length ? activeOutputWindows.map((item) => Number(item.id)).filter(Boolean) : OUTPUT_IDS3;
@@ -17428,6 +17488,26 @@
       );
       setIsOnAir(true);
       notify("Media sent live", asset.name || "Live outputs updated", "success");
+    };
+    const addBackgroundAssets = async () => {
+      try {
+        const filePaths = await window.worship.dialog.openFiles({
+          title: "Add Background Images",
+          filters: [{ name: "Background Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "svg"] }],
+          multiSelections: true
+        });
+        if (!filePaths.length) return;
+        for (const filePath of filePaths) {
+          const fileName = filePath.split("\\").pop() || filePath.split("/").pop() || "Background";
+          await dbService.media.createAsset(filePath, "image", fileName, null, null);
+        }
+        await refreshMediaAssets();
+        setTheme({ ...theme, backgroundImage: filePaths[0], gradient: "" });
+        notify("Backgrounds added", `${filePaths.length} image${filePaths.length === 1 ? "" : "s"} ready to use`, "success");
+      } catch (error) {
+        console.error("Failed to add background images:", error);
+        notify("Background import failed", "Could not add the selected images", "warn");
+      }
     };
     const pickLogoFile = async () => {
       try {
@@ -17707,6 +17787,7 @@
               bgManagerTab,
               editorDragIndex,
               paneSizes,
+              mediaAssets,
               onEditorTextChange: setEditorText,
               onEditorTypeChange: setEditorType,
               onSongTitleDraftChange: setSongTitleDraft,
@@ -17731,6 +17812,11 @@
               onSetBgManagerTab: setBgManagerTab,
               onSetGradientStart: setGradientStart,
               onSetGradientEnd: setGradientEnd,
+              onPickBackground: (asset) => {
+                setTheme({ ...theme, backgroundImage: asset.path, gradient: "" });
+                notify("Background selected", asset.name || "Editor background updated", "success");
+              },
+              onAddBackground: addBackgroundAssets,
               onSaveSectionEdits: saveSectionEdits,
               onGoLive: goLive,
               onSaveTemplate: async () => {
@@ -17751,6 +17837,7 @@
               onMediaSelect: () => void 0,
               onSendToPreview: sendMediaToPreview,
               onSendToLive: sendMediaToLive,
+              onMediaAssetsChanged: refreshMediaAssets,
               onNotify: notify
             }
           ),
